@@ -1,0 +1,116 @@
+@model MediTech.Models.Paciente
+@{
+    ViewData["Title"] = "Perfil del Paciente";
+    var fullName = $"{Model.PrimerNombre} {Model.SegundoNombre} {Model.PrimerApellido} {Model.SegundoApellido}".Replace("  ", " ").Trim();
+    var initials = ((Model.PrimerNombre?.Length > 0 ? Model.PrimerNombre[0].ToString() : "") +
+                   (Model.PrimerApellido?.Length > 0 ? Model.PrimerApellido[0].ToString() : "")).ToUpper();
+    var age = Model.FechaNacimiento.HasValue ? (int)((DateTime.Now - Model.FechaNacimiento.Value).TotalDays / 365.25) : 0;
+}
+
+<style>
+    .profile-header {
+        background: #FFFFFF;
+        border-radius: 14px;
+        border: 1px solid #E2E8F0;
+        padding: 28px;
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        margin-bottom: 24px;
+    }
+    .profile-avatar {
+        width: 72px; height: 72px;
+        border-radius: 50%;
+        background: #3B82F6;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.6rem;
+        font-weight: 700;
+    }
+    .profile-info h3 { font-weight: 700; color: #1E293B; margin-bottom: 4px; }
+    .profile-info .meta { font-size: 0.85rem; color: #64748B; }
+
+    .info-card {
+        background: #FFFFFF;
+        border-radius: 14px;
+        border: 1px solid #E2E8F0;
+        padding: 24px;
+        margin-bottom: 20px;
+    }
+    .info-card h5 {
+        font-weight: 700;
+        color: #1E293B;
+        margin-bottom: 18px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #F1F5F9;
+    }
+
+    .info-row {
+        display: flex;
+        padding: 8px 0;
+        border-bottom: 1px solid #F8FAFC;
+    }
+    .info-row:last-child { border-bottom: none; }
+    .info-label {
+        width: 180px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: #64748B;
+    }
+    .info-value {
+        flex: 1;
+        font-size: 0.88rem;
+        color: #1E293B;
+    }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <a href="@Url.Action("Index")" class="btn btn-outline-secondary btn-sm" style="border-radius:8px;">
+        <i class="fas fa-arrow-left me-1"></i> Volver
+    </a>
+    <a href="@Url.Action("Edit", new { id = Model.IdPaciente })" class="btn btn-primary btn-sm" style="border-radius:8px;">
+        <i class="fas fa-edit me-1"></i> Editar Paciente
+    </a>
+</div>
+
+<div class="profile-header">
+    <div class="profile-avatar">@initials</div>
+    <div class="profile-info">
+        <h3>@fullName</h3>
+        <div class="meta">
+            <i class="fas fa-id-card me-1"></i> @(Model.NumeroIdentificacion ?? "Sin identificación")
+            &nbsp;&bull;&nbsp;
+            <i class="fas fa-phone me-1"></i> @(Model.Telefono ?? "Sin teléfono")
+            &nbsp;&bull;&nbsp;
+            <span class="@(Model.Estado == true ? "badge-active" : "badge-inactive")" style="font-size:0.72rem; padding:2px 8px; border-radius:12px; background:@(Model.Estado == true ? "#D1FAE5" : "#FEE2E2"); color:@(Model.Estado == true ? "#065F46" : "#991B1B");">
+                @(Model.Estado == true ? "Activo" : "Inactivo")
+            </span>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="info-card">
+            <h5><i class="fas fa-user me-2" style="color:#3B82F6;"></i>Información Personal</h5>
+            <div class="info-row"><div class="info-label">Primer Nombre</div><div class="info-value">@(Model.PrimerNombre ?? "—")</div></div>
+            <div class="info-row"><div class="info-label">Segundo Nombre</div><div class="info-value">@(Model.SegundoNombre ?? "—")</div></div>
+            <div class="info-row"><div class="info-label">Primer Apellido</div><div class="info-value">@(Model.PrimerApellido ?? "—")</div></div>
+            <div class="info-row"><div class="info-label">Segundo Apellido</div><div class="info-value">@(Model.SegundoApellido ?? "—")</div></div>
+            <div class="info-row"><div class="info-label">Sexo</div><div class="info-value">@(Model.Sexo == "M" ? "Masculino" : Model.Sexo == "F" ? "Femenino" : "—")</div></div>
+            <div class="info-row"><div class="info-label">Fecha Nacimiento</div><div class="info-value">@(Model.FechaNacimiento?.ToString("dd/MM/yyyy") ?? "—") @(age > 0 ? $"({age} años)" : "")</div></div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="info-card">
+            <h5><i class="fas fa-address-book me-2" style="color:#10B981;"></i>Contacto y Otros</h5>
+            <div class="info-row"><div class="info-label">Identificación</div><div class="info-value">@(Model.NumeroIdentificacion ?? "—")</div></div>
+            <div class="info-row"><div class="info-label">Teléfono</div><div class="info-value">@(Model.Telefono ?? "—")</div></div>
+            <div class="info-row"><div class="info-label">Dirección</div><div class="info-value">@(Model.Direccion ?? "—")</div></div>
+            <div class="info-row"><div class="info-label">Ocupación</div><div class="info-value">@(Model.Ocupacion ?? "—")</div></div>
+            <div class="info-row"><div class="info-label">Fecha Registro</div><div class="info-value">@(Model.FechaRegistro?.ToString("dd/MM/yyyy HH:mm") ?? "—")</div></div>
+        </div>
+    </div>
+</div>

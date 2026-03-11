@@ -1,0 +1,85 @@
+@model dynamic
+@{
+    ViewData["Title"] = "Iniciar Sesión";
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - MediTech</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <style>
+        body {
+            background-color: #f4f7f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        .login-card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .login-header {
+            background-color: #fff;
+            padding: 30px 20px 10px;
+            text-align: center;
+            border-bottom: 2px solid #e9ecef;
+        }
+        .login-logo {
+            max-height: 80px;
+            margin-bottom: 15px;
+        }
+        .btn-primary {
+            background-color: #00a8cc; /* Estilo alineado a UI médico / imágenes */
+            border-color: #00a8cc;
+        }
+        .btn-primary:hover {
+            background-color: #008ba8;
+            border-color: #008ba8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-5">
+                <div class="card login-card">
+                    <div class="login-header">
+                        <img src="~/images/logo.png" alt="MediTech Logo" class="login-logo" />
+                        <h4 class="mb-0 text-muted">Acceso al Sistema</h4>
+                    </div>
+                    <div class="card-body p-4">
+                        @if (ViewData["ErrorMessage"] != null)
+                        {
+                            <div class="alert alert-danger">
+                                @ViewData["ErrorMessage"]
+                            </div>
+                        }
+
+                        <form asp-controller="Account" asp-action="Login" method="post">
+                            <input type="hidden" name="returnUrl" value="@ViewData["ReturnUrl"]" />
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Correo Electrónico</label>
+                                <input type="email" class="form-control" id="email" name="email" required placeholder="correo@ejemplo.com">
+                            </div>
+                            <div class="mb-3">
+                                <label for="password" class="form-label">Contraseña</label>
+                                <input type="password" class="form-control" id="password" name="password" required placeholder="********">
+                            </div>
+                            <div class="d-grid gap-2 mt-4">
+                                <button type="submit" class="btn btn-primary btn-lg">Iniciar Sesión</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

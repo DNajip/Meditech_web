@@ -1,0 +1,546 @@
+Documento de Requerimientos del Sistema (SRS)
+Sistema: MediTech – Sistema de Gestión Clínica
+
+Versión: 1.0
+Tipo de sistema: Aplicación Web
+Arquitectura: ASP.NET Core MVC + SQL Server
+
+1. Introducción
+1.1 Propósito del documento
+
+Este documento describe los requerimientos funcionales y no funcionales del sistema MediTech, una aplicación web diseñada para la gestión de clínicas médicas y consultorios de medicina estética.
+
+El sistema permitirá digitalizar los procesos clínicos y administrativos relacionados con la atención de pacientes, manejo de agenda médica, gestión de consultas, control financiero y almacenamiento de información clínica.
+
+Este documento servirá como guía para:
+
+desarrollo del sistema
+
+validación de funcionalidades
+
+planificación de módulos
+
+evolución futura del software
+
+2. Visión general del sistema
+2.1 Descripción del sistema
+
+MediTech es un sistema web orientado a clínicas médicas, especialmente clínicas de medicina estética o consultorios privados.
+
+El sistema permitirá gestionar de forma centralizada:
+
+pacientes
+
+agenda médica
+
+consultas
+
+tratamientos
+
+documentos clínicos
+
+fotografías médicas
+
+pagos
+
+reportes administrativos
+
+El sistema será accesible mediante navegador web desde computadoras o tablets dentro de la clínica.
+
+2.2 Objetivos del sistema
+
+Los objetivos principales del sistema MediTech son:
+
+Digitalizar el expediente clínico del paciente.
+
+Optimizar la gestión de citas médicas mediante integración con Google Calendar.
+
+Facilitar el registro de consultas médicas.
+
+Centralizar la información del paciente.
+
+Permitir el registro de consentimiento informado con firma digital.
+
+Permitir el almacenamiento de fotografías clínicas.
+
+Administrar los ingresos económicos de la clínica.
+
+Proporcionar información administrativa mediante reportes.
+
+3. Tipos de usuarios del sistema
+Administrador
+
+Responsable de la configuración y administración del sistema.
+
+Funciones:
+
+gestión de usuarios
+
+configuración del sistema
+
+administración de catálogos
+
+acceso completo al sistema
+
+Médico
+
+Responsable de la atención médica del paciente.
+
+Funciones:
+
+revisar agenda médica
+
+iniciar consultas
+
+registrar diagnósticos
+
+registrar tratamientos
+
+revisar historial clínico
+
+Asistente / Recepción
+
+Responsable de la atención administrativa del paciente.
+
+Funciones:
+
+registrar pacientes
+
+programar citas
+
+confirmar citas
+
+registrar pagos
+
+4. Arquitectura general del sistema
+
+Arquitectura tecnológica:
+
+Usuario
+↓
+Navegador web
+↓
+Aplicación MediTech
+ASP.NET Core MVC
+↓
+Base de datos SQL Server
+↓
+Integración externa
+Google Calendar API
+
+5. Flujo general del sistema
+
+El flujo principal del sistema se basa en el ciclo de atención del paciente.
+
+Registro del paciente
+
+Programación de cita
+
+Recepción del paciente
+
+Inicio de consulta médica
+
+Registro clínico
+
+Firma de consentimiento
+
+Registro de tratamientos
+
+Registro de pagos
+
+Generación de reportes
+
+6. Módulos del sistema
+6.1 Módulo de autenticación y seguridad
+Descripción
+
+Permite controlar el acceso al sistema mediante autenticación de usuarios y control de permisos por rol.
+
+Funcionalidades
+
+Inicio de sesión
+Permite acceder al sistema mediante usuario y contraseña.
+
+Control de roles
+Cada usuario tendrá permisos específicos según su rol.
+
+Gestión de sesiones
+El sistema mantendrá la sesión activa del usuario autenticado.
+
+Cierre de sesión
+Permite cerrar sesión de manera segura.
+
+6.2 Dashboard (Panel principal)
+Descripción
+
+El dashboard será la pantalla principal del sistema después del inicio de sesión.
+
+Su objetivo es proporcionar una vista rápida del estado operativo de la clínica.
+
+Funcionalidades
+
+Visualización de citas del día
+El sistema mostrará las citas programadas para el día actual.
+
+Lista de pacientes del día
+Se mostrará una lista de pacientes que serán atendidos durante la jornada.
+
+Indicadores de actividad
+
+número de citas programadas
+
+número de pacientes atendidos
+
+ingresos generados en el día
+
+Accesos rápidos a módulos principales
+
+citas
+
+pacientes
+
+tratamientos
+
+caja
+
+6.3 Módulo de gestión de citas
+Descripción
+
+Permite gestionar la agenda médica del consultorio mediante integración con Google Calendar.
+
+Integración con Google Calendar
+
+El sistema utilizará la API de Google Calendar para:
+
+crear eventos de citas
+
+modificar citas
+
+cancelar citas
+
+visualizar agenda
+
+Esto permitirá aprovechar funcionalidades avanzadas del calendario.
+
+Funcionalidades
+
+Creación de citas
+Permite registrar citas médicas.
+
+Datos de la cita
+
+nombre del paciente
+
+teléfono
+
+tratamiento solicitado
+
+observaciones
+
+fecha
+
+hora
+
+Visualización de agenda
+
+vista diaria
+
+vista semanal
+
+vista mensual
+
+Modificación de citas
+Permite editar citas existentes.
+
+Cancelación de citas
+Permite cancelar citas programadas.
+
+6.4 Módulo de recepción del paciente
+Descripción
+
+Este módulo inicia cuando el paciente llega a la clínica.
+
+Permite confirmar la llegada del paciente y comenzar el proceso de consulta.
+
+Funcionalidades
+
+Confirmar llegada del paciente
+Permite marcar la cita como atendida.
+
+Iniciar consulta
+Permite abrir el registro clínico de la consulta.
+
+6.5 Ficha del paciente (Expediente clínico)
+Descripción
+
+Cada paciente tendrá un expediente clínico digital dentro del sistema.
+
+Este expediente centraliza toda la información relacionada con el paciente.
+
+Información incluida
+
+Datos personales
+Historia clínica
+Consultas médicas
+Citas pasadas
+Consentimientos firmados
+Fotografías clínicas
+Tratamientos realizados
+
+6.6 Módulo de historia clínica
+Descripción
+
+Permite registrar la información médica generada durante la consulta.
+
+Funcionalidades
+
+Registro de consulta médica
+
+Datos registrados:
+
+motivo de consulta
+
+diagnóstico
+
+observaciones
+
+recomendaciones médicas
+
+Registro de signos vitales
+
+presión arterial
+
+frecuencia cardíaca
+
+temperatura corporal
+
+saturación de oxígeno
+
+peso
+
+altura
+
+Historial clínico
+Permite visualizar todas las consultas anteriores.
+
+6.7 Módulo de tratamientos
+Descripción
+
+Permite registrar los tratamientos médicos aplicados durante la consulta.
+
+Funcionalidades
+
+Registro de tratamientos
+
+Información del tratamiento:
+
+medicamento
+
+dosis
+
+frecuencia
+
+duración
+
+indicaciones
+
+Asociación a consulta
+Cada tratamiento se registra dentro de una consulta médica.
+
+6.8 Módulo de consentimiento informado
+Descripción
+
+Permite registrar documentos legales de autorización para tratamientos médicos.
+
+Funcionalidades
+
+Consentimientos predefinidos
+El sistema almacenará plantillas de consentimientos médicos.
+
+Personalización del documento
+El sistema completará el documento con:
+
+nombre del paciente
+
+tratamiento realizado
+
+Firma digital del paciente
+
+El paciente podrá firmar mediante:
+
+tablet
+
+mouse
+
+pantalla táctil
+
+Almacenamiento del documento firmado
+El documento quedará guardado dentro de la ficha del paciente.
+
+6.9 Módulo de gestión de imágenes clínicas
+Descripción
+
+Permite almacenar fotografías clínicas del paciente.
+
+Este módulo es especialmente importante para medicina estética.
+
+Funcionalidades
+
+Carga de imágenes del paciente
+Permite subir fotografías al sistema.
+
+Álbum clínico
+Cada paciente tendrá su propio álbum de imágenes.
+
+Información de imagen
+
+fecha
+
+descripción
+
+tratamiento asociado
+
+Comparación antes y después
+Permite visualizar resultados del tratamiento.
+
+6.10 Módulo de gestión de pacientes
+Descripción
+
+Permite registrar y administrar la información de los pacientes.
+
+Funcionalidades
+
+Registro de pacientes
+
+Datos registrados:
+
+nombre completo
+
+identificación
+
+fecha de nacimiento
+
+sexo
+
+teléfono
+
+dirección
+
+ocupación
+
+Búsqueda de pacientes
+Permite buscar pacientes por nombre o identificación.
+
+Edición de información del paciente
+Permite actualizar información cuando sea necesario.
+
+6.11 Módulo de caja y facturación
+Descripción
+
+Permite registrar los pagos realizados por los pacientes.
+
+Funcionalidades
+
+Registro de pagos
+
+Datos registrados:
+
+paciente
+
+tratamiento
+
+monto pagado
+
+método de pago
+
+fecha
+
+Historial de pagos
+Permite consultar pagos realizados.
+
+Control de ingresos diarios
+Permite visualizar ingresos generados en el día.
+
+6.12 Módulo de reportes
+Descripción
+
+Permite generar información estadística sobre el funcionamiento de la clínica.
+
+Funcionalidades
+
+Reportes de ingresos
+Reportes de citas realizadas
+Reportes de pacientes atendidos
+Reportes de tratamientos realizados
+
+6.13 Módulo de administración del sistema
+Descripción
+
+Permite administrar la configuración general del sistema.
+
+Funcionalidades
+
+Gestión de usuarios
+Creación de usuarios del sistema.
+
+Asignación de roles
+Permite definir permisos según el tipo de usuario.
+
+Administración de catálogos
+
+tratamientos
+
+diagnósticos
+
+medicamentos
+
+7. Requerimientos no funcionales
+Seguridad
+
+El sistema debe requerir autenticación para acceder.
+
+El acceso debe controlarse mediante roles de usuario.
+
+Las contraseñas deben almacenarse de forma segura mediante hash.
+
+Usabilidad
+
+La interfaz debe ser intuitiva y fácil de usar.
+
+La aplicación debe ser responsive.
+
+El sistema debe poder utilizarse desde tablets.
+
+Rendimiento
+
+El sistema debe responder a las acciones del usuario en menos de 3 segundos.
+
+El sistema debe soportar múltiples usuarios simultáneamente.
+
+8. Tecnologías del sistema
+
+Frontend
+
+HTML
+CSS
+Bootstrap
+JavaScript
+
+Backend
+
+ASP.NET Core MVC
+C#
+
+Base de datos
+
+SQL Server
+
+Integraciones externas
+
+Google Calendar API
+
+Conclusión
+
+MediTech será una plataforma integral para la gestión clínica que permitirá digitalizar los procesos médicos y administrativos de clínicas de medicina estética o consultorios privados.
+
+El sistema centralizará la información del paciente, optimizará la gestión de citas médicas y permitirá mejorar la eficiencia operativa de la clínica.

@@ -1,0 +1,257 @@
+Arquitectura General del Sistema (Nivel Alto)
+
+Este nivel muestra todos los actores y sistemas externos.
+
+                ┌───────────────────────┐
+                │      Usuario          │
+                │                       │
+                │  Médico / Asistente  │
+                └──────────┬────────────┘
+                           │
+                           ▼
+                ┌───────────────────────┐
+                │      Navegador Web     │
+                │                       │
+                │ Chrome / Edge / etc  │
+                └──────────┬────────────┘
+                           │
+                           ▼
+                ┌───────────────────────┐
+                │     MediTech Web App  │
+                │   ASP.NET Core MVC    │
+                └──────────┬────────────┘
+                           │
+                           ▼
+                ┌───────────────────────┐
+                │     SQL Server DB     │
+                │                       │
+                │ Base de datos clínica │
+                └──────────┬────────────┘
+                           │
+                           ▼
+                ┌───────────────────────┐
+                │ Google Calendar API   │
+                │                       │
+                │ Gestión de agenda     │
+                └───────────────────────┘
+
+Este nivel responde la pregunta:
+
+¿Quién usa el sistema y con qué servicios interactúa?
+
+2. Arquitectura de Aplicación (Capas del Software)
+
+MediTech seguirá una arquitectura en capas, lo cual facilita mantenimiento y escalabilidad.
+
+┌─────────────────────────────────────────────┐
+│                PRESENTACIÓN                 │
+│                                             │
+│ Views (Razor)                               │
+│ HTML / CSS / Bootstrap                      │
+│ JavaScript                                  │
+│ Sidebar / Dashboard                         │
+└─────────────────────────────────────────────┘
+
+                    │
+
+┌─────────────────────────────────────────────┐
+│                CONTROLADORES                │
+│                                             │
+│ HomeController                              │
+│ CitasController                             │
+│ PacientesController                         │
+│ ConsultaController                          │
+│ CajaController                              │
+│ ReportesController                          │
+└─────────────────────────────────────────────┘
+
+                    │
+
+┌─────────────────────────────────────────────┐
+│               LÓGICA DE NEGOCIO             │
+│                                             │
+│ Servicios del sistema                       │
+│                                             │
+│ ServicioPacientes                           │
+│ ServicioCitas                               │
+│ ServicioConsulta                            │
+│ ServicioConsentimientos                     │
+│ ServicioCaja                                │
+│ ServicioFotosPaciente                       │
+└─────────────────────────────────────────────┘
+
+                    │
+
+┌─────────────────────────────────────────────┐
+│              CAPA DE DATOS                  │
+│                                             │
+│ Repositories / ADO.NET / EF Core            │
+│                                             │
+│ Acceso a SQL Server                         │
+└─────────────────────────────────────────────┘
+
+                    │
+
+┌─────────────────────────────────────────────┐
+│                 BASE DE DATOS               │
+│                                             │
+│ SQL Server                                  │
+│ Esquemas:                                   │
+│ CAT / ADM / CLI / CAJA                      │
+└─────────────────────────────────────────────┘
+3. Arquitectura de Módulos Clínicos
+
+Este es el corazón funcional de MediTech.
+
+                 ┌─────────────────┐
+                 │    Dashboard     │
+                 │ Vista general    │
+                 └────────┬────────┘
+                          │
+                          ▼
+                 ┌─────────────────┐
+                 │      Citas       │
+                 │ Google Calendar  │
+                 └────────┬────────┘
+                          │
+                          ▼
+                 ┌─────────────────┐
+                 │ Recepción       │
+                 │ Paciente llega  │
+                 └────────┬────────┘
+                          │
+                          ▼
+                 ┌─────────────────┐
+                 │   Consulta      │
+                 │ Atención médica │
+                 └────────┬────────┘
+                          │
+      ┌───────────────┬───┴───────┬───────────────┐
+      ▼               ▼           ▼               ▼
+┌────────────┐ ┌────────────┐ ┌────────────┐ ┌────────────┐
+│Signos      │ │Diagnóstico │ │Tratamientos│ │Procedimientos│
+│Vitales     │ │            │ │            │ │              │
+└────────────┘ └────────────┘ └────────────┘ └────────────┘
+
+                          │
+                          ▼
+                 ┌─────────────────┐
+                 │ Consentimiento  │
+                 │ Firma digital   │
+                 └────────┬────────┘
+                          │
+                          ▼
+                 ┌─────────────────┐
+                 │ Fotos paciente  │
+                 │ Álbum clínico   │
+                 └────────┬────────┘
+                          │
+                          ▼
+                 ┌─────────────────┐
+                 │ Caja / Pagos    │
+                 │ Facturación     │
+                 └────────┬────────┘
+                          │
+                          ▼
+                 ┌─────────────────┐
+                 │ Reportes        │
+                 │ Estadísticas    │
+                 └─────────────────┘
+4. Arquitectura de Datos (Modelo clínico)
+
+Este es el flujo real de datos del sistema.
+
+PERSONA
+   │
+   ▼
+CLIENTE (PACIENTE)
+   │
+   ▼
+CITA
+   │
+   ▼
+CONSULTA
+   │
+   ├──────────────► SIGNOS_VITALES
+   │
+   ├──────────────► DIAGNOSTICOS
+   │
+   ├──────────────► TRATAMIENTOS
+   │
+   ├──────────────► PROCEDIMIENTOS
+   │
+   ▼
+CONSENTIMIENTO_FIRMADO
+   │
+   ▼
+FOTOS_PACIENTE
+   │
+   ▼
+PAGO_CAJA
+
+Esto representa el expediente clínico completo del paciente.
+
+5. Integraciones externas
+
+MediTech interactúa con servicios externos.
+
+                ┌─────────────────────────┐
+                │    MediTech System      │
+                └───────────┬─────────────┘
+                            │
+        ┌───────────────────┴───────────────────┐
+        ▼                                       ▼
+
+┌──────────────────────┐           ┌──────────────────────┐
+│ Google Calendar API  │           │ Almacenamiento Fotos │
+│                      │           │ (Server / Cloud)     │
+│ Gestión de citas     │           │ Álbum clínico        │
+└──────────────────────┘           └──────────────────────┘
+6. Seguridad del sistema
+
+El control de seguridad funciona así:
+
+Usuario
+   │
+   ▼
+Login
+   │
+   ▼
+Autenticación
+   │
+   ▼
+Control de Roles
+   │
+   ├── Administrador
+   ├── Doctor
+   └── Asistente
+
+Cada rol tendrá acceso a diferentes módulos.
+
+7. Estructura final del proyecto
+Meditech
+│
+├── Controllers
+│
+├── Models
+│
+├── Services
+│
+├── Repositories
+│
+├── Views
+│
+│   ├── Home
+│   ├── Citas
+│   ├── Pacientes
+│   ├── Consulta
+│   ├── Caja
+│   └── Reportes
+│
+├── Shared
+│   └── Layout
+│
+└── wwwroot
+    ├── css
+    ├── js
+    └── images

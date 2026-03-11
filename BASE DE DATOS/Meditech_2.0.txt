@@ -1,0 +1,432 @@
+/*========================================================
+    CREACION BASE DE DATOS
+========================================================*/
+CREATE DATABASE MediTech;
+GO
+
+USE MediTech;
+GO
+
+
+/*========================================================
+CONFIGURACION GENERAL DEL SISTEMA
+========================================================*/
+
+-- ROLES DEL SISTEMA
+-- Define tipos de usuario (admin, doctor, asistente)
+CREATE TABLE roles(
+    id_rol INT IDENTITY(1,1) PRIMARY KEY,
+    nombre_rol VARCHAR(50) NOT NULL UNIQUE
+);
+
+-- MODULOS DEL SISTEMA
+-- Permite controlar qué rol accede a qué módulo
+CREATE TABLE modulos(
+    id_modulo INT IDENTITY(1,1) PRIMARY KEY,
+    nombre_modulo VARCHAR(100) NOT NULL UNIQUE
+);
+
+-- RELACION ROLES - MODULOS
+CREATE TABLE rol_modulos(
+    id_rol INT NOT NULL,
+    id_modulo INT NOT NULL,
+
+    CONSTRAINT pk_rol_modulos PRIMARY KEY (id_rol,id_modulo),
+
+    FOREIGN KEY(id_rol) REFERENCES roles(id_rol),
+    FOREIGN KEY(id_modulo) REFERENCES modulos(id_modulo)
+);
+
+
+/*========================================================
+CATALOGOS GENERALES
+========================================================*/
+
+-- TIPOS DE IDENTIFICACION
+CREATE TABLE tipo_identificaciones(
+    id_tipo_identificacion INT IDENTITY PRIMARY KEY,
+    descripcion VARCHAR(50) NOT NULL
+);
+
+-- GENERO
+CREATE TABLE genero(
+    id_genero INT IDENTITY PRIMARY KEY,
+    descripcion VARCHAR(20) NOT NULL
+);
+
+
+-- METODOS DE PAGO
+CREATE TABLE metodos_pago(
+    id_metodo_pago INT IDENTITY PRIMARY KEY,
+    descripcion VARCHAR(50)
+);
+
+
+/*========================================================
+USUARIOS DEL SISTEMA
+========================================================*/
+
+-- USUARIOS DEL SOFTWARE
+-- Doctores, asistentes, administradores
+CREATE TABLE usuarios(
+
+    id_usuario INT IDENTITY PRIMARY KEY,
+
+    primer_nombre VARCHAR(50),
+    segundo_nombre VARCHAR(50),
+
+    primer_apellido VARCHAR(50),
+    segundo_apellido VARCHAR(50),
+
+    id_tipo_identificacion INT,
+    identificacion VARCHAR(30),
+
+    id_genero INT,
+
+    fecha_nacimiento DATE,
+
+    email VARCHAR(100) UNIQUE,
+    password VARCHAR(255),
+
+    id_rol INT,
+
+    estado BIT DEFAULT 1,
+
+    fecha_creacion DATETIME DEFAULT GETDATE(),
+
+    FOREIGN KEY(id_tipo_identificacion) REFERENCES tipo_identificaciones(id_tipo_identificacion),
+    FOREIGN KEY(id_genero) REFERENCES genero(id_genero),
+    FOREIGN KEY(id_rol) REFERENCES roles(id_rol)
+);
+
+
+/*========================================================
+PACIENTES
+========================================================*/
+
+-- DATOS PRINCIPALES DEL PACIENTE
+CREATE TABLE pacientes(
+
+    id_paciente INT IDENTITY PRIMARY KEY,
+
+    primer_nombre VARCHAR(50),
+    segundo_nombre VARCHAR(50),
+
+    primer_apellido VARCHAR(50),
+    segundo_apellido VARCHAR(50),
+
+    id_tipo_identificacion INT,
+    numero_identificacion VARCHAR(30),
+
+    sexo CHAR(1),
+
+    fecha_nacimiento DATE,
+
+    telefono VARCHAR(20),
+
+    direccion VARCHAR(200),
+
+    ocupacion VARCHAR(100),
+
+    fecha_registro DATETIME DEFAULT GETDATE(),
+
+    estado BIT DEFAULT 1,
+
+    FOREIGN KEY(id_tipo_identificacion) REFERENCES tipo_identificaciones(id_tipo_identificacion)
+);
+
+
+
+/*========================================================
+ANTECEDENTES MEDICOS
+========================================================*/
+
+-- TABLA PRINCIPAL DE ANTECEDENTES
+CREATE TABLE antecedentes(
+    id_antecedente INT IDENTITY PRIMARY KEY,
+    id_paciente INT,
+    fecha_registro DATETIME DEFAULT GETDATE(),
+
+    FOREIGN KEY(id_paciente) REFERENCES pacientes(id_paciente)
+);
+
+-- ALERGIAS
+CREATE TABLE alergias(
+    id_alergia INT IDENTITY PRIMARY KEY,
+    id_antecedente INT,
+    descripcion VARCHAR(200),
+
+    FOREIGN KEY(id_antecedente) REFERENCES antecedentes(id_antecedente)
+);
+
+-- ANTECEDENTES HEREDOFAMILIARES
+CREATE TABLE antecedentes_heredofamiliares(
+    id_antecedente_heredo INT IDENTITY PRIMARY KEY,
+    id_antecedente INT,
+    descripcion VARCHAR(200),
+
+    FOREIGN KEY(id_antecedente) REFERENCES antecedentes(id_antecedente)
+);
+
+-- ANTECEDENTES NO PATOLOGICOS
+CREATE TABLE antecedentes_no_patologicos(
+    id_antecedente_no_pat INT IDENTITY PRIMARY KEY,
+    id_antecedente INT,
+    descripcion VARCHAR(200),
+
+    FOREIGN KEY(id_antecedente) REFERENCES antecedentes(id_antecedente)
+);
+
+-- ANTECEDENTES PSIQUIATRICOS
+CREATE TABLE antecedentes_psiquiatricos(
+    id_antecedente_psiq INT IDENTITY PRIMARY KEY,
+    id_antecedente INT,
+    descripcion VARCHAR(200),
+
+    FOREIGN KEY(id_antecedente) REFERENCES antecedentes(id_antecedente)
+);
+
+-- VACUNACION
+CREATE TABLE esquema_vacunacion(
+    id_vacuna INT IDENTITY PRIMARY KEY,
+    id_antecedente INT,
+    vacuna VARCHAR(100),
+    fecha DATE,
+
+    FOREIGN KEY(id_antecedente) REFERENCES antecedentes(id_antecedente)
+);
+
+
+/*========================================================
+TRATAMIENTOS
+========================================================*/
+
+-- CATALOGO DE TRATAMIENTOS
+CREATE TABLE tratamientos(
+
+    id_tratamiento INT IDENTITY PRIMARY KEY,
+
+    nombre_tratamiento VARCHAR(200),
+
+    descripcion VARCHAR(500),
+
+    precio DECIMAL(10,2),
+
+    duracion_minutos INT
+);
+
+
+
+/*========================================================
+CITAS MEDICAS
+========================================================*/
+
+-- CITAS MEDICAS
+CREATE TABLE citas(
+
+    id_cita INT IDENTITY PRIMARY KEY,
+
+    id_paciente INT,
+
+    id_tratamiento INT,
+
+    fecha DATE,
+
+    hora_inicio TIME,
+
+    hora_fin TIME,
+
+    telefono VARCHAR(20),
+
+    observaciones VARCHAR(300),
+
+    estado VARCHAR(20) DEFAULT 'PROGRAMADA',
+
+    google_event_id VARCHAR(200),
+
+    fecha_creacion DATETIME DEFAULT GETDATE(),
+
+    FOREIGN KEY(id_paciente) REFERENCES pacientes(id_paciente),
+
+    FOREIGN KEY(id_tratamiento) REFERENCES tratamientos(id_tratamiento)
+);
+
+
+
+/*========================================================
+CONSULTA MEDICA
+========================================================*/
+
+-- CONSULTA MEDICA
+CREATE TABLE consultas(
+
+    id_consulta INT IDENTITY PRIMARY KEY,
+
+    id_paciente INT,
+
+    id_cita INT,
+
+    id_usuario INT,
+
+    motivo_consulta VARCHAR(300),
+
+    diagnostico VARCHAR(500),
+
+    observaciones VARCHAR(500),
+
+    fecha_consulta DATETIME DEFAULT GETDATE(),
+
+    estado VARCHAR(20),
+
+    FOREIGN KEY(id_paciente) REFERENCES pacientes(id_paciente),
+
+    FOREIGN KEY(id_cita) REFERENCES citas(id_cita),
+
+    FOREIGN KEY(id_usuario) REFERENCES usuarios(id_usuario)
+);
+
+
+
+/*========================================================
+SIGNOS VITALES
+========================================================*/
+
+CREATE TABLE signos_vitales(
+
+    id_signos INT IDENTITY PRIMARY KEY,
+
+    id_consulta INT,
+
+    presion_arterial VARCHAR(20),
+
+    frecuencia_cardiaca INT,
+
+    temperatura DECIMAL(5,2),
+
+    peso DECIMAL(5,2),
+
+    altura DECIMAL(5,2),
+
+    saturacion_oxigeno INT,
+
+    FOREIGN KEY(id_consulta) REFERENCES consultas(id_consulta)
+);
+
+
+
+/*========================================================
+MEDICAMENTOS
+========================================================*/
+
+CREATE TABLE medicamentos_activos(
+
+    id_medicamento INT IDENTITY PRIMARY KEY,
+
+    id_consulta INT,
+
+    nombre_medicamento VARCHAR(200),
+
+    dosis VARCHAR(100),
+
+    frecuencia VARCHAR(100),
+
+    duracion VARCHAR(100),
+
+    indicaciones VARCHAR(300),
+
+    FOREIGN KEY(id_consulta) REFERENCES consultas(id_consulta)
+);
+
+
+
+/*========================================================
+CONSENTIMIENTOS
+========================================================*/
+
+-- PLANTILLAS
+CREATE TABLE consentimientos(
+
+    id_consentimiento INT IDENTITY PRIMARY KEY,
+
+    titulo VARCHAR(200),
+
+    contenido TEXT,
+
+    estado BIT DEFAULT 1
+);
+
+
+-- DOCUMENTOS FIRMADOS
+CREATE TABLE consentimiento_firmado(
+
+    id_documento INT IDENTITY PRIMARY KEY,
+
+    id_consentimiento INT,
+
+    id_paciente INT,
+
+    id_consulta INT,
+
+    firma VARBINARY(MAX),
+
+    fecha_firma DATETIME DEFAULT GETDATE(),
+
+    FOREIGN KEY(id_consentimiento) REFERENCES consentimientos(id_consentimiento),
+
+    FOREIGN KEY(id_paciente) REFERENCES pacientes(id_paciente),
+
+    FOREIGN KEY(id_consulta) REFERENCES consultas(id_consulta)
+);
+
+
+
+/*========================================================
+IMAGENES PACIENTE
+========================================================*/
+
+-- ALBUM DE FOTOS
+CREATE TABLE fotos_paciente(
+
+    id_foto INT IDENTITY PRIMARY KEY,
+
+    id_paciente INT,
+
+    id_consulta INT,
+
+    ruta_imagen VARCHAR(300),
+
+    descripcion VARCHAR(200),
+
+    fecha_subida DATETIME DEFAULT GETDATE(),
+
+    FOREIGN KEY(id_paciente) REFERENCES pacientes(id_paciente),
+
+    FOREIGN KEY(id_consulta) REFERENCES consultas(id_consulta)
+);
+
+
+
+/*========================================================
+CAJA Y PAGOS
+========================================================*/
+
+CREATE TABLE pagos(
+
+    id_pago INT IDENTITY PRIMARY KEY,
+
+    id_paciente INT,
+
+    id_consulta INT,
+
+    id_metodo_pago INT,
+
+    monto DECIMAL(10,2),
+
+    fecha_pago DATETIME DEFAULT GETDATE(),
+
+    FOREIGN KEY(id_paciente) REFERENCES pacientes(id_paciente),
+
+    FOREIGN KEY(id_consulta) REFERENCES consultas(id_consulta),
+
+    FOREIGN KEY(id_metodo_pago) REFERENCES metodos_pago(id_metodo_pago)
+);

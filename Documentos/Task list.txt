@@ -1,0 +1,391 @@
+Documento de Task List
+Proyecto: MediTech – Sistema de Gestión Clínica
+
+Versión: 1.0
+Tipo de proyecto: Software Web
+Arquitectura: ASP.NET Core MVC + SQL Server
+
+1. Objetivo del documento
+
+Este documento define la lista de tareas necesarias para desarrollar el sistema MediTech.
+
+El objetivo es organizar el desarrollo del software en actividades claras que permitan implementar el sistema de forma progresiva, ordenada y escalable.
+
+2. Fase 1 – Configuración del proyecto
+
+Objetivo: preparar el entorno de desarrollo del sistema.
+
+Tareas
+
+Crear proyecto ASP.NET Core MVC
+Configurar estructura del proyecto
+Configurar conexión a SQL Server
+Crear archivo appsettings.json
+Configurar repositorio Git del proyecto
+Configurar estructura de carpetas MVC
+
+Carpetas:
+
+Controllers
+Models
+Views
+Services
+Repositories
+wwwroot
+
+Configurar Bootstrap en el proyecto
+Configurar layout principal del sistema
+Configurar sidebar de navegación
+
+Resultado esperado:
+
+Sistema inicial funcionando con navegación básica.
+
+3. Fase 2 – Diseño e implementación de base de datos
+
+Objetivo: implementar la estructura de base de datos del sistema.
+
+Tareas
+
+Crear base de datos MediTech
+Crear esquemas:
+
+CAT
+ADM
+CLI
+CAJA
+
+Crear tablas de catálogos:
+
+Estados
+Roles
+Tipo identificaciones
+Genero
+Tipo consultas
+Tipo diagnósticos
+Tipo procedimientos
+Tipo exámenes
+
+Crear tablas administrativas:
+
+Personas
+Empleados
+Usuarios
+
+Crear tablas clínicas:
+
+Clientes (pacientes)
+Citas
+Consultas
+Detalles consulta
+Signos vitales
+Diagnósticos
+Procedimientos
+Tratamientos
+
+Crear tablas adicionales:
+
+Consentimientos
+Consentimientos firmados
+Fotos paciente
+
+Crear tablas financieras:
+
+Pagos
+Movimientos de caja
+
+Resultado esperado:
+
+Base de datos completa y funcional.
+
+4. Fase 3 – Sistema de autenticación
+
+Objetivo: implementar acceso seguro al sistema.
+
+Tareas
+
+Diseñar vista de login
+Crear formulario de autenticación
+Implementar validación de credenciales
+Implementar sesión de usuario
+Implementar cierre de sesión
+Implementar control de acceso por roles
+Crear middleware de autenticación
+
+Resultado esperado:
+
+Usuarios pueden iniciar sesión y acceder al sistema.
+
+5. Fase 4 – Layout del sistema
+
+Objetivo: construir la interfaz base del sistema.
+
+Tareas
+
+Diseñar Layout principal
+Crear Sidebar del sistema
+Implementar navegación entre módulos
+Implementar diseño responsive
+Crear estructura visual del Dashboard
+
+Módulos visibles en sidebar:
+
+Dashboard
+Citas
+Pacientes
+Tratamientos
+Caja
+Reportes
+Administración
+
+Resultado esperado:
+
+Interfaz base del sistema funcional.
+
+6. Fase 5 – Dashboard
+
+Objetivo: mostrar información general del sistema.
+
+Tareas
+
+Diseñar vista del dashboard
+Crear consultas SQL para indicadores
+Mostrar citas del día
+Mostrar pacientes del día
+Mostrar ingresos del día
+Crear widgets informativos
+
+Resultado esperado:
+
+Panel principal del sistema operativo.
+
+7. Fase 6 – Módulo de gestión de pacientes
+
+Objetivo: administrar la información de pacientes.
+
+Tareas
+
+Crear vista de lista de pacientes
+Crear formulario de registro de paciente
+Implementar CRUD de pacientes
+
+Funciones:
+
+Registrar paciente
+Editar paciente
+Eliminar paciente
+Buscar paciente
+
+Diseñar ficha clínica del paciente
+
+Resultado esperado:
+
+Gestión completa de pacientes.
+
+8. Fase 7 – Módulo de citas (Google Calendar)
+
+Objetivo: gestionar agenda médica.
+
+Tareas
+
+Crear módulo de agenda
+Integrar API Google Calendar
+Crear evento de cita
+Editar evento de cita
+Eliminar cita
+Sincronizar citas con Google Calendar
+
+Diseñar vista calendario:
+
+Vista diaria
+Vista semanal
+Vista mensual
+
+Resultado esperado:
+
+Agenda médica sincronizada con Google Calendar.
+
+9. Fase 8 – Recepción del paciente
+
+Objetivo: iniciar el proceso de consulta.
+
+Tareas
+
+Crear botón "Iniciar consulta"
+Actualizar estado de cita
+Abrir formulario de consulta
+Registrar llegada del paciente
+
+Resultado esperado:
+
+Inicio del flujo clínico.
+
+10. Fase 9 – Módulo de consulta médica
+
+Objetivo: registrar la atención médica del paciente.
+
+Tareas
+
+Diseñar formulario de consulta
+Registrar motivo de consulta
+Registrar diagnóstico
+Registrar observaciones
+Registrar recomendaciones
+
+Implementar registro de signos vitales:
+
+Presión arterial
+Frecuencia cardíaca
+Temperatura
+Peso
+Altura
+
+Resultado esperado:
+
+Consulta médica digital funcional.
+
+11. Fase 10 – Tratamientos y procedimientos
+
+Objetivo: registrar tratamientos médicos.
+
+Tareas
+
+Crear catálogo de tratamientos
+Crear catálogo de procedimientos
+Registrar tratamientos en consulta
+Registrar procedimientos médicos
+Asociar tratamientos a consulta
+
+Resultado esperado:
+
+Control de tratamientos aplicado.
+
+12. Fase 11 – Consentimientos firmados
+
+Objetivo: implementar firma digital de documentos médicos.
+
+Tareas
+
+Crear catálogo de consentimientos
+Diseñar plantilla de consentimiento
+Integrar canvas de firma digital
+Capturar firma del paciente
+Guardar firma digital en base de datos
+Vincular consentimiento con paciente
+
+Resultado esperado:
+
+Consentimientos médicos firmados digitalmente.
+
+13. Fase 12 – Gestión de fotografías clínicas
+
+Objetivo: almacenar fotografías del paciente.
+
+Tareas
+
+Implementar carga de imágenes
+Guardar imágenes en servidor
+Crear álbum de fotos del paciente
+Asociar fotos a consulta
+Diseñar galería de imágenes
+Implementar comparador antes/después
+
+Resultado esperado:
+
+Álbum clínico del paciente funcional.
+
+14. Fase 13 – Módulo de caja
+
+Objetivo: registrar pagos de pacientes.
+
+Tareas
+
+Crear formulario de registro de pago
+Registrar método de pago
+Registrar monto
+Asociar pago a consulta
+Mostrar historial de pagos
+Calcular ingresos diarios
+
+Resultado esperado:
+
+Control financiero del sistema.
+
+15. Fase 14 – Reportes
+
+Objetivo: generar información estadística.
+
+Tareas
+
+Crear reportes de ingresos
+Crear reportes de citas
+Crear reportes de pacientes atendidos
+Crear reportes de tratamientos
+
+Implementar exportación:
+
+PDF
+Excel
+
+Resultado esperado:
+
+Reportes administrativos funcionales.
+
+16. Fase 15 – Administración del sistema
+
+Objetivo: configurar el sistema.
+
+Tareas
+
+Crear gestión de usuarios
+Crear asignación de roles
+Crear gestión de catálogos
+Crear configuración del sistema
+
+Resultado esperado:
+
+Sistema configurable.
+
+17. Fase 16 – Optimización final
+
+Objetivo: preparar el sistema para producción.
+
+Tareas
+
+Optimizar consultas SQL
+Implementar manejo de errores
+Implementar logs del sistema
+Revisar seguridad del sistema
+Optimizar rendimiento
+Pruebas funcionales
+
+Resultado esperado:
+
+Sistema estable y listo para producción.
+
+Resumen del Task List
+
+El desarrollo de MediTech se divide en 16 fases principales:
+
+1 Configuración del proyecto
+2 Diseño de base de datos
+3 Sistema de autenticación
+4 Layout del sistema
+5 Dashboard
+6 Gestión de pacientes
+7 Gestión de citas
+8 Recepción del paciente
+9 Consulta médica
+10 Tratamientos
+11 Consentimientos firmados
+12 Fotografías clínicas
+13 Caja
+14 Reportes
+15 Administración
+16 Optimización final
+
+Conclusión
+
+Este Task List establece una hoja de ruta clara para el desarrollo completo del sistema MediTech, permitiendo implementar el sistema de forma progresiva y controlada.
+
+El desarrollo modular permite construir primero las funcionalidades esenciales y posteriormente ampliar el sistema con módulos adicionales.

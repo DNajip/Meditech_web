@@ -1,0 +1,428 @@
+Roadmap Profesional de Desarrollo
+Proyecto: MediTech
+
+Duración estimada desarrollo inicial: 3 a 4 meses
+
+Estrategia de desarrollo:
+
+MVP → Sistema Clínico Completo → Automatización
+
+FASE 1
+Fundación del sistema (Arquitectura)
+
+Objetivo: Construir la base técnica del sistema.
+
+Duración estimada: 1 semana
+
+1.1 Arquitectura del proyecto
+
+Configurar:
+
+ASP.NET Core MVC
+
+SQL Server
+
+Entity Framework o ADO.NET
+
+estructura MVC
+
+Estructura:
+
+Controllers
+Models
+Views
+Services
+Repositories
+wwwroot
+1.2 Configuración de base de datos
+
+Crear:
+
+CAT
+ADM
+CLI
+CAJA
+
+Tablas base:
+
+ESTADOS
+ROLES
+TIPO_IDENTIFICACIONES
+GENERO
+1.3 Sistema de usuarios
+
+Tablas:
+
+PERSONAS
+EMPLEADOS
+USUARIOS
+ROLES
+
+Funcionalidades:
+
+Login
+
+Logout
+
+Control de sesión
+
+Control de roles
+
+Resultado esperado:
+
+✔ sistema con login funcional
+✔ acceso controlado
+
+FASE 2
+Interfaz base del sistema
+
+Duración: 1 semana
+
+2.1 Layout general
+
+Crear:
+
+_Layout.cshtml
+Sidebar
+Top navigation
+
+El sidebar tendrá acceso a:
+
+Dashboard
+Citas
+Pacientes
+Tratamientos
+Caja
+Reportes
+Administración
+2.2 Dashboard
+
+Implementar vista principal.
+
+Mostrar:
+
+citas del día
+pacientes del día
+ingresos del día
+accesos rápidos
+
+Resultado esperado:
+
+✔ sistema navegable
+
+FASE 3
+Gestión de pacientes
+
+Duración: 1 semana
+
+3.1 CRUD de pacientes
+
+Tablas usadas:
+
+PERSONAS
+CLIENTES
+
+Funciones:
+
+registrar paciente
+
+editar paciente
+
+buscar paciente
+
+ver ficha del paciente
+
+3.2 Ficha clínica del paciente
+
+Vista tipo expediente:
+
+Información personal
+Consultas
+Fotos
+Consentimientos
+Tratamientos
+
+Resultado esperado:
+
+✔ expediente digital del paciente
+
+FASE 4
+Sistema de citas (Google Calendar)
+
+Duración: 2 semanas
+
+4.1 Integración Google Calendar API
+
+Implementar:
+
+crear evento
+editar evento
+eliminar evento
+
+Guardar en BD:
+
+GOOGLE_EVENT_ID
+4.2 Vista agenda
+
+Tipo calendario:
+
+vista diaria
+vista semanal
+vista mensual
+
+Datos de cita:
+
+nombre
+telefono
+tratamiento
+observaciones
+
+Resultado esperado:
+
+✔ agenda médica funcional
+
+FASE 5
+Flujo clínico (Consulta)
+
+Duración: 2 semanas
+
+Esta fase es el corazón del sistema.
+
+Flujo:
+
+Cita
+↓
+Recepción paciente
+↓
+Iniciar consulta
+↓
+Registro clínico
+
+Tablas usadas:
+
+CONSULTA
+DETALLES_CONSULTA
+SIGNOS_VITALES
+DIAGNOSTICOS
+PROCEDIMIENTOS
+TRATAMIENTOS
+
+Funciones:
+
+Registrar:
+
+motivo consulta
+diagnóstico
+observaciones
+recomendaciones
+
+Registrar signos vitales.
+
+Resultado esperado:
+
+✔ consulta médica digital
+
+FASE 6
+Consentimientos firmados
+
+Duración: 1 semana
+
+Tablas nuevas:
+
+CONSENTIMIENTOS
+CONSENTIMIENTO_FIRMADO
+
+Funcionalidades:
+
+Mostrar documento.
+
+Permitir firma mediante:
+
+canvas HTML
+tablet
+mouse
+
+Guardar:
+
+firma digital
+fecha
+paciente
+
+Resultado esperado:
+
+✔ consentimiento digital
+
+FASE 7
+Fotos del paciente
+
+Duración: 1 semana
+
+Tabla:
+
+FOTOS_PACIENTE
+
+Funciones:
+
+Subir imágenes.
+
+Asociar a:
+
+paciente
+consulta
+tratamiento
+
+Mostrar:
+
+galería
+antes / después
+
+Resultado esperado:
+
+✔ álbum clínico
+
+FASE 8
+Tratamientos
+
+Duración: 1 semana
+
+Tabla:
+
+CAT_TRATAMIENTOS
+
+Funciones:
+
+crear tratamientos
+
+precio
+
+descripción
+
+Usados en:
+
+consultas
+caja
+
+Resultado esperado:
+
+✔ catálogo de servicios
+
+FASE 9
+Caja y facturación
+
+Duración: 1 semana
+
+Tabla:
+
+CAJA_PAGOS
+
+Funciones:
+
+Registrar pago:
+
+paciente
+consulta
+monto
+método pago
+
+Mostrar:
+
+ingresos diarios
+historial pagos
+
+Resultado esperado:
+
+✔ control financiero básico
+
+FASE 10
+Reportes
+
+Duración: 1 semana
+
+Reportes:
+
+ingresos diarios
+citas realizadas
+pacientes atendidos
+tratamientos realizados
+
+Exportar:
+
+PDF
+Excel
+
+Resultado esperado:
+
+✔ estadísticas del negocio
+
+FASE 11
+Administración del sistema
+
+Duración: 1 semana
+
+Funciones:
+
+Gestión de:
+
+usuarios
+roles
+tratamientos
+diagnósticos
+
+Resultado esperado:
+
+✔ sistema configurable
+
+FASE 12
+Optimización final
+
+Duración: 1 semana
+
+Implementar:
+
+validaciones
+logs
+manejo errores
+optimización consultas
+seguridad
+
+Mejorar:
+
+UX
+interfaz
+rendimiento
+Roadmap visual
+FASE 1  Arquitectura
+FASE 2  Interfaz base
+FASE 3  Pacientes
+FASE 4  Citas (Google Calendar)
+FASE 5  Consultas
+FASE 6  Consentimientos
+FASE 7  Fotos
+FASE 8  Tratamientos
+FASE 9  Caja
+FASE 10 Reportes
+FASE 11 Administración
+FASE 12 Optimización
+Orden real de desarrollo
+
+Nunca desarrolles en otro orden.
+
+La dependencia es:
+
+Usuarios
+↓
+Layout
+↓
+Pacientes
+↓
+Citas
+↓
+Consultas
+↓
+Consentimientos
+↓
+Fotos
+↓
+Caja
+↓
+Reportes

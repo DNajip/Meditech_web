@@ -1,0 +1,286 @@
+@{
+    ViewData["Title"] = "Dashboard";
+
+    var userName = User.Identity?.Name ?? "Usuario";
+    var firstName = userName.Split(' ').FirstOrDefault() ?? "Usuario";
+
+    // Determine greeting based on time of day
+    var hour = DateTime.Now.Hour;
+    var greeting = hour < 12 ? "Buenos días" : hour < 18 ? "Buenas tardes" : "Buenas noches";
+}
+
+<style>
+    .greeting h2 {
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: #1E293B;
+        margin-bottom: 4px;
+    }
+    .greeting p {
+        color: #64748B;
+        font-size: 0.9rem;
+    }
+
+    /* Stat Cards */
+    .stat-card {
+        background: #FFFFFF;
+        border-radius: 14px;
+        padding: 22px;
+        border: 1px solid #E2E8F0;
+        transition: box-shadow 0.2s;
+    }
+    .stat-card:hover { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06); }
+
+    .stat-card .icon-box {
+        width: 44px; height: 44px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+    }
+
+    .stat-card .stat-value {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: #1E293B;
+        margin-top: 12px;
+    }
+    .stat-card .stat-label {
+        font-size: 0.82rem;
+        color: #64748B;
+    }
+
+    .icon-blue { background: #DBEAFE; color: #3B82F6; }
+    .icon-green { background: #D1FAE5; color: #10B981; }
+    .icon-purple { background: #EDE9FE; color: #8B5CF6; }
+    .icon-amber { background: #FEF3C7; color: #F59E0B; }
+
+    /* Quick Actions */
+    .quick-action-card {
+        background: #FFFFFF;
+        border-radius: 14px;
+        border: 1px solid #E2E8F0;
+        padding: 24px;
+    }
+    .quick-action-card h5 {
+        font-weight: 700;
+        color: #1E293B;
+        margin-bottom: 18px;
+    }
+
+    .action-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 18px 12px;
+        border-radius: 12px;
+        border: 1px solid #E2E8F0;
+        background: #FAFAFA;
+        text-decoration: none;
+        color: #334155;
+        font-size: 0.8rem;
+        font-weight: 500;
+        transition: all 0.15s;
+        text-align: center;
+    }
+    .action-btn:hover {
+        background: #EFF6FF;
+        border-color: #3B82F6;
+        color: #3B82F6;
+    }
+    .action-btn i {
+        font-size: 1.4rem;
+    }
+    .action-btn .act-blue { color: #3B82F6; }
+    .action-btn .act-green { color: #10B981; }
+    .action-btn .act-purple { color: #8B5CF6; }
+    .action-btn .act-amber { color: #F59E0B; }
+
+    /* Agenda Card */
+    .agenda-card {
+        background: #FFFFFF;
+        border-radius: 14px;
+        border: 1px solid #E2E8F0;
+        padding: 24px;
+    }
+    .agenda-card h5 {
+        font-weight: 700;
+        color: #1E293B;
+    }
+    .agenda-card .subtitle {
+        font-size: 0.8rem;
+        color: #94A3B8;
+    }
+
+    .agenda-item {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 12px 0;
+        border-bottom: 1px solid #F1F5F9;
+    }
+    .agenda-item:last-child { border-bottom: none; }
+
+    .agenda-avatar {
+        width: 40px; height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 0.78rem;
+        color: #FFFFFF;
+    }
+    .agenda-item-info { flex: 1; }
+    .agenda-item-info .patient-name { font-weight: 600; font-size: 0.88rem; color: #1E293B; }
+    .agenda-item-info .patient-service { font-size: 0.78rem; color: #64748B; }
+
+    .agenda-time { text-align: right; }
+    .agenda-time .time { font-weight: 600; font-size: 0.85rem; color: #1E293B; }
+    .agenda-time .duration { font-size: 0.72rem; color: #94A3B8; }
+
+    .badge-status {
+        font-size: 0.7rem;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-weight: 600;
+    }
+    .badge-confirmed { background: #D1FAE5; color: #065F46; }
+    .badge-waiting { background: #FEF3C7; color: #92400E; }
+    .badge-scheduled { background: #DBEAFE; color: #1E40AF; }
+
+    /* Google Calendar Badge */
+    .gcal-badge {
+        background: linear-gradient(135deg, #3B82F6, #1D4ED8);
+        border-radius: 14px;
+        padding: 22px;
+        color: white;
+    }
+    .gcal-badge h6 { font-weight: 700; margin-bottom: 6px; }
+    .gcal-badge p { font-size: 0.82rem; opacity: 0.85; margin-bottom: 12px; }
+    .gcal-badge .btn-gcal {
+        background: rgba(255,255,255,0.2);
+        border: 1px solid rgba(255,255,255,0.3);
+        color: white;
+        border-radius: 8px;
+        padding: 6px 16px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+</style>
+
+<!-- Greeting -->
+<div class="greeting mb-4">
+    <h2>¡@greeting, @firstName! 👋</h2>
+    <p>Bienvenido al sistema MediTech. Aquí tienes un resumen de tu día.</p>
+</div>
+
+<!-- Stat Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-lg-3 col-md-6">
+        <a href="/Pacientes" style="text-decoration:none;">
+        <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="icon-box icon-blue"><i class="fas fa-users"></i></div>
+            </div>
+            <div class="stat-value">@ViewBag.TotalPacientes</div>
+            <div class="stat-label">Total Pacientes</div>
+        </div>
+        </a>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="icon-box icon-green"><i class="fas fa-dollar-sign"></i></div>
+            </div>
+            <div class="stat-value">$0</div>
+            <div class="stat-label">Ingresos Estimados</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <a href="/Pacientes" style="text-decoration:none;">
+        <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="icon-box icon-purple"><i class="fas fa-user-plus"></i></div>
+            </div>
+            <div class="stat-value">@ViewBag.PacientesHoy</div>
+            <div class="stat-label">Pacientes Hoy</div>
+        </div>
+        </a>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="icon-box icon-amber"><i class="fas fa-clock"></i></div>
+            </div>
+            <div class="stat-value">0</div>
+            <div class="stat-label">En Sala de Espera</div>
+        </div>
+    </div>
+</div>
+
+<!-- Bottom Row: Agenda + Quick Actions -->
+<div class="row g-3">
+    <!-- Agenda de Hoy -->
+    <div class="col-lg-8">
+        <div class="agenda-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h5 class="mb-0">Agenda de Hoy</h5>
+                    <span class="subtitle">Mostrando citas próximas</span>
+                </div>
+                <a href="#" class="btn btn-primary btn-sm" style="border-radius:8px;">
+                    <i class="fas fa-plus me-1"></i> Nueva Cita
+                </a>
+            </div>
+
+            <div class="text-center py-4 text-muted">
+                <i class="fas fa-calendar-day fa-2x mb-2" style="color: #CBD5E1;"></i>
+                <p class="mb-0">No hay citas programadas para hoy.</p>
+                <small>Las citas aparecerán aquí cuando se registren.</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions + GCal -->
+    <div class="col-lg-4">
+        <div class="quick-action-card mb-3">
+            <h5>Acciones Rápidas</h5>
+            <div class="row g-2">
+                <div class="col-6">
+                    <a href="#" class="action-btn w-100">
+                        <i class="fas fa-user-plus act-blue"></i>
+                        Nuevo Paciente
+                    </a>
+                </div>
+                <div class="col-6">
+                    <a href="#" class="action-btn w-100">
+                        <i class="fas fa-file-invoice-dollar act-green"></i>
+                        Facturar
+                    </a>
+                </div>
+                <div class="col-6">
+                    <a href="#" class="action-btn w-100">
+                        <i class="fas fa-file-signature act-purple"></i>
+                        Consentimiento
+                    </a>
+                </div>
+                <div class="col-6">
+                    <a href="#" class="action-btn w-100">
+                        <i class="fas fa-camera act-amber"></i>
+                        Subir Fotos
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="gcal-badge">
+            <h6><i class="fab fa-google me-1"></i> Google Calendar Activo</h6>
+            <p>Tus citas están sincronizadas en tiempo real con la nube.</p>
+            <button class="btn btn-gcal"><i class="fas fa-external-link-alt me-1"></i> Ver Detalles</button>
+        </div>
+    </div>
+</div>
