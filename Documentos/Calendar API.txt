@@ -1,0 +1,4 @@
+Calendar API
+Para usar esta clave en tu aplicación, debes pasarla con el parámetro key=API_KEY.
+
+AIzaSyDqYN8ISYd74iqFLyBUAzoiYTVmzuAV0Lw

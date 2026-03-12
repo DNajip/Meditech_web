@@ -29,36 +29,42 @@ public class AccountController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Login(string email, string password, string? returnUrl = null)
+    public async Task<IActionResult> Login(string username, string password, string? returnUrl = null)
     {
         ViewData["ReturnUrl"] = returnUrl;
 
-        if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
+        if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
         {
-            ViewData["ErrorMessage"] = "Por favor ingrese correo y contraseña.";
+            ViewData["ErrorMessage"] = "Por favor ingrese usuario y contraseña.";
             return View();
         }
 
         var user = await _context.Usuarios
             .Include(u => u.Role)
-            .FirstOrDefaultAsync(u => u.Email == email && u.Password == password && u.Estado == true);
+            .Include(u => u.Empleado)
+                .ThenInclude(e => e!.Persona)
+            .FirstOrDefaultAsync(u => u.Username == username && u.IdEstado == 1);
 
-        if (user == null)
+        if (user == null || !VerifyPassword(password, user.PasswordHash, user.PasswordSalt))
         {
             ViewData["ErrorMessage"] = "Credenciales inválidas o usuario inactivo.";
             return View();
         }
 
+        var fullName = user.Empleado?.Persona != null 
+            ? $"{user.Empleado.Persona.PrimerNombre} {user.Empleado.Persona.PrimerApellido}"
+            : user.Username;
+
         var claims = new List<Claim>
         {
             new Claim(ClaimTypes.NameIdentifier, user.IdUsuario.ToString()),
-            new Claim(ClaimTypes.Name, $"{user.PrimerNombre} {user.PrimerApellido}"),
-            new Claim(ClaimTypes.Email, user.Email ?? "")
+            new Claim(ClaimTypes.Name, fullName),
+            new Claim(ClaimTypes.Name, user.Username)
         };
 
         if (user.Role != null)
         {
-            claims.Add(new Claim(ClaimTypes.Role, user.Role.NombreRol));
+            claims.Add(new Claim(ClaimTypes.Role, user.Role.DescRol));
         }
 
         var claimsIdentity = new ClaimsIdentity(
@@ -76,11 +82,11 @@ public class AccountController : Controller
             authProperties);
 
         // Session setup
-        HttpContext.Session.SetString("UserName", $"{user.PrimerNombre} {user.PrimerApellido}");
+        HttpContext.Session.SetString("UserName", fullName);
         HttpContext.Session.SetInt32("UserId", user.IdUsuario);
         if (user.Role != null)
         {
-            HttpContext.Session.SetString("UserRole", user.Role.NombreRol);
+            HttpContext.Session.SetString("UserRole", user.Role.DescRol);
         }
 
         if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
@@ -89,6 +95,26 @@ public class AccountController : Controller
         }
 
         return RedirectToAction("Index", "Home");
+    }
+
+    private bool VerifyPassword(string password, byte[]? storedHash, byte[]? storedSalt)
+    {
+        if (storedHash == null || storedSalt == null)
+        {
+            // Fallback for migration/plain text if needed, but per-script it should be binary
+            // For now, let's assume standard HMACSHA512
+            return false; 
+        }
+
+        using (var hmac = new System.Security.Cryptography.HMACSHA512(storedSalt))
+        {
+            var computedHash = hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes(password));
+            for (int i = 0; i < computedHash.Length; i++)
+            {
+                if (computedHash[i] != storedHash[i]) return false;
+            }
+        }
+        return true;
     }
 
     [HttpPost]

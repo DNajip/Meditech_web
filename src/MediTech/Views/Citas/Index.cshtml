@@ -1,0 +1,186 @@
+@model IEnumerable<MediTech.Models.Cita>
+@{
+    ViewData["Title"] = "Agenda de Citas";
+}
+
+<style>
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+    }
+    .page-header h2 { font-size: 1.5rem; font-weight: 700; color: #1E293B; margin: 0; }
+    .page-header .subtitle { font-size: 0.85rem; color: #64748B; }
+
+    .citas-container {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .cita-card {
+        background: #FFFFFF;
+        border-radius: 12px;
+        border: 1px solid #E2E8F0;
+        padding: 16px 20px;
+        display: grid;
+        grid-template-columns: 80px 1fr 180px 140px 100px;
+        align-items: center;
+        gap: 20px;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .cita-card:hover { 
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+
+    .cita-time {
+        text-align: center;
+        border-right: 1px solid #F1F5F9;
+        padding-right: 15px;
+    }
+    .cita-time .time-start { font-weight: 700; color: #1E293B; font-size: 1.05rem; display: block; }
+    .cita-time .time-end { font-size: 0.75rem; color: #94A3B8; font-weight: 500; }
+
+    .cita-patient { display: flex; flex-direction: column; }
+    .cita-patient .name { font-weight: 600; color: #334155; font-size: 0.95rem; }
+    .cita-patient .id { font-size: 0.78rem; color: #64748B; }
+
+    .cita-treatment {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.88rem;
+        color: #475569;
+    }
+    .cita-treatment i { color: #3B82F6; font-size: 0.8rem; }
+
+    .status-badge {
+        font-size: 0.72rem;
+        font-weight: 600;
+        padding: 4px 12px;
+        border-radius: 20px;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        text-align: center;
+    }
+    .status-programada { background: #DBEAFE; color: #1E40AF; }
+    .status-completada { background: #D1FAE5; color: #065F46; }
+    .status-cancelada { background: #FEE2E2; color: #991B1B; }
+
+    .cita-actions { display: flex; gap: 10px; justify-content: flex-end; }
+    .btn-action {
+        width: 32px; height: 32px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none !important;
+        transition: all 0.2s;
+    }
+    .btn-view { background: #F1F5F9; color: #64748B; }
+    .btn-view:hover { background: #E2E8F0; color: #1E293B; }
+    .btn-edit { background: #EFF6FF; color: #3B82F6; }
+    .btn-edit:hover { background: #DBEAFE; color: #1D4ED8; }
+    .btn-sync { background: #F0FDF4; color: #10B981; }
+
+    .sync-indicator {
+        font-size: 0.7rem;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin-top: 4px;
+    }
+    .sync-ok { color: #10B981; }
+    .sync-pending { color: #F59E0B; }
+</style>
+
+<div class="page-header">
+    <div>
+        <h2><i class="fas fa-calendar-alt me-2" style="color:#3B82F6;"></i>Agenda Médica</h2>
+        <span class="subtitle">Gestión de citas y sincronización con Google Calendar</span>
+    </div>
+    <a href="@Url.Action("Create")" class="btn btn-primary" style="border-radius:8px;">
+        <i class="fas fa-calendar-plus me-1"></i> Nueva Cita
+    </a>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show mb-4" role="alert" style="border-radius:12px; font-size:0.9rem;">
+        <i class="fas fa-check-circle me-2"></i> @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<div class="citas-container">
+    @if (Model.Any())
+    {
+        @foreach (var cita in Model)
+        {
+            var statusClass = cita.IdEstado switch {
+                1 => "status-programada",
+                2 => "status-completada",
+                3 => "status-cancelada",
+                _ => ""
+            };
+
+            <div class="cita-card">
+                <div class="cita-time">
+                    <span class="time-start">@DateTime.Today.Add(cita.HoraInicio).ToString("HH:mm")</span>
+                    <span class="time-end">Fin: @DateTime.Today.Add(cita.HoraFin).ToString("HH:mm")</span>
+                </div>
+
+                <div class="cita-patient">
+                    <span class="name">@cita.Paciente?.Persona?.PrimerNombre @cita.Paciente?.Persona?.PrimerApellido</span>
+                    <span class="id">@cita.Paciente?.Persona?.NumIdentificacion</span>
+                    <span class="id" style="font-size: 0.7rem; color: #94A3B8;">@cita.Fecha.ToString("dd MMMM, yyyy")</span>
+                </div>
+
+                <div class="cita-treatment">
+                    <i class="fas fa-notes-medical"></i>
+                    <span>@(cita.Tratamiento?.NombreTratamiento ?? "Consulta General")</span>
+                </div>
+
+                <div class="text-center">
+                    <span class="status-badge @statusClass">@(cita.Estado?.DescEstado ?? "Pendiente")</span>
+                    @if (!string.IsNullOrEmpty(cita.GoogleEventId))
+                    {
+                        <div class="sync-indicator sync-ok">
+                            <i class="fab fa-google"></i> Sincronizado
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="sync-indicator sync-pending">
+                            <i class="fas fa-cloud-upload-alt"></i> Solo Local
+                        </div>
+                    }
+                </div>
+
+                <div class="cita-actions">
+                    <a href="@Url.Action("Details", new { id = cita.IdCita })" class="btn-action btn-view" title="Ver Detalles"><i class="fas fa-eye"></i></a>
+                    <a href="@Url.Action("Edit", new { id = cita.IdCita })" class="btn-action btn-edit" title="Editar"><i class="fas fa-edit"></i></a>
+                    @if (cita.IdEstado == 1)
+                    {
+                        <form asp-action="Cancel" method="post" style="display:inline;">
+                            <input type="hidden" name="id" value="@cita.IdCita" />
+                            <button type="submit" class="btn-action" style="background: #FFF1F2; color: #E11D48; border: none;" title="Cancelar" onclick="return confirm('¿Desea cancelar esta cita?')">
+                                <i class="fas fa-times-circle"></i>
+                            </button>
+                        </form>
+                    }
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="text-center py-5" style="color: #94A3B8; background: #FFF; border-radius: 16px; border: 1px dashed #E2E8F0;">
+            <i class="fas fa-calendar-day fa-3x mb-3" style="color: #CBD5E1;"></i>
+            <h5>No hay citas programadas</h5>
+            <p class="small">Inicia agendando una nueva cita para tus pacientes.</p>
+        </div>
+    }
+</div>

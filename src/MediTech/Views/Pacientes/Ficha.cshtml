@@ -1,0 +1,280 @@
+@model MediTech.Models.Paciente
+@{
+    ViewData["Title"] = "Ficha Médica";
+    var fullName = Model.Persona != null 
+        ? $"{Model.Persona.PrimerNombre} {Model.Persona.SegundoNombre} {Model.Persona.PrimerApellido} {Model.Persona.SegundoApellido}".Replace("  ", " ").Trim()
+        : "Paciente";
+    var initials = Model.Persona != null 
+        ? ((Model.Persona.PrimerNombre?.Length > 0 ? Model.Persona.PrimerNombre[0].ToString() : "") +
+           (Model.Persona.PrimerApellido?.Length > 0 ? Model.Persona.PrimerApellido[0].ToString() : "")).ToUpper()
+        : "P";
+}
+
+<style>
+    .ficha-container {
+        display: grid;
+        grid-template-columns: 320px 1fr;
+        gap: 24px;
+        align-items: start;
+    }
+
+    .sidebar-card {
+        background: #FFFFFF;
+        border-radius: 16px;
+        border: 1px solid #E2E8F0;
+        padding: 24px;
+        position: sticky;
+        top: 88px;
+    }
+
+    .profile-section {
+        text-align: center;
+        margin-bottom: 24px;
+        padding-bottom: 24px;
+        border-bottom: 1px solid #F1F5F9;
+    }
+
+    .profile-avatar-large {
+        width: 100px; height: 100px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #3B82F6, #1E40AF);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.2rem;
+        font-weight: 700;
+        margin: 0 auto 16px;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+
+    .profile-name { font-size: 1.25rem; font-weight: 700; color: #1E293B; margin-bottom: 4px; }
+    .profile-id { font-size: 0.85rem; color: #64748B; margin-bottom: 12px; display: block; }
+
+    .quick-info {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .info-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 0.88rem;
+        color: #334155;
+    }
+
+    .info-item i { width: 20px; color: #94A3B8; text-align: center; }
+
+    .main- ficha-content {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+    }
+
+    .content-card {
+        background: #FFFFFF;
+        border-radius: 16px;
+        border: 1px solid #E2E8F0;
+        padding: 24px;
+    }
+
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #F1F5F9;
+        background: transparent;
+    }
+
+    .card-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #1E293B;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .placeholder-content {
+        background: #F8FAFC;
+        border: 2px dashed #E2E8F0;
+        border-radius: 12px;
+        padding: 40px;
+        text-align: center;
+        color: #94A3B8;
+    }
+
+    .placeholder-content i { font-size: 2.5rem; margin-bottom: 12px; color: #CBD5E1; }
+
+    .nav-tabs-ficha {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 8px;
+        overflow-x: auto;
+        padding-bottom: 4px;
+    }
+
+    .nav-tab {
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: #64748B;
+        text-decoration: none;
+        white-space: nowrap;
+        transition: all 0.2s;
+        border: 1px solid transparent;
+    }
+
+    .nav-tab:hover { background: #F1F5F9; color: #334155; }
+    .nav-tab.active { background: #3B82F6; color: white; }
+
+    .btn-ficha-action {
+        background: #F1F5F9;
+        border: none;
+        color: #475569;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        transition: all 0.2s;
+    }
+    .btn-ficha-action:hover { background: #E2E8F0; color: #1E293B; }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex align-items-center gap-3">
+        <a href="@Url.Action("Index")" class="btn btn-outline-secondary btn-sm" style="border-radius:8px;">
+            <i class="fas fa-arrow-left me-1"></i> Volver
+        </a>
+        <h4 class="mb-0 fw-bold">Ficha Médica</h4>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-primary btn-sm" style="border-radius:8px;"><i class="fas fa-print me-1"></i> Imprimir</button>
+        <a href="@Url.Action("Edit", new { id = Model.IdPaciente })" class="btn btn-primary btn-sm" style="border-radius:8px;"><i class="fas fa-edit me-1"></i> Editar</a>
+    </div>
+</div>
+
+<div class="ficha-container">
+    <!-- SIDEBAR: Personal Data -->
+    <aside class="sidebar-card">
+        <div class="profile-section">
+            <div class="profile-avatar-large">@initials</div>
+            <h5 class="profile-name">@fullName</h5>
+            <span class="profile-id">@Model.Persona?.TipoIdentificacion?.DescTipo: @Model.Persona?.NumIdentificacion</span>
+            <span class="badge @(Model.IdEstado == 1 ? "bg-success-subtle text-success" : "bg-danger-subtle text-danger")" style="font-size: 0.75rem; border-radius: 20px; padding: 4px 12px;">
+                @(Model.IdEstado == 1 ? "Activo" : "Inactivo")
+            </span>
+        </div>
+
+        <div class="quick-info">
+            <div class="info-item">
+                <i class="fas fa-venus-mars"></i>
+                <span>@(Model.Persona?.Genero?.DescGenero ?? "No definido")</span>
+            </div>
+            <div class="info-item">
+                <i class="fas fa-birthday-cake"></i>
+                <span>@(Model.Persona?.FechaNacimiento?.ToString("dd/MM/yyyy") ?? "N/D")</span>
+            </div>
+            <div class="info-item">
+                <i class="fas fa-phone"></i>
+                <span>@(Model.Persona?.Telefono ?? "N/D")</span>
+            </div>
+            <div class="info-item">
+                <i class="fas fa-envelope"></i>
+                <span class="text-truncate">@(Model.Persona?.Email ?? "N/D")</span>
+            </div>
+            <div class="info-item">
+                <i class="fas fa-briefcase"></i>
+                <span>@(Model.Ocupacion ?? "N/D")</span>
+            </div>
+            <hr class="my-2" style="border-color: #F1F5F9;">
+            <div class="info-item">
+                <i class="fas fa-calendar-alt"></i>
+                <span style="font-size: 0.8rem; color: #94A3B8;">Registrado: @(Model.FechaRegistro?.ToString("dd/MM/yyyy") ?? "—")</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT: Clinical Modules -->
+    <div class="main-ficha-content">
+        <!-- Tabs Navigation -->
+        <div class="nav-tabs-ficha">
+            <a href="#" class="nav-tab active">Resumen</a>
+            <a href="#" class="nav-tab">Historial</a>
+            <a href="#" class="nav-tab">Consultas</a>
+            <a href="#" class="nav-tab">Citas</a>
+            <a href="#" class="nav-tab">Galería</a>
+            <a href="#" class="nav-tab">Documentos</a>
+            <a href="#" class="nav-tab">Finanzas</a>
+        </div>
+
+        <!-- Historial de Citas Placeholder -->
+        <div class="content-card">
+            <div class="card-header">
+                <h6 class="card-title"><i class="fas fa-calendar-check" style="color:#3B82F6;"></i> Próximas Citas</h6>
+                <button class="btn-ficha-action">Agendar Nueva</button>
+            </div>
+            <div class="placeholder-content">
+                <i class="fas fa-calendar-day"></i>
+                <p class="mb-0">No hay citas programadas para este paciente.</p>
+            </div>
+        </div>
+
+        <!-- Consultas Médicas Placeholder -->
+        <div class="content-card">
+            <div class="card-header">
+                <h6 class="card-title"><i class="fas fa-stethoscope" style="color:#10B981;"></i> Consultas Recientes</h6>
+                <button class="btn-ficha-action">Nueva Consulta</button>
+            </div>
+            <div class="placeholder-content">
+                <i class="fas fa-notes-medical"></i>
+                <p class="mb-0">Aún no se han registrado consultas médicas.</p>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
+                <!-- Fotos Clínicas -->
+                <div class="content-card h-100">
+                    <div class="card-header">
+                        <h6 class="card-title"><i class="fas fa-camera" style="color:#8B5CF6;"></i> Fotos Clínicas</h6>
+                    </div>
+                    <div class="placeholder-content" style="padding: 24px;">
+                        <i class="fas fa-images"></i>
+                        <p class="small mb-0">Sin imágenes cargadas.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <!-- Consentimientos -->
+                <div class="content-card h-100">
+                    <div class="card-header">
+                        <h6 class="card-title"><i class="fas fa-file-signature" style="color:#F59E0B;"></i> Consentimientos</h6>
+                    </div>
+                    <div class="placeholder-content" style="padding: 24px;">
+                        <i class="fas fa-pen-nib"></i>
+                        <p class="small mb-0">Pendientes de firma.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pagos / Finanzas -->
+        <div class="content-card">
+            <div class="card-header">
+                <h6 class="card-title"><i class="fas fa-hand-holding-usd" style="color:#EF4444;"></i> Historial de Pagos</h6>
+                <button class="btn-ficha-action">Ver Estado de Cuenta</button>
+            </div>
+            <div class="placeholder-content" style="padding: 30px;">
+                <i class="fas fa-receipt"></i>
+                <p class="mb-0">El paciente no tiene saldos pendientes ni historial de pagos.</p>
+            </div>
+        </div>
+    </div>
+</div>

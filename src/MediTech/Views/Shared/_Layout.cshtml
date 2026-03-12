@@ -186,7 +186,7 @@
         <div class="sidebar-section-label">Principal</div>
         <ul class="sidebar-nav">
             <li><a href="@Url.Action("Index","Home")" class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "active" : "")"><i class="fas fa-th-large"></i> Dashboard</a></li>
-            <li><a href="#"><i class="fas fa-calendar-alt"></i> Agenda</a></li>
+            <li><a href="@Url.Action("Index","Citas")" class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Citas" ? "active" : "")"><i class="fas fa-calendar-alt"></i> Citas</a></li>
             <li><a href="@Url.Action("Index","Pacientes")" class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Pacientes" ? "active" : "")"><i class="fas fa-user-injured"></i> Pacientes</a></li>
             <li><a href="#"><i class="fas fa-stethoscope"></i> Consultas</a></li>
         </ul>
@@ -210,10 +210,17 @@
 
     <!-- TOPBAR -->
     <div class="topbar">
-        <div class="topbar-search">
-            <i class="fas fa-search" style="color: var(--text-secondary);"></i>
-            <input type="text" placeholder="Buscar pacientes, expediente..." />
-        </div>
+        @if (ViewContext.RouteData.Values["controller"]?.ToString() != "Pacientes")
+        {
+            <div class="topbar-search">
+                <i class="fas fa-search" style="color: var(--text-secondary);"></i>
+                <input type="text" placeholder="Buscar pacientes, expediente..." />
+            </div>
+        }
+        else
+        {
+            <div></div> <!-- Spacer -->
+        }
 
         <div class="topbar-user">
             <div class="user-info">

@@ -22,7 +22,7 @@ public class HomeController : Controller
     {
         var today = DateTime.Today;
 
-        ViewBag.TotalPacientes = await _context.Pacientes.CountAsync(p => p.Estado == true);
+        ViewBag.TotalPacientes = await _context.Pacientes.CountAsync(p => p.IdEstado == 1);
         ViewBag.PacientesHoy = await _context.Pacientes.CountAsync(p => p.FechaRegistro.HasValue && p.FechaRegistro.Value.Date == today);
 
         return View();

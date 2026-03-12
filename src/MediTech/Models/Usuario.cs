@@ -4,60 +4,43 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MediTech.Models
 {
-    [Table("usuarios")]
+    [Table("USUARIOS", Schema = "ADM")]
     public class Usuario
     {
         [Key]
-        [Column("id_usuario")]
+        [Column("ID_USUARIO")]
         public int IdUsuario { get; set; }
 
-        [Column("primer_nombre")]
-        [StringLength(50)]
-        public string? PrimerNombre { get; set; }
+        [Required]
+        [Column("USERNAME")]
+        [StringLength(80)]
+        public string Username { get; set; } = string.Empty;
 
-        [Column("segundo_nombre")]
-        [StringLength(50)]
-        public string? SegundoNombre { get; set; }
+        [Column("PASSWORD_HASH")]
+        public byte[]? PasswordHash { get; set; }
 
-        [Column("primer_apellido")]
-        [StringLength(50)]
-        public string? PrimerApellido { get; set; }
+        [Column("PASSWORD_SALT")]
+        public byte[]? PasswordSalt { get; set; }
 
-        [Column("segundo_apellido")]
-        [StringLength(50)]
-        public string? SegundoApellido { get; set; }
+        [Column("ID_EMPLEADO")]
+        public int? IdEmpleado { get; set; }
 
-        [Column("id_tipo_identificacion")]
-        public int? IdTipoIdentificacion { get; set; }
-
-        [Column("identificacion")]
-        [StringLength(30)]
-        public string? Identificacion { get; set; }
-
-        [Column("id_genero")]
-        public int? IdGenero { get; set; }
-
-        [Column("fecha_nacimiento")]
-        public DateTime? FechaNacimiento { get; set; }
-
-        [Column("email")]
-        [StringLength(100)]
-        public string? Email { get; set; }
-
-        [Column("password")]
-        [StringLength(255)]
-        public string? Password { get; set; }
-
-        [Column("id_rol")]
+        [Column("ID_ROL")]
         public int? IdRol { get; set; }
 
-        [Column("estado")]
-        public bool? Estado { get; set; }
+        [Column("FECHA_CREACION")]
+        public DateTime? FechaCreacion { get; set; } = DateTime.Now;
 
-        [Column("fecha_creacion")]
-        public DateTime? FechaCreacion { get; set; }
+        [Column("ID_ESTADO")]
+        public int? IdEstado { get; set; }
+
+        [ForeignKey("IdEmpleado")]
+        public Empleado? Empleado { get; set; }
 
         [ForeignKey("IdRol")]
         public Role? Role { get; set; }
+
+        [ForeignKey("IdEstado")]
+        public Estado? Estado { get; set; }
     }
 }

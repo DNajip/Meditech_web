@@ -4,59 +4,38 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MediTech.Models
 {
-    [Table("pacientes")]
+    [Table("PACIENTES", Schema = "CLI")]
     public class Paciente
     {
         [Key]
-        [Column("id_paciente")]
+        [Column("ID_PACIENTE")]
         public int IdPaciente { get; set; }
 
-        [Column("primer_nombre")]
-        [StringLength(50)]
-        public string? PrimerNombre { get; set; }
+        [Column("ID_PERSONA")]
+        public int IdPersona { get; set; }
 
-        [Column("segundo_nombre")]
-        [StringLength(50)]
-        public string? SegundoNombre { get; set; }
-
-        [Column("primer_apellido")]
-        [StringLength(50)]
-        public string? PrimerApellido { get; set; }
-
-        [Column("segundo_apellido")]
-        [StringLength(50)]
-        public string? SegundoApellido { get; set; }
-
-        [Column("id_tipo_identificacion")]
-        public int? IdTipoIdentificacion { get; set; }
-
-        [Column("numero_identificacion")]
-        [StringLength(30)]
-        public string? NumeroIdentificacion { get; set; }
-
-        [Column("sexo")]
-        [StringLength(1)]
-        public string? Sexo { get; set; }
-
-        [Column("fecha_nacimiento")]
-        public DateTime? FechaNacimiento { get; set; }
-
-        [Column("telefono")]
-        [StringLength(20)]
-        public string? Telefono { get; set; }
-
-        [Column("direccion")]
-        [StringLength(200)]
-        public string? Direccion { get; set; }
-
-        [Column("ocupacion")]
+        [Column("OCUPACION")]
         [StringLength(100)]
         public string? Ocupacion { get; set; }
 
-        [Column("fecha_registro")]
-        public DateTime? FechaRegistro { get; set; }
+        [Column("CONTACTO_EMERGENCIA")]
+        [StringLength(120)]
+        public string? ContactoEmergencia { get; set; }
 
-        [Column("estado")]
-        public bool? Estado { get; set; }
+        [Column("TELEFONO_EMERGENCIA")]
+        [StringLength(20)]
+        public string? TelefonoEmergencia { get; set; }
+
+        [Column("FECHA_REGISTRO")]
+        public DateTime? FechaRegistro { get; set; } = DateTime.Now;
+
+        [Column("ID_ESTADO")]
+        public int? IdEstado { get; set; } = 1;
+
+        [ForeignKey("IdPersona")]
+        public Persona? Persona { get; set; }
+
+        [ForeignKey("IdEstado")]
+        public Estado? Estado { get; set; }
     }
 }

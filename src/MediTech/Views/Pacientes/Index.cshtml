@@ -169,34 +169,35 @@
                 @{ var colors = new[] { "#3B82F6", "#10B981", "#8B5CF6", "#F59E0B", "#EF4444", "#06B6D4" }; }
                 @foreach (var (p, i) in Model.Select((p, i) => (p, i)))
                 {
-                    var initials = ((p.PrimerNombre?.Length > 0 ? p.PrimerNombre[0].ToString() : "") +
-                                   (p.PrimerApellido?.Length > 0 ? p.PrimerApellido[0].ToString() : "")).ToUpper();
+                    var initials = ((p.Persona?.PrimerNombre?.Length > 0 ? p.Persona.PrimerNombre[0].ToString() : "") +
+                                   (p.Persona?.PrimerApellido?.Length > 0 ? p.Persona.PrimerApellido[0].ToString() : "")).ToUpper();
                     var color = colors[i % colors.Length];
                     <tr>
                         <td>
                             <div class="patient-name-cell">
                                 <div class="patient-avatar" style="background:@color;">@initials</div>
                                 <div>
-                                    <strong>@p.PrimerNombre @p.PrimerApellido</strong>
-                                    @if (!string.IsNullOrEmpty(p.SegundoApellido))
+                                    <strong>@p.Persona?.PrimerNombre @p.Persona?.PrimerApellido</strong>
+                                    @if (!string.IsNullOrEmpty(p.Persona?.SegundoApellido))
                                     {
-                                        <span style="color:#94A3B8;"> @p.SegundoApellido</span>
+                                        <span style="color:#94A3B8;"> @p.Persona.SegundoApellido</span>
                                     }
                                 </div>
                             </div>
                         </td>
-                        <td>@(p.NumeroIdentificacion ?? "—")</td>
-                        <td>@(p.Telefono ?? "—")</td>
-                        <td>@(p.Sexo == "M" ? "Masculino" : p.Sexo == "F" ? "Femenino" : "—")</td>
+                        <td>@(p.Persona?.NumIdentificacion ?? "—")</td>
+                        <td>@(p.Persona?.Telefono ?? "—")</td>
+                        <td>@(p.Persona?.IdGenero == 1 ? "Masculino" : p.Persona?.IdGenero == 2 ? "Femenino" : "—")</td>
                         <td>@(p.FechaRegistro?.ToString("dd/MM/yyyy") ?? "—")</td>
                         <td>
-                            <span class="@(p.Estado == true ? "badge-active" : "badge-inactive")">
-                                @(p.Estado == true ? "Activo" : "Inactivo")
+                            <span class="@(p.IdEstado == 1 ? "badge-active" : "badge-inactive")">
+                                @(p.IdEstado == 1 ? "Activo" : "Inactivo")
                             </span>
                         </td>
                         <td>
-                            <a href="@Url.Action("Details", new { id = p.IdPaciente })" class="action-link"><i class="fas fa-eye"></i></a>
-                            <a href="@Url.Action("Edit", new { id = p.IdPaciente })" class="action-link"><i class="fas fa-edit"></i></a>
+                            <a href="@Url.Action("Details", new { id = p.IdPaciente })" class="action-link" title="Detalles"><i class="fas fa-eye"></i></a>
+                            <a href="@Url.Action("Ficha", new { id = p.IdPaciente })" class="action-link" title="Ver Ficha" style="color: #10B981;"><i class="fas fa-file-medical"></i></a>
+                            <a href="@Url.Action("Edit", new { id = p.IdPaciente })" class="action-link" title="Editar" style="color: #F59E0B;"><i class="fas fa-pencil-alt"></i></a>
                         </td>
                     </tr>
                 }

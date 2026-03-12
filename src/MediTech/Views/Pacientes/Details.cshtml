@@ -1,10 +1,14 @@
 @model MediTech.Models.Paciente
 @{
     ViewData["Title"] = "Perfil del Paciente";
-    var fullName = $"{Model.PrimerNombre} {Model.SegundoNombre} {Model.PrimerApellido} {Model.SegundoApellido}".Replace("  ", " ").Trim();
-    var initials = ((Model.PrimerNombre?.Length > 0 ? Model.PrimerNombre[0].ToString() : "") +
-                   (Model.PrimerApellido?.Length > 0 ? Model.PrimerApellido[0].ToString() : "")).ToUpper();
-    var age = Model.FechaNacimiento.HasValue ? (int)((DateTime.Now - Model.FechaNacimiento.Value).TotalDays / 365.25) : 0;
+    var fullName = Model.Persona != null 
+        ? $"{Model.Persona.PrimerNombre} {Model.Persona.SegundoNombre} {Model.Persona.PrimerApellido} {Model.Persona.SegundoApellido}".Replace("  ", " ").Trim()
+        : "Paciente";
+    var initials = Model.Persona != null 
+        ? ((Model.Persona.PrimerNombre?.Length > 0 ? Model.Persona.PrimerNombre[0].ToString() : "") +
+           (Model.Persona.PrimerApellido?.Length > 0 ? Model.Persona.PrimerApellido[0].ToString() : "")).ToUpper()
+        : "P";
+    var age = Model.Persona?.FechaNacimiento != null ? (int)((DateTime.Now - Model.Persona.FechaNacimiento.Value).TotalDays / 365.25) : 0;
 }
 
 <style>
@@ -64,6 +68,8 @@
         font-size: 0.88rem;
         color: #1E293B;
     }
+    .badge-active { background: #D1FAE5; color: #065F46; }
+    .badge-inactive { background: #FEE2E2; color: #991B1B; }
 </style>
 
 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -80,12 +86,12 @@
     <div class="profile-info">
         <h3>@fullName</h3>
         <div class="meta">
-            <i class="fas fa-id-card me-1"></i> @(Model.NumeroIdentificacion ?? "Sin identificación")
+            <i class="fas fa-id-card me-1"></i> @(Model.Persona?.NumIdentificacion ?? "Sin identificación")
             &nbsp;&bull;&nbsp;
-            <i class="fas fa-phone me-1"></i> @(Model.Telefono ?? "Sin teléfono")
+            <i class="fas fa-phone me-1"></i> @(Model.Persona?.Telefono ?? "Sin teléfono")
             &nbsp;&bull;&nbsp;
-            <span class="@(Model.Estado == true ? "badge-active" : "badge-inactive")" style="font-size:0.72rem; padding:2px 8px; border-radius:12px; background:@(Model.Estado == true ? "#D1FAE5" : "#FEE2E2"); color:@(Model.Estado == true ? "#065F46" : "#991B1B");">
-                @(Model.Estado == true ? "Activo" : "Inactivo")
+            <span class="@(Model.IdEstado == 1 ? "badge-active" : "badge-inactive")" style="font-size:0.72rem; padding:2px 8px; border-radius:12px;">
+                @(Model.IdEstado == 1 ? "Activo" : "Inactivo")
             </span>
         </div>
     </div>
@@ -95,20 +101,20 @@
     <div class="col-lg-6">
         <div class="info-card">
             <h5><i class="fas fa-user me-2" style="color:#3B82F6;"></i>Información Personal</h5>
-            <div class="info-row"><div class="info-label">Primer Nombre</div><div class="info-value">@(Model.PrimerNombre ?? "—")</div></div>
-            <div class="info-row"><div class="info-label">Segundo Nombre</div><div class="info-value">@(Model.SegundoNombre ?? "—")</div></div>
-            <div class="info-row"><div class="info-label">Primer Apellido</div><div class="info-value">@(Model.PrimerApellido ?? "—")</div></div>
-            <div class="info-row"><div class="info-label">Segundo Apellido</div><div class="info-value">@(Model.SegundoApellido ?? "—")</div></div>
-            <div class="info-row"><div class="info-label">Sexo</div><div class="info-value">@(Model.Sexo == "M" ? "Masculino" : Model.Sexo == "F" ? "Femenino" : "—")</div></div>
-            <div class="info-row"><div class="info-label">Fecha Nacimiento</div><div class="info-value">@(Model.FechaNacimiento?.ToString("dd/MM/yyyy") ?? "—") @(age > 0 ? $"({age} años)" : "")</div></div>
+            <div class="info-row"><div class="info-label">Primer Nombre</div><div class="info-value">@(Model.Persona?.PrimerNombre ?? "—")</div></div>
+            <div class="info-row"><div class="info-label">Segundo Nombre</div><div class="info-value">@(Model.Persona?.SegundoNombre ?? "—")</div></div>
+            <div class="info-row"><div class="info-label">Primer Apellido</div><div class="info-value">@(Model.Persona?.PrimerApellido ?? "—")</div></div>
+            <div class="info-row"><div class="info-label">Segundo Apellido</div><div class="info-value">@(Model.Persona?.SegundoApellido ?? "—")</div></div>
+            <div class="info-row"><div class="info-label">Sexo</div><div class="info-value">@(Model.Persona?.Genero?.DescGenero ?? "—")</div></div>
+            <div class="info-row"><div class="info-label">Fecha Nacimiento</div><div class="info-value">@(Model.Persona?.FechaNacimiento?.ToString("dd/MM/yyyy") ?? "—") @(age > 0 ? $"({age} años)" : "")</div></div>
         </div>
     </div>
     <div class="col-lg-6">
         <div class="info-card">
             <h5><i class="fas fa-address-book me-2" style="color:#10B981;"></i>Contacto y Otros</h5>
-            <div class="info-row"><div class="info-label">Identificación</div><div class="info-value">@(Model.NumeroIdentificacion ?? "—")</div></div>
-            <div class="info-row"><div class="info-label">Teléfono</div><div class="info-value">@(Model.Telefono ?? "—")</div></div>
-            <div class="info-row"><div class="info-label">Dirección</div><div class="info-value">@(Model.Direccion ?? "—")</div></div>
+            <div class="info-row"><div class="info-label">Identificación</div><div class="info-value">@(Model.Persona?.NumIdentificacion ?? "—")</div></div>
+            <div class="info-row"><div class="info-label">Teléfono</div><div class="info-value">@(Model.Persona?.Telefono ?? "—")</div></div>
+            <div class="info-row"><div class="info-label">Dirección</div><div class="info-value">@(Model.Persona?.Direccion ?? "—")</div></div>
             <div class="info-row"><div class="info-label">Ocupación</div><div class="info-value">@(Model.Ocupacion ?? "—")</div></div>
             <div class="info-row"><div class="info-label">Fecha Registro</div><div class="info-value">@(Model.FechaRegistro?.ToString("dd/MM/yyyy HH:mm") ?? "—")</div></div>
         </div>

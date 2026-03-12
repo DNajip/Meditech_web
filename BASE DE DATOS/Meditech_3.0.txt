@@ -3,8 +3,8 @@ MEDITECH DB v3
 Arquitectura clínica profesional
 ========================================================*/
 
-CREATE DATABASE MediTech;
-GO
+--CREATE DATABASE MediTech;
+--GO
 
 USE MediTech;
 GO
@@ -37,7 +37,8 @@ DESC_ESTADO VARCHAR(50) NOT NULL,
 FECHA_CREACION DATETIME2 NOT NULL DEFAULT SYSDATETIME()
 );
 
-INSERT INTO CAT.ESTADOS VALUES
+INSERT INTO CAT.ESTADOS  (DESC_ESTADO)
+VALUES
 ('ACTIVO'),
 ('INACTIVO'),
 ('ANULADO');
@@ -174,6 +175,7 @@ REFERENCES CAT.ESTADOS(ID_ESTADO)
 GO
 
 
+
 /*========================================================
 EMPLEADOS
 ========================================================*/
@@ -301,11 +303,16 @@ REFERENCES CAT.ESTADOS(ID_ESTADO)
 
 );
 GO
+ALTER TABLE CLI.CITAS
+ADD CONSTRAINT UQ_CITA_HORA
+UNIQUE(ID_PACIENTE, FECHA, HORA_INICIO);
 
 CREATE INDEX IX_CITAS_FECHA
 ON CLI.CITAS(FECHA);
 GO
 
+CREATE INDEX IX_CITAS_PACIENTE
+ON CLI.CITAS(ID_PACIENTE);
 
 /*========================================================
 CONSULTAS
@@ -341,6 +348,8 @@ REFERENCES CAT.ESTADOS(ID_ESTADO)
 
 );
 GO
+CREATE INDEX IX_CONSULTAS_CITA
+ON CLI.CONSULTAS(ID_CITA);
 
 
 /*========================================================
@@ -422,6 +431,7 @@ REFERENCES CLI.CONSULTAS(ID_CONSULTA)
 );
 GO
 
+SELECT * FROM ADM.USUARIOS
 
 /*========================================================
 FOTOS PACIENTE
@@ -479,3 +489,5 @@ REFERENCES CLI.CONSULTAS(ID_CONSULTA)
 
 );
 GO
+
+select *from adm.USUARIOS
