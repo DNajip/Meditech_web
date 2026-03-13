@@ -1,186 +1,189 @@
-@model IEnumerable<MediTech.Models.Cita>
 @{
     ViewData["Title"] = "Agenda de Citas";
+    Layout = "_Layout";
 }
 
-<style>
-    .page-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 24px;
-    }
-    .page-header h2 { font-size: 1.5rem; font-weight: 700; color: #1E293B; margin: 0; }
-    .page-header .subtitle { font-size: 0.85rem; color: #64748B; }
+@section Styles {
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/citas-calendar.css" asp-append-version="true" />
+}
 
-    .citas-container {
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-    }
+<!-- Calendar Wrapper: Calendar + Agenda Panel -->
+<div class="calendar-wrapper">
 
-    .cita-card {
-        background: #FFFFFF;
-        border-radius: 12px;
-        border: 1px solid #E2E8F0;
-        padding: 16px 20px;
-        display: grid;
-        grid-template-columns: 80px 1fr 180px 140px 100px;
-        align-items: center;
-        gap: 20px;
-        transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .cita-card:hover { 
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-    }
+    <!-- Center: Calendar Area -->
+    <div class="calendar-main">
 
-    .cita-time {
-        text-align: center;
-        border-right: 1px solid #F1F5F9;
-        padding-right: 15px;
-    }
-    .cita-time .time-start { font-weight: 700; color: #1E293B; font-size: 1.05rem; display: block; }
-    .cita-time .time-end { font-size: 0.75rem; color: #94A3B8; font-weight: 500; }
+        <!-- Custom Calendar Header -->
+        <div class="calendar-header">
+            <div class="calendar-header-left">
+                <div class="brand-title">
+                    <i class="fas fa-calendar-alt"></i>
+                    MediTech Agenda
+                </div>
+                <button class="btn-today" id="btnToday">Hoy</button>
+                <div class="calendar-nav-buttons">
+                    <button class="btn-nav" id="btnPrev"><i class="fas fa-chevron-left"></i></button>
+                    <button class="btn-nav" id="btnNext"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                <span class="calendar-title" id="calendarTitle">Marzo 2026</span>
+            </div>
 
-    .cita-patient { display: flex; flex-direction: column; }
-    .cita-patient .name { font-weight: 600; color: #334155; font-size: 0.95rem; }
-    .cita-patient .id { font-size: 0.78rem; color: #64748B; }
+            <div class="calendar-header-right">
+                <div class="calendar-search">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="calendarSearchInput" placeholder="Buscar pacientes o citas..." autocomplete="off" />
+                    <div class="search-results-dropdown" id="searchResultsDropdown"></div>
+                </div>
 
-    .cita-treatment {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 0.88rem;
-        color: #475569;
-    }
-    .cita-treatment i { color: #3B82F6; font-size: 0.8rem; }
+                <div class="view-switcher">
+                    <button data-view="timeGridDay">Día</button>
+                    <button data-view="timeGridWeek" class="active">Semana</button>
+                    <button data-view="dayGridMonth">Mes</button>
+                    <button data-view="listWeek">Agenda</button>
+                </div>
 
-    .status-badge {
-        font-size: 0.72rem;
-        font-weight: 600;
-        padding: 4px 12px;
-        border-radius: 20px;
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
-        text-align: center;
-    }
-    .status-programada { background: #DBEAFE; color: #1E40AF; }
-    .status-completada { background: #D1FAE5; color: #065F46; }
-    .status-cancelada { background: #FEE2E2; color: #991B1B; }
+                <button class="btn-create-cita" id="btnCreateCita">
+                    <i class="fas fa-plus"></i> Crear
+                </button>
+            </div>
+        </div>
 
-    .cita-actions { display: flex; gap: 10px; justify-content: flex-end; }
-    .btn-action {
-        width: 32px; height: 32px;
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        text-decoration: none !important;
-        transition: all 0.2s;
-    }
-    .btn-view { background: #F1F5F9; color: #64748B; }
-    .btn-view:hover { background: #E2E8F0; color: #1E293B; }
-    .btn-edit { background: #EFF6FF; color: #3B82F6; }
-    .btn-edit:hover { background: #DBEAFE; color: #1D4ED8; }
-    .btn-sync { background: #F0FDF4; color: #10B981; }
-
-    .sync-indicator {
-        font-size: 0.7rem;
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        margin-top: 4px;
-    }
-    .sync-ok { color: #10B981; }
-    .sync-pending { color: #F59E0B; }
-</style>
-
-<div class="page-header">
-    <div>
-        <h2><i class="fas fa-calendar-alt me-2" style="color:#3B82F6;"></i>Agenda Médica</h2>
-        <span class="subtitle">Gestión de citas y sincronización con Google Calendar</span>
+        <!-- FullCalendar Grid -->
+        <div class="calendar-body">
+            <div id="fullcalendar"></div>
+        </div>
     </div>
-    <a href="@Url.Action("Create")" class="btn btn-primary" style="border-radius:8px;">
-        <i class="fas fa-calendar-plus me-1"></i> Nueva Cita
-    </a>
+
+    <!-- Right Panel: Today's Agenda -->
+    <aside class="agenda-panel">
+        <div class="agenda-panel-header">
+            <div class="agenda-title">
+                Agenda de Hoy
+                <span class="count-badge" id="agendaCount">0 citas</span>
+            </div>
+            <div class="agenda-subtitle" id="agendaDate">Cargando...</div>
+        </div>
+        <div class="agenda-panel-body" id="agendaPanelBody">
+            <div class="agenda-empty">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Cargando agenda...</p>
+            </div>
+        </div>
+    </aside>
+</div>
+
+<!-- Event Popover -->
+<div class="event-popover" id="eventPopover">
+    <div class="event-popover-header">
+        <div class="event-color-bar" id="popoverColorBar"></div>
+        <div class="event-info">
+            <div class="event-title" id="popoverTitle">Paciente</div>
+            <div class="event-treatment" id="popoverTreatment">Tratamiento</div>
+        </div>
+        <button class="event-popover-close" id="popoverClose"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="event-popover-body">
+        <div class="detail-row"><i class="fas fa-clock"></i> <span id="popoverTime"></span></div>
+        <div class="detail-row"><i class="fas fa-calendar"></i> <span id="popoverDate"></span></div>
+        <div class="detail-row"><i class="fas fa-sticky-note"></i> <span id="popoverObs"></span></div>
+        <div class="detail-row" id="popoverSync"><i class="fab fa-google"></i> -</div>
+    </div>
+    <div class="event-popover-footer">
+        <a href="#" class="popover-btn" id="popoverBtnView"><i class="fas fa-eye"></i> Ver</a>
+        <a href="#" class="popover-btn primary" id="popoverBtnEdit"><i class="fas fa-edit"></i> Editar</a>
+        <a href="#" class="popover-btn" id="popoverBtnPatient"><i class="fas fa-user"></i> Paciente</a>
+    </div>
+</div>
+
+<!-- Create Appointment Modal -->
+<div class="modal-backdrop-citas" id="createModalBackdrop"></div>
+<div class="modal-citas" id="createModal">
+    <div class="modal-citas-header">
+        <h3><i class="fas fa-calendar-plus"></i> Agendar Nueva Cita</h3>
+        <button class="modal-close-btn" id="btnCloseModal"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-citas-body">
+        <div class="modal-alert" id="modalAlert"></div>
+        <form id="createCitaForm">
+            @Html.AntiForgeryToken()
+
+            <div class="form-group">
+                <label for="modalPaciente">Paciente</label>
+                <select name="IdPaciente" id="modalPaciente" required>
+                    <option value="">-- Seleccione un Paciente --</option>
+                    @if (ViewBag.Pacientes != null)
+                    {
+                        @foreach (var item in (Microsoft.AspNetCore.Mvc.Rendering.SelectList)ViewBag.Pacientes)
+                        {
+                            <option value="@item.Value">@item.Text</option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="modalTratamiento">Tratamiento / Servicio</label>
+                <select name="IdTratamiento" id="modalTratamiento">
+                    <option value="">-- Seleccione un Tratamiento --</option>
+                    @if (ViewBag.Tratamientos != null)
+                    {
+                        @foreach (var item in (Microsoft.AspNetCore.Mvc.Rendering.SelectList)ViewBag.Tratamientos)
+                        {
+                            <option value="@item.Value">@item.Text</option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="modalFecha">Fecha</label>
+                    <input type="date" name="Fecha" id="modalFecha" required />
+                </div>
+                <div class="form-group">
+                    <label for="modalHoraInicio">Hora Inicio</label>
+                    <input type="time" name="HoraInicio" id="modalHoraInicio" required />
+                </div>
+                <div class="form-group">
+                    <label for="modalHoraFin">Hora Fin</label>
+                    <input type="time" name="HoraFin" id="modalHoraFin" required />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="modalObs">Observaciones</label>
+                <textarea name="Observaciones" id="modalObs" rows="2" placeholder="Detalles adicionales..."></textarea>
+            </div>
+
+            <div class="modal-citas-footer" style="padding: 0; border: none; margin-top: 8px;">
+                <div class="google-hint">
+                    <i class="fab fa-google"></i> Se sincronizará con Google Calendar
+                </div>
+                <button type="submit" class="btn-save-cita">
+                    <i class="fas fa-save"></i> Guardar Cita
+                </button>
+            </div>
+        </form>
+    </div>
 </div>
 
 @if (TempData["SuccessMessage"] != null)
 {
-    <div class="alert alert-success alert-dismissible fade show mb-4" role="alert" style="border-radius:12px; font-size:0.9rem;">
-        <i class="fas fa-check-circle me-2"></i> @TempData["SuccessMessage"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Flash success toast
+            const toast = document.createElement('div');
+            toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#10B981;color:#FFF;padding:12px 20px;border-radius:10px;font-size:0.88rem;font-weight:600;z-index:9999;box-shadow:0 4px 12px rgba(16,185,129,0.3);display:flex;align-items:center;gap:8px;';
+            toast.innerHTML = '<i class="fas fa-check-circle"></i> @TempData["SuccessMessage"]';
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        });
+    </script>
 }
 
-<div class="citas-container">
-    @if (Model.Any())
-    {
-        @foreach (var cita in Model)
-        {
-            var statusClass = cita.IdEstado switch {
-                1 => "status-programada",
-                2 => "status-completada",
-                3 => "status-cancelada",
-                _ => ""
-            };
-
-            <div class="cita-card">
-                <div class="cita-time">
-                    <span class="time-start">@DateTime.Today.Add(cita.HoraInicio).ToString("HH:mm")</span>
-                    <span class="time-end">Fin: @DateTime.Today.Add(cita.HoraFin).ToString("HH:mm")</span>
-                </div>
-
-                <div class="cita-patient">
-                    <span class="name">@cita.Paciente?.Persona?.PrimerNombre @cita.Paciente?.Persona?.PrimerApellido</span>
-                    <span class="id">@cita.Paciente?.Persona?.NumIdentificacion</span>
-                    <span class="id" style="font-size: 0.7rem; color: #94A3B8;">@cita.Fecha.ToString("dd MMMM, yyyy")</span>
-                </div>
-
-                <div class="cita-treatment">
-                    <i class="fas fa-notes-medical"></i>
-                    <span>@(cita.Tratamiento?.NombreTratamiento ?? "Consulta General")</span>
-                </div>
-
-                <div class="text-center">
-                    <span class="status-badge @statusClass">@(cita.Estado?.DescEstado ?? "Pendiente")</span>
-                    @if (!string.IsNullOrEmpty(cita.GoogleEventId))
-                    {
-                        <div class="sync-indicator sync-ok">
-                            <i class="fab fa-google"></i> Sincronizado
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="sync-indicator sync-pending">
-                            <i class="fas fa-cloud-upload-alt"></i> Solo Local
-                        </div>
-                    }
-                </div>
-
-                <div class="cita-actions">
-                    <a href="@Url.Action("Details", new { id = cita.IdCita })" class="btn-action btn-view" title="Ver Detalles"><i class="fas fa-eye"></i></a>
-                    <a href="@Url.Action("Edit", new { id = cita.IdCita })" class="btn-action btn-edit" title="Editar"><i class="fas fa-edit"></i></a>
-                    @if (cita.IdEstado == 1)
-                    {
-                        <form asp-action="Cancel" method="post" style="display:inline;">
-                            <input type="hidden" name="id" value="@cita.IdCita" />
-                            <button type="submit" class="btn-action" style="background: #FFF1F2; color: #E11D48; border: none;" title="Cancelar" onclick="return confirm('¿Desea cancelar esta cita?')">
-                                <i class="fas fa-times-circle"></i>
-                            </button>
-                        </form>
-                    }
-                </div>
-            </div>
-        }
-    }
-    else
-    {
-        <div class="text-center py-5" style="color: #94A3B8; background: #FFF; border-radius: 16px; border: 1px dashed #E2E8F0;">
-            <i class="fas fa-calendar-day fa-3x mb-3" style="color: #CBD5E1;"></i>
-            <h5>No hay citas programadas</h5>
-            <p class="small">Inicia agendando una nueva cita para tus pacientes.</p>
-        </div>
-    }
-</div>
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@@fullcalendar/core@6.1.14/locales/es.global.min.js"></script>
+    <script src="~/js/citas-calendar.js" asp-append-version="true"></script>
+}

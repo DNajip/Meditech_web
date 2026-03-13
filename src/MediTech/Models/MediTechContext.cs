@@ -18,6 +18,7 @@ namespace MediTech.Models
         public DbSet<Paciente> Pacientes { get; set; } = null!;
         public DbSet<Tratamiento> Tratamientos { get; set; } = null!;
         public DbSet<Cita> Citas { get; set; } = null!;
+        public DbSet<GoogleToken> GoogleTokens { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

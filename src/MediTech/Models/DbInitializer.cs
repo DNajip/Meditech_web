@@ -9,6 +9,10 @@ namespace MediTech.Models
         public static void Initialize(MediTechContext context)
         {
             Console.WriteLine("--- DB INITIALIZER START ---");
+
+            // Apply schema migrations for new columns/tables
+            ApplyMigrations(context);
+            
             
             var existingAdmin = context.Usuarios
                 .Include(u => u.Empleado)
@@ -98,6 +102,35 @@ namespace MediTech.Models
 
             context.SaveChanges();
             Console.WriteLine("--- DB INITIALIZER END ---");
+        }
+
+        /// <summary>
+        /// Applies incremental schema changes to the running database.
+        /// Uses IF NOT EXISTS to be idempotent (safe to run multiple times).
+        /// </summary>
+        private static void ApplyMigrations(MediTechContext context)
+        {
+            Console.WriteLine("Applying schema migrations...");
+
+            // Create ADM.GOOGLE_TOKENS table if it doesn't exist
+            context.Database.ExecuteSqlRaw(@"
+                IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'ADM' AND TABLE_NAME = 'GOOGLE_TOKENS')
+                BEGIN
+                    CREATE TABLE ADM.GOOGLE_TOKENS(
+                        ID_TOKEN INT IDENTITY CONSTRAINT PK_GOOGLE_TOKENS PRIMARY KEY,
+                        ID_USUARIO INT NOT NULL,
+                        ACCESS_TOKEN VARCHAR(2000),
+                        REFRESH_TOKEN VARCHAR(2000),
+                        TOKEN_EXPIRY DATETIME2,
+                        FECHA_CREACION DATETIME2 DEFAULT SYSDATETIME(),
+                        FECHA_ACTUALIZACION DATETIME2,
+                        FOREIGN KEY(ID_USUARIO) REFERENCES ADM.USUARIOS(ID_USUARIO)
+                    );
+                    PRINT 'Created ADM.GOOGLE_TOKENS table';
+                END
+            ");
+
+            Console.WriteLine("Schema migrations applied.");
         }
 
         private static void SeedTreatments(MediTechContext context)

@@ -21,17 +21,118 @@ public class CitasController : Controller
         _logger = logger;
     }
 
-    // GET: Citas
+    // GET: Citas — FullCalendar view
     public async Task<IActionResult> Index()
+    {
+        await PrepareDropdowns();
+        return View();
+    }
+
+    // GET: Citas/GetEvents — JSON feed for FullCalendar
+    [HttpGet]
+    public async Task<IActionResult> GetEvents(DateTime start, DateTime end)
     {
         var citas = await _context.Citas
             .Include(c => c.Paciente).ThenInclude(p => p!.Persona)
             .Include(c => c.Tratamiento)
             .Include(c => c.Estado)
-            .OrderByDescending(c => c.Fecha)
-            .ThenByDescending(c => c.HoraInicio)
+            .Where(c => c.Fecha >= start.Date && c.Fecha <= end.Date)
             .ToListAsync();
-        return View(citas);
+
+        var events = citas.Select(c => new
+        {
+            id = c.IdCita,
+            title = $"{c.Paciente?.Persona?.PrimerNombre} {c.Paciente?.Persona?.PrimerApellido}",
+            start = c.Fecha.Date.Add(c.HoraInicio).ToString("yyyy-MM-ddTHH:mm:ss"),
+            end = c.Fecha.ToString("yyyy-MM-dd") + "T" + c.HoraFin.ToString(@"hh\:mm\:ss"),
+            color = "#3B82F6",
+            extendedProps = new
+            {
+                pacienteId = c.IdPaciente,
+                tratamiento = c.Tratamiento?.NombreTratamiento ?? "Consulta General",
+                observaciones = c.Observaciones ?? "",
+                estado = c.Estado?.DescEstado ?? "ACTIVO",
+                estadoId = c.IdEstado,
+                identificacion = c.Paciente?.Persona?.NumIdentificacion ?? "",
+                googleSynced = !string.IsNullOrEmpty(c.GoogleEventId)
+            }
+        });
+
+        return Json(events);
+    }
+
+    // GET: Citas/GetTodayAgenda — JSON for "Today's Agenda" panel
+    [HttpGet]
+    public async Task<IActionResult> GetTodayAgenda()
+    {
+        var today = DateTime.Today;
+        var citas = await _context.Citas
+            .Include(c => c.Paciente).ThenInclude(p => p!.Persona)
+            .Include(c => c.Tratamiento)
+            .Include(c => c.Estado)
+            .Where(c => c.Fecha == today && c.IdEstado == 1)
+            .OrderBy(c => c.HoraInicio)
+            .ToListAsync();
+
+        var agenda = citas.Select(c => new
+        {
+            id = c.IdCita,
+            horaInicio = DateTime.Today.Add(c.HoraInicio).ToString("hh:mm tt"),
+            horaFin = DateTime.Today.Add(c.HoraFin).ToString("hh:mm tt"),
+            paciente = $"{c.Paciente?.Persona?.PrimerNombre} {c.Paciente?.Persona?.PrimerApellido}",
+            tratamiento = c.Tratamiento?.NombreTratamiento ?? "General",
+            color = "#3B82F6",
+            observaciones = c.Observaciones ?? "",
+            pacienteId = c.IdPaciente,
+            estado = c.Estado?.DescEstado ?? "ACTIVO"
+        });
+
+        return Json(new { count = citas.Count, items = agenda });
+    }
+
+    // GET: Citas/Search?term=xxx — JSON search for patients/appointments
+    [HttpGet]
+    public async Task<IActionResult> Search(string term)
+    {
+        if (string.IsNullOrWhiteSpace(term) || term.Length < 2)
+            return Json(new { patients = Array.Empty<object>(), appointments = Array.Empty<object>() });
+
+        var normalizedTerm = term.ToUpper();
+
+        var patients = await _context.Pacientes
+            .Include(p => p.Persona)
+            .Where(p => p.IdEstado == 1 &&
+                (p.Persona!.PrimerNombre.ToUpper().Contains(normalizedTerm) ||
+                 p.Persona.PrimerApellido.ToUpper().Contains(normalizedTerm) ||
+                 p.Persona.NumIdentificacion.ToUpper().Contains(normalizedTerm)))
+            .Take(5)
+            .Select(p => new
+            {
+                id = p.IdPaciente,
+                nombre = $"{p.Persona!.PrimerNombre} {p.Persona.PrimerApellido}",
+                identificacion = p.Persona.NumIdentificacion
+            })
+            .ToListAsync();
+
+        var appointments = await _context.Citas
+            .Include(c => c.Paciente).ThenInclude(p => p!.Persona)
+            .Include(c => c.Tratamiento)
+            .Where(c => c.Paciente!.Persona!.PrimerNombre.ToUpper().Contains(normalizedTerm) ||
+                        c.Paciente.Persona!.PrimerApellido.ToUpper().Contains(normalizedTerm) ||
+                        c.Paciente.Persona!.NumIdentificacion.ToUpper().Contains(normalizedTerm))
+            .OrderByDescending(c => c.Fecha)
+            .Take(5)
+            .Select(c => new
+            {
+                id = c.IdCita,
+                paciente = $"{c.Paciente!.Persona!.PrimerNombre} {c.Paciente.Persona.PrimerApellido}",
+                fecha = c.Fecha.ToString("dd/MM/yyyy"),
+                hora = DateTime.Today.Add(c.HoraInicio).ToString("hh:mm tt"),
+                tratamiento = c.Tratamiento != null ? c.Tratamiento.NombreTratamiento : "Consulta General"
+            })
+            .ToListAsync();
+
+        return Json(new { patients, appointments });
     }
 
     // GET: Citas/Details/5
@@ -48,6 +149,36 @@ public class CitasController : Controller
         if (cita == null) return NotFound();
 
         return View(cita);
+    }
+
+    // GET: Citas/GetEventDetail/5 — JSON for event popover
+    [HttpGet]
+    public async Task<IActionResult> GetEventDetail(int id)
+    {
+        var cita = await _context.Citas
+            .Include(c => c.Paciente).ThenInclude(p => p!.Persona)
+            .Include(c => c.Tratamiento)
+            .Include(c => c.Estado)
+            .FirstOrDefaultAsync(m => m.IdCita == id);
+
+        if (cita == null) return NotFound();
+
+        return Json(new
+        {
+            id = cita.IdCita,
+            paciente = $"{cita.Paciente?.Persona?.PrimerNombre} {cita.Paciente?.Persona?.PrimerApellido}",
+            pacienteId = cita.IdPaciente,
+            identificacion = cita.Paciente?.Persona?.NumIdentificacion ?? "",
+            tratamiento = cita.Tratamiento?.NombreTratamiento ?? "General",
+            color = "#3B82F6",
+            fecha = cita.Fecha.ToString("dd/MM/yyyy"),
+            horaInicio = DateTime.Today.Add(cita.HoraInicio).ToString("hh:mm tt"),
+            horaFin = DateTime.Today.Add(cita.HoraFin).ToString("hh:mm tt"),
+            observaciones = cita.Observaciones ?? "",
+            estado = cita.Estado?.DescEstado ?? "ACTIVO",
+            estadoId = cita.IdEstado,
+            googleSynced = !string.IsNullOrEmpty(cita.GoogleEventId)
+        });
     }
 
     // GET: Citas/Create
@@ -131,6 +262,62 @@ public class CitasController : Controller
 
         await PrepareDropdowns();
         return View(cita);
+    }
+
+    // POST: Citas/CreateJson — AJAX endpoint for modal create
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CreateJson([FromForm] Cita? cita)
+    {
+        if (cita == null) return Json(new { success = false, message = "Datos inválidos." });
+
+        // Validations
+        if (cita.Fecha < DateTime.Today)
+            return Json(new { success = false, message = "No se pueden crear citas en el pasado." });
+        if (cita.HoraFin <= cita.HoraInicio)
+            return Json(new { success = false, message = "La hora de fin debe ser mayor a la de inicio." });
+
+        var conflict = await _context.Citas.AnyAsync(c =>
+            c.Fecha == cita.Fecha &&
+            cita.HoraInicio < c.HoraFin &&
+            cita.HoraFin > c.HoraInicio);
+
+        if (conflict)
+            return Json(new { success = false, message = "Ya existe una cita que se solapa con este horario." });
+
+        try
+        {
+            cita.IdEstado = 1;
+            _context.Add(cita);
+            await _context.SaveChangesAsync();
+
+            // Google Calendar sync
+            var paciente = await _context.Pacientes.Include(p => p.Persona)
+                .FirstOrDefaultAsync(p => p.IdPaciente == cita.IdPaciente);
+            var tratamiento = await _context.Tratamientos
+                .FirstOrDefaultAsync(t => t.IdTratamiento == cita.IdTratamiento);
+
+            var startDt = cita.Fecha.Date.Add(cita.HoraInicio);
+            var endDt = cita.Fecha.Date.Add(cita.HoraFin);
+
+            var googleEventId = await _googleCalendar.CreateEventAsync(
+                $"Consulta - {paciente?.Persona?.PrimerNombre} {paciente?.Persona?.PrimerApellido}",
+                $"Tratamiento: {tratamiento?.NombreTratamiento}. Obs: {cita.Observaciones}",
+                startDt, endDt);
+
+            if (!string.IsNullOrEmpty(googleEventId))
+            {
+                cita.GoogleEventId = googleEventId;
+                await _context.SaveChangesAsync();
+            }
+
+            return Json(new { success = true, id = cita.IdCita });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error saving appointment via AJAX.");
+            return Json(new { success = false, message = "Error al guardar en la base de datos." });
+        }
     }
 
     // GET: Citas/Edit/5

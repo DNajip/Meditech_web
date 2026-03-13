@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MediTech")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+1208ce4a5873cde844a6acadf3dbb9eee1b4510d")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0a3a3e0b2ee0b3ca31a1868d0d737578f0a2a933")]
 [assembly: System.Reflection.AssemblyProductAttribute("MediTech")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MediTech")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
