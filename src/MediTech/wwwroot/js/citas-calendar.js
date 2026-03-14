@@ -105,15 +105,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 document.getElementById('popoverDate').textContent = data.fecha;
                 document.getElementById('popoverObs').textContent = data.observaciones || 'Sin observaciones';
 
-                const syncBadge = document.getElementById('popoverSync');
-                if (data.googleSynced) {
-                    syncBadge.innerHTML = '<i class="fab fa-google"></i> Sincronizado';
-                    syncBadge.style.color = '#10B981';
-                } else {
-                    syncBadge.innerHTML = '<i class="fas fa-cloud"></i> Solo Local';
-                    syncBadge.style.color = '#F59E0B';
-                }
-
                 // Action links
                 document.getElementById('popoverBtnView').href = `/Citas/Details/${data.id}`;
                 document.getElementById('popoverBtnEdit').href = `/Citas/Edit/${data.id}`;

@@ -230,4 +230,4 @@ E:\Programación\Antigravity\Meditech\src\MediTech\bin\Debug\net10.0\MediTech.pd
 E:\Programación\Antigravity\Meditech\src\MediTech\obj\Debug\net10.0\MediTech.genruntimeconfig.cache
 E:\Programación\Antigravity\Meditech\src\MediTech\obj\Debug\net10.0\ref\MediTech.dll
 E:\Programación\Antigravity\Meditech\src\MediTech\obj\Debug\net10.0\compressed\omrglcp0px-{0}-ugs46aynv4-ugs46aynv4.gz
-E:\Programación\Antigravity\Meditech\src\MediTech\obj\Debug\net10.0\compressed\eukzba4kwk-{0}-igcgye7kno-igcgye7kno.gz
+E:\Programación\Antigravity\Meditech\src\MediTech\obj\Debug\net10.0\compressed\eukzba4kwk-{0}-ed6rakvngw-ed6rakvngw.gz

@@ -34,10 +34,6 @@ public class Cita
     [StringLength(300)]
     public string? Observaciones { get; set; }
 
-    [Column("GOOGLE_EVENT_ID")]
-    [StringLength(200)]
-    public string? GoogleEventId { get; set; }
-
     [Column("FECHA_CREACION")]
     public DateTime? FechaCreacion { get; set; }
 

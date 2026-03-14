@@ -112,23 +112,7 @@ namespace MediTech.Models
         {
             Console.WriteLine("Applying schema migrations...");
 
-            // Create ADM.GOOGLE_TOKENS table if it doesn't exist
-            context.Database.ExecuteSqlRaw(@"
-                IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'ADM' AND TABLE_NAME = 'GOOGLE_TOKENS')
-                BEGIN
-                    CREATE TABLE ADM.GOOGLE_TOKENS(
-                        ID_TOKEN INT IDENTITY CONSTRAINT PK_GOOGLE_TOKENS PRIMARY KEY,
-                        ID_USUARIO INT NOT NULL,
-                        ACCESS_TOKEN VARCHAR(2000),
-                        REFRESH_TOKEN VARCHAR(2000),
-                        TOKEN_EXPIRY DATETIME2,
-                        FECHA_CREACION DATETIME2 DEFAULT SYSDATETIME(),
-                        FECHA_ACTUALIZACION DATETIME2,
-                        FOREIGN KEY(ID_USUARIO) REFERENCES ADM.USUARIOS(ID_USUARIO)
-                    );
-                    PRINT 'Created ADM.GOOGLE_TOKENS table';
-                END
-            ");
+            // No pending schema migrations required at this time
 
             Console.WriteLine("Schema migrations applied.");
         }

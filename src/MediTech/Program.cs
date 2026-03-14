@@ -49,9 +49,6 @@ builder.Services.AddDbContext<MediTechContext>(options =>
     options.UseSqlServer(connectionString));
 
 // Custom Services
-builder.Services.AddScoped<MediTech.Services.IGoogleCalendarService, MediTech.Services.GoogleCalendarService>();
-
-
 // Authentication & Session
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>

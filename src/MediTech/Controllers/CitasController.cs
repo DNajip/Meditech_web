@@ -2,22 +2,17 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using MediTech.Models;
-using MediTech.Services;
-
-namespace MediTech.Controllers;
+using MediTech.Models;namespace MediTech.Controllers;
 
 [Authorize]
 public class CitasController : Controller
 {
     private readonly MediTechContext _context;
-    private readonly IGoogleCalendarService _googleCalendar;
     private readonly ILogger<CitasController> _logger;
 
-    public CitasController(MediTechContext context, IGoogleCalendarService googleCalendar, ILogger<CitasController> logger)
+    public CitasController(MediTechContext context, ILogger<CitasController> logger)
     {
         _context = context;
-        _googleCalendar = googleCalendar;
         _logger = logger;
     }
 
@@ -53,8 +48,7 @@ public class CitasController : Controller
                 observaciones = c.Observaciones ?? "",
                 estado = c.Estado?.DescEstado ?? "ACTIVO",
                 estadoId = c.IdEstado,
-                identificacion = c.Paciente?.Persona?.NumIdentificacion ?? "",
-                googleSynced = !string.IsNullOrEmpty(c.GoogleEventId)
+                identificacion = c.Paciente?.Persona?.NumIdentificacion ?? ""
             }
         });
 
@@ -176,8 +170,7 @@ public class CitasController : Controller
             horaFin = DateTime.Today.Add(cita.HoraFin).ToString("hh:mm tt"),
             observaciones = cita.Observaciones ?? "",
             estado = cita.Estado?.DescEstado ?? "ACTIVO",
-            estadoId = cita.IdEstado,
-            googleSynced = !string.IsNullOrEmpty(cita.GoogleEventId)
+            estadoId = cita.IdEstado
         });
     }
 
@@ -225,30 +218,6 @@ public class CitasController : Controller
                     _context.Add(cita);
                     await _context.SaveChangesAsync();
 
-                    // Sync with Google Calendar
-                    var paciente = await _context.Pacientes
-                        .Include(p => p.Persona)
-                        .FirstOrDefaultAsync(p => p.IdPaciente == cita.IdPaciente);
-                    
-                    var tratamiento = await _context.Tratamientos
-                        .FirstOrDefaultAsync(t => t.IdTratamiento == cita.IdTratamiento);
-
-                    var startDateTime = cita.Fecha.Date.Add(cita.HoraInicio);
-                    var endDateTime = cita.Fecha.Date.Add(cita.HoraFin);
-
-                    var googleEventId = await _googleCalendar.CreateEventAsync(
-                        $"Consulta - {paciente?.Persona?.PrimerNombre} {paciente?.Persona?.PrimerApellido}",
-                        $"Tratamiento: {tratamiento?.NombreTratamiento}. Obs: {cita.Observaciones}",
-                        startDateTime,
-                        endDateTime
-                    );
-
-                    if (!string.IsNullOrEmpty(googleEventId))
-                    {
-                        cita.GoogleEventId = googleEventId;
-                        await _context.SaveChangesAsync();
-                    }
-
                     TempData["SuccessMessage"] = "Cita creada correctamente.";
                     return RedirectToAction(nameof(Index));
                 }
@@ -290,26 +259,6 @@ public class CitasController : Controller
             cita.IdEstado = 1;
             _context.Add(cita);
             await _context.SaveChangesAsync();
-
-            // Google Calendar sync
-            var paciente = await _context.Pacientes.Include(p => p.Persona)
-                .FirstOrDefaultAsync(p => p.IdPaciente == cita.IdPaciente);
-            var tratamiento = await _context.Tratamientos
-                .FirstOrDefaultAsync(t => t.IdTratamiento == cita.IdTratamiento);
-
-            var startDt = cita.Fecha.Date.Add(cita.HoraInicio);
-            var endDt = cita.Fecha.Date.Add(cita.HoraFin);
-
-            var googleEventId = await _googleCalendar.CreateEventAsync(
-                $"Consulta - {paciente?.Persona?.PrimerNombre} {paciente?.Persona?.PrimerApellido}",
-                $"Tratamiento: {tratamiento?.NombreTratamiento}. Obs: {cita.Observaciones}",
-                startDt, endDt);
-
-            if (!string.IsNullOrEmpty(googleEventId))
-            {
-                cita.GoogleEventId = googleEventId;
-                await _context.SaveChangesAsync();
-            }
 
             return Json(new { success = true, id = cita.IdCita });
         }
@@ -359,23 +308,6 @@ public class CitasController : Controller
                     _context.Update(cita);
                     await _context.SaveChangesAsync();
 
-                    // Update Google Calendar
-                    if (!string.IsNullOrEmpty(cita.GoogleEventId))
-                    {
-                        var paciente = await _context.Pacientes.Include(p => p.Persona).FirstOrDefaultAsync(p => p.IdPaciente == cita.IdPaciente);
-                        var tratamiento = await _context.Tratamientos.FirstOrDefaultAsync(t => t.IdTratamiento == cita.IdTratamiento);
-
-                        var startDateTime = cita.Fecha.Date.Add(cita.HoraInicio);
-                        var endDateTime = cita.Fecha.Date.Add(cita.HoraFin);
-
-                        await _googleCalendar.UpdateEventAsync(
-                            cita.GoogleEventId,
-                            $"Consulta - {paciente?.Persona?.PrimerNombre} {paciente?.Persona?.PrimerApellido} (Actualizada)",
-                            $"Tratamiento: {tratamiento?.NombreTratamiento}. Obs: {cita.Observaciones}",
-                            startDateTime, endDateTime
-                        );
-                    }
-
                     TempData["SuccessMessage"] = "Cita actualizada correctamente.";
                     return RedirectToAction(nameof(Index));
                 }
@@ -404,11 +336,6 @@ public class CitasController : Controller
             _context.Update(cita);
             await _context.SaveChangesAsync();
 
-            if (!string.IsNullOrEmpty(cita.GoogleEventId))
-            {
-                await _googleCalendar.DeleteEventAsync(cita.GoogleEventId);
-            }
-
             TempData["SuccessMessage"] = "Cita cancelada correctamente.";
         }
         catch (Exception ex)
@@ -428,12 +355,6 @@ public class CitasController : Controller
         var cita = await _context.Citas.FindAsync(id);
         if (cita != null)
         {
-            // Delete from Google Calendar
-            if (!string.IsNullOrEmpty(cita.GoogleEventId))
-            {
-                await _googleCalendar.DeleteEventAsync(cita.GoogleEventId);
-            }
-
             _context.Citas.Remove(cita);
             await _context.SaveChangesAsync();
             TempData["SuccessMessage"] = "Cita eliminada correctamente.";
