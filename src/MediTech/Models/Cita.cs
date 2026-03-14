@@ -17,6 +17,11 @@ public class Cita
     [Column("ID_TRATAMIENTO")]
     public int? IdTratamiento { get; set; }
 
+    [Column("TELEFONO")]
+    [Required(ErrorMessage = "El número de teléfono es obligatorio")]
+    [StringLength(20)]
+    public string Telefono { get; set; } = null!;
+
     [Column("FECHA")]
     [Required(ErrorMessage = "La fecha es obligatoria")]
     [DataType(DataType.Date)]

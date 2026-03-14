@@ -86,12 +86,21 @@
     <div class="event-popover-body">
         <div class="detail-row"><i class="fas fa-clock"></i> <span id="popoverTime"></span></div>
         <div class="detail-row"><i class="fas fa-calendar"></i> <span id="popoverDate"></span></div>
+        <div class="detail-row"><i class="fas fa-phone"></i> <span id="popoverPhone"></span></div>
         <div class="detail-row"><i class="fas fa-sticky-note"></i> <span id="popoverObs"></span></div>
     </div>
-    <div class="event-popover-footer">
+    <div class="event-popover-footer" id="popoverFooter">
         <a href="#" class="popover-btn" id="popoverBtnView"><i class="fas fa-eye"></i> Ver</a>
-        <a href="#" class="popover-btn primary" id="popoverBtnEdit"><i class="fas fa-edit"></i> Editar</a>
-        <a href="#" class="popover-btn" id="popoverBtnPatient"><i class="fas fa-user"></i> Paciente</a>
+        <a href="#" class="popover-btn" id="popoverBtnEdit"><i class="fas fa-edit"></i> Editar</a>
+        <a href="#" class="popover-btn" id="popoverBtnPatient"><i class="fas fa-user-circle"></i> Expediente</a>
+    </div>
+    <div class="event-popover-footer mt-2" id="popoverActionFooter">
+        <form method="post" id="formMarcarAtendida" style="display:none; width:100%;">
+            <input type="hidden" name="id" id="popoverAtendidaId" value="" />
+            <button type="submit" class="btn btn-sm btn-success w-100" style="border-radius: 8px;">
+                <i class="fas fa-check-circle"></i> Confirmar Llegada
+            </button>
+        </form>
     </div>
 </div>
 
@@ -107,18 +116,11 @@
         <form id="createCitaForm">
             @Html.AntiForgeryToken()
 
-            <div class="form-group">
-                <label for="modalPaciente">Paciente</label>
-                <select name="IdPaciente" id="modalPaciente" required>
-                    <option value="">-- Seleccione un Paciente --</option>
-                    @if (ViewBag.Pacientes != null)
-                    {
-                        @foreach (var item in (Microsoft.AspNetCore.Mvc.Rendering.SelectList)ViewBag.Pacientes)
-                        {
-                            <option value="@item.Value">@item.Text</option>
-                        }
-                    }
-                </select>
+            <div class="form-group position-relative">
+                <label for="modalPacienteSearch">Paciente</label>
+                <input type="text" id="modalPacienteSearch" class="form-control" placeholder="Buscar por nombre o identificación..." autocomplete="off" required>
+                <input type="hidden" name="IdPaciente" id="modalPaciente" required>
+                <div id="pacienteSearchResults" class="list-group position-absolute w-100 shadow" style="display: none; z-index: 1050; max-height: 200px; overflow-y: auto;"></div>
             </div>
 
             <div class="form-group">
@@ -148,6 +150,11 @@
                     <label for="modalHoraFin">Hora Fin</label>
                     <input type="time" name="HoraFin" id="modalHoraFin" required />
                 </div>
+            </div>
+
+            <div class="form-group">
+                <label for="modalTelefono">Teléfono de Contacto <span class="text-danger">*</span></label>
+                <input type="tel" name="Telefono" id="modalTelefono" class="form-control" placeholder="Ej: 8888-8888" required />
             </div>
 
             <div class="form-group">

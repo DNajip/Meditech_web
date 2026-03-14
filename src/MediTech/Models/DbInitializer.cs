@@ -112,7 +112,18 @@ namespace MediTech.Models
         {
             Console.WriteLine("Applying schema migrations...");
 
-            // No pending schema migrations required at this time
+            // Add TELEFONO column to CLI.CITAS if it doesn't exist
+            context.Database.ExecuteSqlRaw(@"
+                IF NOT EXISTS (
+                    SELECT * FROM sys.columns 
+                    WHERE object_id = OBJECT_ID(N'[CLI].[CITAS]') 
+                    AND name = 'TELEFONO'
+                )
+                BEGIN
+                    ALTER TABLE [CLI].[CITAS] ADD [TELEFONO] VARCHAR(20) NOT NULL DEFAULT '00000000'
+                    PRINT 'Added TELEFONO column to CLI.CITAS table';
+                END
+            ");
 
             Console.WriteLine("Schema migrations applied.");
         }

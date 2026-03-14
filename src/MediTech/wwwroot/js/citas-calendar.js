@@ -103,12 +103,23 @@ document.addEventListener('DOMContentLoaded', function () {
                 document.getElementById('popoverColorBar').style.backgroundColor = data.color;
                 document.getElementById('popoverTime').textContent = `${data.horaInicio} - ${data.horaFin}`;
                 document.getElementById('popoverDate').textContent = data.fecha;
+                document.getElementById('popoverPhone').textContent = data.telefono || 'Sin teléfono';
                 document.getElementById('popoverObs').textContent = data.observaciones || 'Sin observaciones';
 
                 // Action links
                 document.getElementById('popoverBtnView').href = `/Citas/Details/${data.id}`;
                 document.getElementById('popoverBtnEdit').href = `/Citas/Edit/${data.id}`;
                 document.getElementById('popoverBtnPatient').href = `/Pacientes/Details/${data.pacienteId}`;
+
+                // Handle Marcar Atendida button
+                const formAtendida = document.getElementById('formMarcarAtendida');
+                if (data.estadoId === 1) { // 1 = Programada
+                    formAtendida.style.display = 'block';
+                    formAtendida.action = `/Citas/MarcarAtendida/${data.id}`;
+                    document.getElementById('popoverAtendidaId').value = data.id;
+                } else {
+                    formAtendida.style.display = 'none';
+                }
 
                 // Position popover near click
                 const x = Math.min(jsEvent.clientX, window.innerWidth - 320);
@@ -301,7 +312,64 @@ document.addEventListener('DOMContentLoaded', function () {
     function closeCreateModal() {
         modalBackdrop?.classList.remove('active');
         modalEl?.classList.remove('active');
+        document.getElementById('pacienteSearchResults').style.display = 'none';
+        document.getElementById('modalPacienteSearch').value = '';
+        document.getElementById('modalPaciente').value = '';
     }
+
+    // Modal Patient Autocomplete
+    const mPacienteSearch = document.getElementById('modalPacienteSearch');
+    const mPacienteHidden = document.getElementById('modalPaciente');
+    const mSearchResults = document.getElementById('pacienteSearchResults');
+    let mSearchTimeout;
+
+    mPacienteSearch?.addEventListener('input', function() {
+        clearTimeout(mSearchTimeout);
+        mPacienteHidden.value = ''; // clear hidden value if they type
+        const term = this.value.trim();
+
+        if (term.length < 2) {
+            mSearchResults.style.display = 'none';
+            return;
+        }
+
+        mSearchTimeout = setTimeout(() => {
+            fetch(`/Citas/BuscarPacientes?term=${encodeURIComponent(term)}`)
+                .then(r => r.json())
+                .then(data => {
+                    let html = '';
+                    if (data.length > 0) {
+                        data.forEach(p => {
+                            html += `
+                                <a href="javascript:void(0)" class="list-group-item list-group-item-action py-2" data-id="${p.id}" data-name="${p.label}">
+                                    <i class="fas fa-user-circle me-2 text-secondary"></i> ${p.label}
+                                </a>
+                            `;
+                        });
+                    } else {
+                        html = '<div class="list-group-item text-muted"><i class="fas fa-search"></i> No se encontraron pacientes</div>';
+                    }
+                    mSearchResults.innerHTML = html;
+                    mSearchResults.style.display = 'block';
+
+                    // Attach click events
+                    mSearchResults.querySelectorAll('a').forEach(item => {
+                        item.addEventListener('click', function() {
+                            mPacienteHidden.value = this.dataset.id;
+                            mPacienteSearch.value = this.dataset.name;
+                            mSearchResults.style.display = 'none';
+                        });
+                    });
+                })
+                .catch(err => console.error('Patient search error:', err));
+        }, 300);
+    });
+
+    document.addEventListener('click', function (e) {
+        if (mSearchResults && !mSearchResults.contains(e.target) && e.target !== mPacienteSearch) {
+            mSearchResults.style.display = 'none';
+        }
+    });
 
     // Handle modal form submission
     const createForm = document.getElementById('createCitaForm');

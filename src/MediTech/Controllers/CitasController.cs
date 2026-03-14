@@ -48,7 +48,8 @@ public class CitasController : Controller
                 observaciones = c.Observaciones ?? "",
                 estado = c.Estado?.DescEstado ?? "ACTIVO",
                 estadoId = c.IdEstado,
-                identificacion = c.Paciente?.Persona?.NumIdentificacion ?? ""
+                identificacion = c.Paciente?.Persona?.NumIdentificacion ?? "",
+                telefono = c.Telefono
             }
         });
 
@@ -170,7 +171,8 @@ public class CitasController : Controller
             horaFin = DateTime.Today.Add(cita.HoraFin).ToString("hh:mm tt"),
             observaciones = cita.Observaciones ?? "",
             estado = cita.Estado?.DescEstado ?? "ACTIVO",
-            estadoId = cita.IdEstado
+            estadoId = cita.IdEstado,
+            telefono = cita.Telefono
         });
     }
 
@@ -236,9 +238,30 @@ public class CitasController : Controller
     // POST: Citas/CreateJson — AJAX endpoint for modal create
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> CreateJson([FromForm] Cita? cita)
+    public async Task<IActionResult> CreateJson(int pacienteId, int tratamientoId, DateTime fecha, string horaInicio, string horaFin, string observaciones, string telefono)
     {
-        if (cita == null) return Json(new { success = false, message = "Datos inválidos." });
+        if (pacienteId == 0)
+            return Json(new { success = false, message = "El paciente es obligatorio." });
+            
+        if (string.IsNullOrEmpty(telefono))
+            return Json(new { success = false, message = "El teléfono celular es obligatorio." });
+
+        if (!TimeSpan.TryParse(horaInicio, out TimeSpan hInicio))
+            return Json(new { success = false, message = "Formato de hora de inicio inválido." });
+        if (!TimeSpan.TryParse(horaFin, out TimeSpan hFin))
+            return Json(new { success = false, message = "Formato de hora de fin inválido." });
+
+        var cita = new Cita
+        {
+            IdPaciente = pacienteId,
+            IdTratamiento = tratamientoId,
+            Fecha = fecha,
+            HoraInicio = hInicio,
+            HoraFin = hFin,
+            Observaciones = observaciones,
+            Telefono = telefono,
+            IdEstado = 1 // 1: Programada (puedes ajustar según tu catálogo)
+        };
 
         // Validations
         if (cita.Fecha < DateTime.Today)
@@ -284,7 +307,7 @@ public class CitasController : Controller
     // POST: Citas/Edit/5
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(int id, [Bind("IdCita,IdPaciente,IdTratamiento,Fecha,HoraInicio,HoraFin,Observaciones,GoogleEventId,IdEstado")] Cita? cita)
+    public async Task<IActionResult> Edit(int id, [Bind("IdCita,IdPaciente,IdTratamiento,Fecha,HoraInicio,HoraFin,Observaciones,IdEstado,Telefono")] Cita? cita)
     {
         if (cita == null) return NotFound();
         if (id != cita.IdCita) return NotFound();
@@ -320,6 +343,31 @@ public class CitasController : Controller
         }
         await PrepareDropdowns();
         return View(cita);
+    }
+
+    // POST: Citas/MarcarAtendida/5
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> MarcarAtendida(int id)
+    {
+        var cita = await _context.Citas.FindAsync(id);
+        if (cita == null) return NotFound();
+
+        try
+        {
+            cita.IdEstado = 2; // Atendida / En Sala
+            _context.Update(cita);
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = "Paciente registrado como En Sala de Espera / Atendido.";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error changing appointment status.");
+            TempData["ErrorMessage"] = "No se pudo actualizar el estado de la cita.";
+        }
+
+        return RedirectToAction(nameof(Index));
     }
 
     // POST: Citas/Cancel/5
@@ -385,5 +433,40 @@ public class CitasController : Controller
         ViewBag.Pacientes = new SelectList(pacientes, "IdPaciente", "Nombre");
         ViewBag.Tratamientos = new SelectList(tratamientos, "IdTratamiento", "NombreTratamiento");
         ViewBag.Estados = new SelectList(await _context.Estados.ToListAsync(), "IdEstado", "DescEstado");
+    }
+
+    // GET: Citas/BuscarPacientes
+    [HttpGet]
+    public async Task<IActionResult> BuscarPacientes(string term)
+    {
+        if (string.IsNullOrWhiteSpace(term))
+            return Json(new List<object>());
+
+        var query = _context.Pacientes
+            .Include(p => p.Persona)
+            .Where(p => p.IdEstado == 1);
+
+        var terms = term.ToLower().Split(' ');
+        
+        foreach (var t in terms)
+        {
+            query = query.Where(p => 
+                p.Persona != null && (
+                    (p.Persona.PrimerNombre != null && p.Persona.PrimerNombre.ToLower().Contains(t)) ||
+                    (p.Persona.PrimerApellido != null && p.Persona.PrimerApellido.ToLower().Contains(t)) ||
+                    (p.Persona.NumIdentificacion != null && p.Persona.NumIdentificacion.ToLower().Contains(t))
+                )
+            );
+        }
+
+        var results = await query
+            .Select(p => new {
+                id = p.IdPaciente,
+                label = $"{p.Persona.PrimerNombre} {p.Persona.PrimerApellido} - {p.Persona.NumIdentificacion}"
+            })
+            .Take(10)
+            .ToListAsync();
+
+        return Json(results);
     }
 }
