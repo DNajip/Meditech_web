@@ -29,6 +29,7 @@ public class CitasController : Controller
     {
         var citas = await _context.Citas
             .Include(c => c.Paciente).ThenInclude(p => p!.Persona)
+            .Include(c => c.PosiblePaciente)
             .Include(c => c.Tratamiento)
             .Include(c => c.Estado)
             .Where(c => c.Fecha >= start.Date && c.Fecha <= end.Date)
@@ -37,27 +38,55 @@ public class CitasController : Controller
         var events = citas.Select(c => new
         {
             id = c.IdCita,
-            title = $"{c.Paciente?.Persona?.PrimerNombre} {c.Paciente?.Persona?.PrimerApellido}",
-            start = c.Fecha.Date.Add(c.HoraInicio).ToString("yyyy-MM-ddTHH:mm:ss"),
-            end = c.Fecha.ToString("yyyy-MM-dd") + "T" + c.HoraFin.ToString(@"hh\:mm\:ss"),
-            color = "#3B82F6",
+            title = c.IdPaciente != null 
+                ? $"{c.Paciente?.Persona?.PrimerNombre ?? "S/N"} {c.Paciente?.Persona?.PrimerApellido ?? ""}".Trim()
+                : $"{c.PosiblePaciente?.PrimerNombre ?? "S/N"} {c.PosiblePaciente?.PrimerApellido ?? ""}".Trim(),
+            start = c.Fecha.Add(c.HoraInicio),
+            end = c.Fecha.Add(c.HoraFin),
+            color = c.IdPaciente == null ? "#F59E0B" : (c.IdEstado == 2 ? "#10B981" : "#3B82F6"), // Amber for prospect, Green for attended
             extendedProps = new
             {
                 pacienteId = c.IdPaciente,
+                posiblePacienteId = c.IdPosiblePaciente,
                 tratamiento = c.Tratamiento?.NombreTratamiento ?? "Consulta General",
                 observaciones = c.Observaciones ?? "",
-                estado = c.Estado?.DescEstado ?? "ACTIVO",
                 estadoId = c.IdEstado,
-                identificacion = c.Paciente?.Persona?.NumIdentificacion ?? "",
-                telefono = c.Telefono
+                telefono = c.Telefono,
+                isProspect = c.IdPaciente == null
             }
         });
 
         return Json(events);
     }
 
-    // GET: Citas/GetTodayAgenda — JSON for "Today's Agenda" panel
+    // GET: Citas/Hoy — JSON for "Agenda de Hoy" offcanvas panel
     [HttpGet]
+    public async Task<IActionResult> Hoy()
+    {
+        var hoy = DateTime.Today;
+        var citas = await _context.Citas
+            .Include(c => c.Paciente).ThenInclude(p => p!.Persona)
+            .Include(c => c.Tratamiento)
+            .Include(c => c.Estado)
+            .Where(c => c.Fecha == hoy)
+            .OrderBy(c => c.HoraInicio)
+            .ToListAsync();
+
+        var result = citas.Select(c => new
+        {
+            id = c.IdCita,
+            paciente = c.IdPaciente != null 
+                ? $"{c.Paciente?.Persona?.PrimerNombre ?? "S/N"} {c.Paciente?.Persona?.PrimerApellido ?? ""}".Trim()
+                : $"{c.PosiblePaciente?.PrimerNombre ?? "S/N"} {c.PosiblePaciente?.PrimerApellido ?? ""}".Trim(),
+            horaInicio = c.HoraInicio.ToString(@"hh\:mm"),
+            horaFin = c.HoraFin.ToString(@"hh\:mm"),
+            telefono = c.Telefono,
+            tratamiento = c.Tratamiento?.NombreTratamiento ?? "Consulta General",
+            estadoId = c.IdEstado
+        });
+
+        return Json(result);
+    }
     public async Task<IActionResult> GetTodayAgenda()
     {
         var today = DateTime.Today;
@@ -74,7 +103,9 @@ public class CitasController : Controller
             id = c.IdCita,
             horaInicio = DateTime.Today.Add(c.HoraInicio).ToString("hh:mm tt"),
             horaFin = DateTime.Today.Add(c.HoraFin).ToString("hh:mm tt"),
-            paciente = $"{c.Paciente?.Persona?.PrimerNombre} {c.Paciente?.Persona?.PrimerApellido}",
+            paciente = c.IdPaciente != null 
+                ? $"{c.Paciente?.Persona?.PrimerNombre ?? "S/N"} {c.Paciente?.Persona?.PrimerApellido ?? ""}".Trim()
+                : $"{c.PosiblePaciente?.PrimerNombre ?? "S/N"} {c.PosiblePaciente?.PrimerApellido ?? ""}".Trim(),
             tratamiento = c.Tratamiento?.NombreTratamiento ?? "General",
             color = "#3B82F6",
             observaciones = c.Observaciones ?? "",
@@ -235,32 +266,34 @@ public class CitasController : Controller
         return View(cita);
     }
 
-    // POST: Citas/CreateJson — AJAX endpoint for modal create
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> CreateJson(int pacienteId, int tratamientoId, DateTime fecha, string horaInicio, string horaFin, string observaciones, string telefono)
+    public async Task<IActionResult> CreateJson(int? PacienteId, int? PosiblePacienteId, int IdTratamiento, DateTime Fecha, string HoraInicio, string HoraFin, string Observaciones, string Telefono)
     {
-        if (pacienteId == 0)
-            return Json(new { success = false, message = "El paciente es obligatorio." });
+        if (PacienteId == null && PosiblePacienteId == null)
+            return Json(new { success = false, message = "Debe seleccionar un paciente o un prospecto." });
             
-        if (string.IsNullOrEmpty(telefono))
+        if (string.IsNullOrEmpty(Telefono))
             return Json(new { success = false, message = "El teléfono celular es obligatorio." });
-
-        if (!TimeSpan.TryParse(horaInicio, out TimeSpan hInicio))
+ 
+        if (!TimeSpan.TryParse(HoraInicio, out TimeSpan hInicio))
             return Json(new { success = false, message = "Formato de hora de inicio inválido." });
-        if (!TimeSpan.TryParse(horaFin, out TimeSpan hFin))
+        if (!TimeSpan.TryParse(HoraFin, out TimeSpan hFin))
             return Json(new { success = false, message = "Formato de hora de fin inválido." });
 
         var cita = new Cita
         {
-            IdPaciente = pacienteId,
-            IdTratamiento = tratamientoId,
-            Fecha = fecha,
+            IdPaciente = PacienteId,
+            IdPosiblePaciente = PosiblePacienteId,
+            IdTratamiento = IdTratamiento,
+            Fecha = Fecha,
             HoraInicio = hInicio,
             HoraFin = hFin,
-            Observaciones = observaciones,
-            Telefono = telefono,
-            IdEstado = 1 // 1: Programada (puedes ajustar según tu catálogo)
+            Observaciones = Observaciones,
+            Telefono = Telefono,
+            IdEstadoCita = 1, // 1: Programada
+            IdEstado = 1,     // 1: Activo
+            FechaCreacion = DateTime.Now
         };
 
         // Validations
@@ -288,7 +321,8 @@ public class CitasController : Controller
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error saving appointment via AJAX.");
-            return Json(new { success = false, message = "Error al guardar en la base de datos." });
+            var innerMsg = ex.InnerException != null ? " | " + ex.InnerException.Message : "";
+            return Json(new { success = false, message = "Error al guardar en la base de datos: " + ex.Message + innerMsg });
         }
     }
 
@@ -433,6 +467,8 @@ public class CitasController : Controller
         ViewBag.Pacientes = new SelectList(pacientes, "IdPaciente", "Nombre");
         ViewBag.Tratamientos = new SelectList(tratamientos, "IdTratamiento", "NombreTratamiento");
         ViewBag.Estados = new SelectList(await _context.Estados.ToListAsync(), "IdEstado", "DescEstado");
+        ViewBag.TiposIdentificacion = new SelectList(await _context.TiposIdentificacion.Where(t => t.IdEstado == 1).ToListAsync(), "IdTipoIdentificacion", "DescTipo");
+        ViewBag.Generos = new SelectList(await _context.Generos.Where(g => g.IdEstado == 1).ToListAsync(), "IdGenero", "DescGenero");
     }
 
     // GET: Citas/BuscarPacientes
@@ -459,14 +495,160 @@ public class CitasController : Controller
             );
         }
 
-        var results = await query
+        var patients = await query
             .Select(p => new {
                 id = p.IdPaciente,
-                label = $"{p.Persona.PrimerNombre} {p.Persona.PrimerApellido} - {p.Persona.NumIdentificacion}"
+                label = (p.Persona.PrimerNombre ?? "S/N") + " " + (p.Persona.PrimerApellido ?? "") + " - " + (p.Persona.NumIdentificacion ?? "S/I"),
+                isProspect = false,
+                telefono = p.Persona.Telefono
+            })
+            .Take(10)
+            .ToListAsync();
+
+        var prospects = await _context.PosiblePacientes
+            .Where(p => p.IdEstado == 1 && (p.PrimerNombre.Contains(term) || p.PrimerApellido.Contains(term) || p.Telefono.Contains(term)))
+            .Select(p => new {
+                id = p.IdPosiblePaciente,
+                label = "[PROSPECTO] " + p.PrimerNombre + " " + p.PrimerApellido + " - " + p.Telefono,
+                isProspect = true,
+                telefono = p.Telefono
+            })
+            .Take(5)
+            .ToListAsync();
+
+        var results = patients.Cast<object>().Concat(prospects.Cast<object>());
+
+        return Json(results);
+    }
+
+    // POST: Citas/CreateProspectoJson
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CreateProspectoJson(string primerNombre, string primerApellido, string telefono, string? segundoNombre = null, string? segundoApellido = null)
+    {
+        if (string.IsNullOrWhiteSpace(primerNombre) || string.IsNullOrWhiteSpace(primerApellido) || string.IsNullOrWhiteSpace(telefono))
+            return Json(new { success = false, message = "Nombre, Apellido y Teléfono son obligatorios." });
+
+        try
+        {
+            var prospecto = new PosiblePaciente
+            {
+                PrimerNombre = primerNombre.ToUpper(),
+                PrimerApellido = primerApellido.ToUpper(),
+                SegundoNombre = segundoNombre?.ToUpper(),
+                SegundoApellido = segundoApellido?.ToUpper(),
+                Telefono = telefono,
+                IdEstado = 1
+            };
+
+            _context.PosiblePacientes.Add(prospecto);
+            await _context.SaveChangesAsync();
+
+            return Json(new { success = true, id = prospecto.IdPosiblePaciente, label = "[NUEVO] " + prospecto.PrimerNombre + " " + prospecto.PrimerApellido });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creardo prospecto.");
+            return Json(new { success = false, message = "Error al guardar el prospecto." });
+        }
+    }
+
+    // POST: Citas/ConvertirProspecto
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ConvertirProspecto(int idCita, int idPosiblePaciente, int idTipoIdentificacion, string numIdentificacion, int idGenero, DateTime fechaNacimiento, string? email, string? direccion, string? contactoEmergencia, string? telefonoEmergencia)
+    {
+        try
+        {
+            var rawSql = "EXEC ADM.SP_CONVERTIR_POSIBLE_A_PACIENTE @IdPosiblePaciente, @IdCita, @IdTipoIdentificacion, @NumIdentificacion, @IdGenero, @FechaNacimiento, @Email, @Direccion, @ContactoEmergencia, @TelefonoEmergencia";
+            
+            var parameters = new[] {
+                new Microsoft.Data.SqlClient.SqlParameter("@IdPosiblePaciente", idPosiblePaciente),
+                new Microsoft.Data.SqlClient.SqlParameter("@IdCita", idCita),
+                new Microsoft.Data.SqlClient.SqlParameter("@IdTipoIdentificacion", idTipoIdentificacion),
+                new Microsoft.Data.SqlClient.SqlParameter("@NumIdentificacion", numIdentificacion),
+                new Microsoft.Data.SqlClient.SqlParameter("@IdGenero", idGenero),
+                new Microsoft.Data.SqlClient.SqlParameter("@FechaNacimiento", fechaNacimiento),
+                new Microsoft.Data.SqlClient.SqlParameter("@Email", (object?)email ?? DBNull.Value),
+                new Microsoft.Data.SqlClient.SqlParameter("@Direccion", (object?)direccion ?? DBNull.Value),
+                new Microsoft.Data.SqlClient.SqlParameter("@ContactoEmergencia", (object?)contactoEmergencia ?? DBNull.Value),
+                new Microsoft.Data.SqlClient.SqlParameter("@TelefonoEmergencia", (object?)telefonoEmergencia ?? DBNull.Value)
+            };
+
+            await _context.Database.ExecuteSqlRawAsync(rawSql, parameters);
+
+            // Asegurar que el estado de la cita cambie a Atendida (2) para el flujo de consulta
+            var cita = await _context.Citas.FindAsync(idCita);
+            if (cita != null)
+            {
+                cita.IdEstado = 2; // Atendida / En Sala
+                _context.Update(cita);
+                await _context.SaveChangesAsync();
+            }
+            
+            return Json(new { success = true, idCita = idCita, message = "Paciente convertido y registrado correctamente. Redirigiendo a consulta..." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al convertir prospecto.");
+            return Json(new { success = false, message = "Error durante la conversión: " + ex.Message });
+        }
+    }
+    // GET: Citas/BuscarTratamientos
+    [HttpGet]
+    public async Task<IActionResult> BuscarTratamientos(string term)
+    {
+        if (string.IsNullOrWhiteSpace(term))
+            return Json(new List<object>());
+
+        var query = _context.Tratamientos
+            .Where(t => t.IdEstado == 1 && t.NombreTratamiento.Contains(term));
+
+        var results = await query
+            .Select(t => new {
+                id = t.IdTratamiento,
+                nombre = t.NombreTratamiento
             })
             .Take(10)
             .ToListAsync();
 
         return Json(results);
+    }
+
+    // GET: Citas/BuscarPacientePorTelefono
+    [HttpGet]
+    public async Task<IActionResult> BuscarPacientePorTelefono(string telefono)
+    {
+        if (string.IsNullOrWhiteSpace(telefono))
+            return Json(new { success = false });
+
+        var paciente = await _context.Pacientes
+            .Include(p => p.Persona)
+            .FirstOrDefaultAsync(p => p.IdEstado == 1 && p.Persona!.Telefono == telefono);
+
+        if (paciente != null)
+        {
+            return Json(new { 
+                success = true, 
+                id = paciente.IdPaciente, 
+                nombre = $"{paciente.Persona!.PrimerNombre} {paciente.Persona.PrimerApellido}",
+                isProspect = false
+            });
+        }
+
+        var prospecto = await _context.PosiblePacientes
+            .FirstOrDefaultAsync(p => p.IdEstado == 1 && p.Telefono == telefono);
+
+        if (prospecto != null)
+        {
+            return Json(new { 
+                success = true, 
+                id = prospecto.IdPosiblePaciente, 
+                nombre = $"{prospecto.PrimerNombre} {prospecto.PrimerApellido}",
+                isProspect = true
+            });
+        }
+
+        return Json(new { success = false });
     }
 }

@@ -1,0 +1,275 @@
+@model MediTech.Models.Cuenta
+
+@{
+    ViewData["Title"] = "Detalle de Cuenta #" + Model.IdCuenta;
+    var monedas = ViewBag.Monedas as List<MediTech.Models.Moneda>;
+    decimal totalPagado = ViewBag.TotalPagado;
+    decimal saldoPendiente = ViewBag.SaldoPendiente;
+    bool isPagada = saldoPendiente <= 0 && (Model.TotalFinal ?? 0) > 0;
+    var nombrePaciente = Model.Paciente?.Persona != null
+        ? $"{Model.Paciente.Persona.PrimerNombre} {Model.Paciente.Persona.PrimerApellido}"
+        : "N/A";
+}
+
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="display-6 fw-bold text-gradient-primary mb-0">Cuenta #@Model.IdCuenta</h2>
+            <p class="text-muted">Detalle de cuenta y registro de pagos</p>
+        </div>
+        <div class="d-flex gap-2">
+            @if (!isPagada)
+            {
+                <button type="button" class="btn btn-success shadow-sm" data-bs-toggle="modal" data-bs-target="#modalPago">
+                    <i class="fas fa-dollar-sign me-2"></i>Registrar Pago
+                </button>
+            }
+            <a asp-action="Index" class="btn btn-outline-secondary shadow-sm">
+                <i class="fas fa-arrow-left me-2"></i>Volver
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>@TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row g-4">
+        <!-- Info Card -->
+        <div class="col-md-4">
+            <div class="card card-premium border-0 shadow-sm h-100">
+                <div class="card-body p-4">
+                    <div class="text-center mb-4">
+                        <div class="avatar-lg bg-soft-primary rounded-circle mx-auto d-flex align-items-center justify-content-center mb-3" style="width:70px;height:70px;">
+                            <i class="fas fa-file-invoice-dollar text-primary fs-3"></i>
+                        </div>
+                        <span class="badge @(isPagada ? "bg-success" : "bg-warning text-dark") rounded-pill fs-6 px-3 py-2">
+                            @(isPagada ? "✓ PAGADA" : "⏳ PENDIENTE")
+                        </span>
+                    </div>
+
+                    <ul class="list-unstyled">
+                        <li class="d-flex justify-content-between py-2 border-bottom">
+                            <span class="text-muted">Paciente</span>
+                            <span class="fw-bold">@nombrePaciente</span>
+                        </li>
+                        <li class="d-flex justify-content-between py-2 border-bottom">
+                            <span class="text-muted">Moneda</span>
+                            <span class="fw-bold">@Model.MonedaBase?.Nombre (@Model.MonedaBase?.Simbolo)</span>
+                        </li>
+                        <li class="d-flex justify-content-between py-2 border-bottom">
+                            <span class="text-muted">Fecha</span>
+                            <span class="fw-bold">@Model.FechaCreacion.ToString("dd/MM/yyyy HH:mm")</span>
+                        </li>
+                        <li class="d-flex justify-content-between py-2 border-bottom">
+                            <span class="text-muted">Tasa de Cambio</span>
+                            <span class="fw-bold">@ViewBag.TasaCambio</span>
+                        </li>
+                    </ul>
+
+                    <div class="bg-light rounded-3 p-3 mt-3">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Subtotal:</span>
+                            <span class="fw-bold">@Model.MonedaBase?.Simbolo @Model.TotalBruto?.ToString("N2")</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Descuento:</span>
+                            <span class="fw-bold text-danger">- @Model.MonedaBase?.Simbolo @Model.Descuento.ToString("N2")</span>
+                        </div>
+                        <hr class="my-2">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="fw-bold fs-5">Total:</span>
+                            <span class="fw-bold fs-5 text-primary">@Model.MonedaBase?.Simbolo @Model.TotalFinal?.ToString("N2")</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Pagado:</span>
+                            <span class="fw-bold text-success">@Model.MonedaBase?.Simbolo @totalPagado.ToString("N2")</span>
+                        </div>
+                        <hr class="my-2">
+                        <div class="d-flex justify-content-between">
+                            <span class="fw-bold fs-5">Saldo:</span>
+                            <span class="fw-bold fs-5 @(saldoPendiente > 0 ? "text-danger" : "text-success")">@Model.MonedaBase?.Simbolo @saldoPendiente.ToString("N2")</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Items & Payments -->
+        <div class="col-md-8">
+            <!-- Items de la Cuenta -->
+            <div class="card card-premium border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-0 pt-4 px-4">
+                    <h5 class="fw-bold mb-0"><i class="fas fa-list text-primary me-2"></i>Ítems de la Cuenta</h5>
+                </div>
+                <div class="card-body px-4">
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0">
+                            <thead class="bg-light-faded">
+                                <tr>
+                                    <th>Tipo</th>
+                                    <th>Descripción</th>
+                                    <th class="text-center">Cant.</th>
+                                    <th class="text-end">Precio Unit.</th>
+                                    <th class="text-end">Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model.Detalles)
+                                {
+                                    <tr>
+                                        <td>
+                                            <span class="badge @(item.TipoItem == "TRATAMIENTO" ? "bg-soft-success text-success" : "bg-soft-info text-info") rounded-pill">
+                                                @item.TipoItem
+                                            </span>
+                                        </td>
+                                        <td class="fw-semibold">@item.Descripcion</td>
+                                        <td class="text-center">@item.Cantidad</td>
+                                        <td class="text-end">@Model.MonedaBase?.Simbolo @item.PrecioUnitario?.ToString("N2")</td>
+                                        <td class="text-end fw-bold">@Model.MonedaBase?.Simbolo @item.Subtotal?.ToString("N2")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Historial de Pagos -->
+            <div class="card card-premium border-0 shadow-sm">
+                <div class="card-header bg-white border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold mb-0"><i class="fas fa-money-bill-wave text-success me-2"></i>Historial de Pagos</h5>
+                    <span class="badge bg-primary rounded-pill">@Model.Pagos.Count pagos</span>
+                </div>
+                <div class="card-body px-4">
+                    @if (!Model.Pagos.Any())
+                    {
+                        <div class="text-center py-4 text-muted">
+                            <i class="fas fa-receipt fa-3x mb-3 d-block opacity-25"></i>
+                            Aún no se han registrado pagos para esta cuenta.
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table align-middle mb-0">
+                                <thead class="bg-light-faded">
+                                    <tr>
+                                        <th># Pago</th>
+                                        <th>Método</th>
+                                        <th class="text-end">Monto</th>
+                                        <th>Moneda</th>
+                                        <th>Tasa</th>
+                                        <th>Fecha</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var pago in Model.Pagos.OrderByDescending(p => p.FechaPago))
+                                    {
+                                        <tr>
+                                            <td><span class="badge bg-light text-dark">#@pago.IdPago</span></td>
+                                            <td>
+                                                <span class="badge @GetMetodoClass(pago.MetodoPago) rounded-pill">
+                                                    <i class="@GetMetodoIcon(pago.MetodoPago) me-1"></i>@pago.MetodoPago
+                                                </span>
+                                            </td>
+                                            <td class="text-end fw-bold text-success">@pago.Moneda?.Simbolo @pago.Monto?.ToString("N2")</td>
+                                            <td>@pago.Moneda?.Nombre</td>
+                                            <td class="text-muted small">@pago.TasaCambioAplicada</td>
+                                            <td class="text-muted small">@pago.FechaPago.ToString("dd/MM/yyyy HH:mm")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Registrar Pago -->
+<div class="modal fade" id="modalPago" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-success bg-opacity-10 border-0">
+                <h5 class="modal-title fw-bold"><i class="fas fa-dollar-sign text-success me-2"></i>Registrar Pago</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="RegistrarPago" method="post">
+                <div class="modal-body">
+                    <input type="hidden" name="idCuenta" value="@Model.IdCuenta" />
+                    <div class="bg-light rounded-3 p-3 mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">Saldo Pendiente:</span>
+                            <span class="fw-bold fs-5 text-danger">@Model.MonedaBase?.Simbolo @saldoPendiente.ToString("N2")</span>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Monto a Pagar <span class="text-danger">*</span></label>
+                        <input type="number" name="monto" class="form-control" step="0.01" min="0.01" max="@saldoPendiente" value="@saldoPendiente" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Moneda <span class="text-danger">*</span></label>
+                        <select name="idMoneda" class="form-select" required>
+                            @if (monedas != null)
+                            {
+                                @foreach (var m in monedas)
+                                {
+                                    <option value="@m.IdMoneda" selected="@(m.IdMoneda == Model.IdMonedaBase)">@m.Nombre (@m.Simbolo)</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Método de Pago <span class="text-danger">*</span></label>
+                        <select name="metodoPago" class="form-select" required>
+                            <option value="EFECTIVO">💵 Efectivo</option>
+                            <option value="TARJETA">💳 Tarjeta</option>
+                            <option value="TRANSFERENCIA">🏦 Transferencia</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success"><i class="fas fa-check me-2"></i>Confirmar Pago</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@functions {
+    string GetMetodoClass(string? metodo) => metodo switch
+    {
+        "EFECTIVO" => "bg-soft-success text-success",
+        "TARJETA" => "bg-soft-primary text-primary",
+        "TRANSFERENCIA" => "bg-soft-info text-info",
+        _ => "bg-light text-dark"
+    };
+
+    string GetMetodoIcon(string? metodo) => metodo switch
+    {
+        "EFECTIVO" => "fas fa-money-bill-wave",
+        "TARJETA" => "fas fa-credit-card",
+        "TRANSFERENCIA" => "fas fa-university",
+        _ => "fas fa-question"
+    };
+}
+
+<style>
+    .text-gradient-primary { background: linear-gradient(135deg, #2D3E50 0%, #4A90E2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .card-premium { border-radius: 15px; }
+    .bg-soft-primary { background: rgba(13, 110, 253, 0.1); }
+    .bg-soft-warning { background: rgba(255, 193, 7, 0.1); }
+    .bg-soft-danger { background: rgba(220, 53, 69, 0.1); }
+    .bg-soft-info { background: rgba(13, 202, 240, 0.1); }
+    .bg-soft-success { background: rgba(25, 135, 84, 0.1); }
+    .bg-light-faded { background-color: rgba(248, 249, 250, 0.7); }
+</style>

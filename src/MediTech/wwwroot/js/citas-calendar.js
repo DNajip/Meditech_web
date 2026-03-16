@@ -1,423 +1,573 @@
 /* ============================================================
-   MediTech – Citas Calendar JavaScript
-   FullCalendar init, event handling, timeline, search
+   MediTech – Citas Calendar JavaScript (Rediseño UI)
    ============================================================ */
 
 document.addEventListener('DOMContentLoaded', function () {
 
-    // ── FullCalendar Init ──
+    // 1. DOM Elements References
     const calendarEl = document.getElementById('fullcalendar');
+    const titleEl = document.getElementById('calendarTitle');
+    const btnToday = document.getElementById('btnToday');
+    const btnPrev = document.getElementById('btnPrevMonth');
+    const btnNext = document.getElementById('btnNextMonth');
+    const btnViewMonth = document.getElementById('btnViewMonth');
+    const btnViewWeek = document.getElementById('btnViewWeek');
+    const btnViewDay = document.getElementById('btnViewDay');
+    
+    const agendaBody = document.getElementById('agendaHoyList');
+    const modalCrearEl = document.getElementById('modalCrearCita');
+    const modalDetalleEl = document.getElementById('modalDetalleCita');
+
     if (!calendarEl) return;
 
+    // 2. Helper Functions
+    function updateCalendarTitle(view) {
+        if (!titleEl || !view) return;
+        const date = view.currentStart;
+        const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+            'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+        titleEl.textContent = months[date.getMonth()] + ' ' + date.getFullYear();
+    }
+
+    function formatAmPm(dateStr) {
+        if (!dateStr) return '';
+        const [h, m] = dateStr.split(':');
+        let hours = parseInt(h);
+        const ampm = hours >= 12 ? 'p.m.' : 'a.m.';
+        hours = hours % 12;
+        hours = hours ? hours : 12;
+        return `${String(hours).padStart(2,'0')}:${m} ${ampm}`;
+    }
+
+    // 3. FullCalendar Instance Configuration
     const calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'timeGridWeek',
         locale: 'es',
-        headerToolbar: false,  // We use custom header
+        headerToolbar: false,
         nowIndicator: true,
         allDaySlot: false,
         slotMinTime: '06:00:00',
-        slotMaxTime: '21:00:00',
         slotDuration: '00:30:00',
         slotLabelInterval: '01:00:00',
         height: '100%',
         expandRows: true,
+        selectable: true,
         dayHeaderFormat: { weekday: 'short', day: 'numeric' },
         eventTimeFormat: {
             hour: 'numeric',
             minute: '2-digit',
             meridiem: 'short'
         },
-        events: {
-            url: '/Citas/GetEvents',
-            method: 'GET',
-            failure: function () {
-                console.error('Error loading calendar events.');
-            }
+        events: '/Citas/GetEvents',
+        
+        // CUSTOM EVENT RENDER
+        eventContent: function(arg) {
+            let treatmentText = arg.event.extendedProps.tratamiento || 'General';
+            // Extract the simple time 
+            let timeText = arg.timeText;
+            
+            let htmlStr = `
+                <div class="custom-event-content">
+                    <div class="custom-event-time">${timeText}</div>
+                    <div class="custom-event-title">${arg.event.title}</div>
+                    <div class="custom-event-treatment">${treatmentText}</div>
+                </div>
+            `;
+            return { html: htmlStr };
+        },
+
+        select: function(info) {
+            if (window.openCreateModal) window.openCreateModal(info.start);
         },
         eventClick: function (info) {
             info.jsEvent.preventDefault();
-            showEventPopover(info.event, info.jsEvent);
+            if (window.showEventModal) window.showEventModal(info.event);
         },
         datesSet: function (dateInfo) {
-            updateCalendarTitle(dateInfo);
-        },
-        eventDidMount: function (info) {
-            // Add tooltip
-            info.el.title = info.event.title + ' - ' +
-                (info.event.extendedProps.tratamiento || '');
+            updateCalendarTitle(dateInfo.view);
         }
     });
 
-    calendar.render();
-    window.mediCalendar = calendar;
+    // 4. Custom Header & Navigation Events
+    btnToday?.addEventListener('click', () => calendar.today());
+    btnPrev?.addEventListener('click', () => calendar.prev());
+    btnNext?.addEventListener('click', () => calendar.next());
 
-    // ── Custom Header Controls ──
-    const titleEl = document.getElementById('calendarTitle');
-    const btnToday = document.getElementById('btnToday');
-    const btnPrev = document.getElementById('btnPrev');
-    const btnNext = document.getElementById('btnNext');
+    const viewButtons = [btnViewMonth, btnViewWeek, btnViewDay];
+    
+    btnViewMonth?.addEventListener('click', function() {
+        calendar.changeView('dayGridMonth');
+        updateActiveButton(this);
+    });
+    btnViewWeek?.addEventListener('click', function() {
+        calendar.changeView('timeGridWeek');
+        updateActiveButton(this);
+    });
+    btnViewDay?.addEventListener('click', function() {
+        calendar.changeView('timeGridDay');
+        updateActiveButton(this);
+    });
 
-    btnToday?.addEventListener('click', () => {
-        calendar.today();
-    });
-    btnPrev?.addEventListener('click', () => {
-        calendar.prev();
-    });
-    btnNext?.addEventListener('click', () => {
-        calendar.next();
-    });
-
-    // View switcher
-    document.querySelectorAll('.view-switcher button').forEach(btn => {
-        btn.addEventListener('click', function () {
-            const view = this.dataset.view;
-            if (!view) return;
-            calendar.changeView(view);
-            // Update active button
-            document.querySelectorAll('.view-switcher button').forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
+    function updateActiveButton(activeBtn) {
+        viewButtons.forEach(btn => {
+            if(!btn) return;
+            btn.classList.remove('active');
+            btn.style.backgroundColor = '#FFF';
+            btn.style.color = '#6B7280';
+            btn.classList.add('bg-white', 'text-secondary');
         });
-    });
-
-    function updateCalendarTitle(dateInfo) {
-        if (!titleEl) return;
-        const date = dateInfo.view.currentStart;
-        const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-            'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-        titleEl.textContent = months[date.getMonth()] + ' ' + date.getFullYear();
+        activeBtn.classList.remove('bg-white', 'text-secondary');
+        activeBtn.classList.add('active');
+        activeBtn.style.backgroundColor = '#4F46E5';
+        activeBtn.style.color = 'white';
     }
 
-    // ── Event Popover ──
-    const popoverEl = document.getElementById('eventPopover');
-    let popoverTimeout;
-
-    function showEventPopover(event, jsEvent) {
-        if (!popoverEl) return;
-
-        // Fetch event details
-        fetch(`/Citas/GetEventDetail/${event.id}`)
-            .then(r => r.json())
-            .then(data => {
-                document.getElementById('popoverTitle').textContent = data.paciente;
-                document.getElementById('popoverTreatment').textContent = data.tratamiento;
-                document.getElementById('popoverColorBar').style.backgroundColor = data.color;
-                document.getElementById('popoverTime').textContent = `${data.horaInicio} - ${data.horaFin}`;
-                document.getElementById('popoverDate').textContent = data.fecha;
-                document.getElementById('popoverPhone').textContent = data.telefono || 'Sin teléfono';
-                document.getElementById('popoverObs').textContent = data.observaciones || 'Sin observaciones';
-
-                // Action links
-                document.getElementById('popoverBtnView').href = `/Citas/Details/${data.id}`;
-                document.getElementById('popoverBtnEdit').href = `/Citas/Edit/${data.id}`;
-                document.getElementById('popoverBtnPatient').href = `/Pacientes/Details/${data.pacienteId}`;
-
-                // Handle Marcar Atendida button
-                const formAtendida = document.getElementById('formMarcarAtendida');
-                if (data.estadoId === 1) { // 1 = Programada
-                    formAtendida.style.display = 'block';
-                    formAtendida.action = `/Citas/MarcarAtendida/${data.id}`;
-                    document.getElementById('popoverAtendidaId').value = data.id;
-                } else {
-                    formAtendida.style.display = 'none';
-                }
-
-                // Position popover near click
-                const x = Math.min(jsEvent.clientX, window.innerWidth - 320);
-                const y = Math.min(jsEvent.clientY, window.innerHeight - 300);
-                popoverEl.style.left = x + 'px';
-                popoverEl.style.top = y + 'px';
-                popoverEl.classList.add('active');
-            })
-            .catch(err => console.error('Error loading event detail:', err));
-    }
-
-    // Close popover
-    document.getElementById('popoverClose')?.addEventListener('click', () => {
-        popoverEl?.classList.remove('active');
-    });
-
-    document.addEventListener('click', function (e) {
-        if (popoverEl && !popoverEl.contains(e.target) && !e.target.closest('.fc-event')) {
-            popoverEl.classList.remove('active');
-        }
-    });
-
-    // ── Today's Agenda Panel ──
-    loadTodayAgenda();
-
-    function loadTodayAgenda() {
-        const agendaBody = document.getElementById('agendaPanelBody');
-        const agendaCount = document.getElementById('agendaCount');
-        const agendaDate = document.getElementById('agendaDate');
+    // 5. Offcanvas Agenda Logic
+    window.loadTodayAgenda = function() {
         if (!agendaBody) return;
-
-        // Set today's date
-        const today = new Date();
-        const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-        const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-            'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-        if (agendaDate) {
-            agendaDate.textContent = `${days[today.getDay()]}, ${today.getDate()} de ${months[today.getMonth()]}`;
-        }
-
-        fetch('/Citas/GetTodayAgenda')
+        agendaBody.innerHTML = '<div class="text-center p-4"><div class="spinner-border text-primary" role="status"></div></div>';
+        
+        fetch('/Citas/Hoy')
             .then(r => r.json())
             .then(data => {
-                if (agendaCount) agendaCount.textContent = data.count + ' citas';
-
-                if (data.count === 0) {
+                if (!data || data.length === 0) {
                     agendaBody.innerHTML = `
-                        <div class="agenda-empty">
-                            <i class="fas fa-calendar-check"></i>
-                            <p>No hay citas programadas para hoy</p>
-                        </div>
-                    `;
+                        <div class="text-center text-muted p-5 mt-4">
+                            <i class="bi bi-calendar-x fs-1 text-secondary opacity-50 mb-3 block"></i>
+                            <p class="fw-semibold">No hay citas programadas para hoy</p>
+                            <button class="btn btn-sm btn-outline-primary mt-2" data-bs-toggle="modal" data-bs-target="#modalCrearCita">Agendar una</button>
+                        </div>`;
                     return;
                 }
-
+                
                 let html = '';
-                data.items.forEach(item => {
+                data.forEach(c => {
+                    // status check: icon and color manipulation
+                    const isAttended = c.estadoId === 2;
+                    let statusIcon = isAttended ? '<i class="bi bi-check-circle-fill status-check"></i>' : '<i class="bi bi-circle status-pending"></i>';
+
                     html += `
-                        <div class="timeline-item">
-                            <div class="timeline-dot" style="color: ${item.color};"></div>
-                            <div class="timeline-card" style="border-left-color: ${item.color};" onclick="window.location.href='/Citas/Details/${item.id}'">
-                                <div class="time-range" style="color: ${item.color};">
-                                    <span class="check-icon" style="background: ${item.color};"><i class="fas fa-check"></i></span>
-                                    ${item.horaInicio} - ${item.horaFin}
+                        <div class="today-card" onclick="openDetailsFromAgenda(${c.id})">
+                            <div class="today-card-info w-100 pe-3">
+                                <div class="today-card-time">
+                                    <i class="bi bi-clock"></i> ${formatAmPm(c.horaInicio)} - ${formatAmPm(c.horaFin)}
                                 </div>
-                                <div class="patient-name">${item.paciente}</div>
-                                <div class="treatment-name">${item.tratamiento}${item.observaciones ? ' - ' + item.observaciones : ''}</div>
-                                <div class="card-actions">
-                                    <a href="/Citas/Details/${item.id}" class="action-btn" title="Ver Detalles" onclick="event.stopPropagation();">
-                                        <i class="fas fa-file-alt"></i>
-                                    </a>
-                                    <a href="/Citas/Edit/${item.id}" class="action-btn" title="Editar" onclick="event.stopPropagation();">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    <a href="/Pacientes/Details/${item.pacienteId}" class="action-btn" title="Expediente" onclick="event.stopPropagation();">
-                                        <i class="fas fa-clock"></i>
-                                    </a>
+                                <div class="today-card-name">${c.paciente}</div>
+                                <div class="today-card-phone">
+                                    <i class="bi bi-telephone"></i> ${c.telefono || 'Sin registro'}
+                                </div>
+                                <div class="today-card-treatment">
+                                    <i class="bi bi-person-badge me-1"></i> ${c.tratamiento}
                                 </div>
                             </div>
-                        </div>
-                    `;
+                            <div class="today-card-status">
+                                ${statusIcon}
+                            </div>
+                        </div>`;
                 });
-
                 agendaBody.innerHTML = html;
             })
             .catch(err => {
-                console.error('Error loading today agenda:', err);
-                agendaBody.innerHTML = '<div class="agenda-empty"><p>Error al cargar la agenda</p></div>';
+                console.error('Error agenda:', err);
+                agendaBody.innerHTML = '<div class="alert alert-danger mx-3 mt-3">Error al cargar la agenda de hoy</div>';
             });
-    }
+    };
 
-    // ── Search ──
-    const searchInput = document.getElementById('calendarSearchInput');
-    const searchDropdown = document.getElementById('searchResultsDropdown');
-    let searchTimeout;
-
-    searchInput?.addEventListener('input', function () {
-        clearTimeout(searchTimeout);
-        const term = this.value.trim();
-
-        if (term.length < 2) {
-            searchDropdown?.classList.remove('active');
-            return;
-        }
-
-        searchTimeout = setTimeout(() => {
-            fetch(`/Citas/Search?term=${encodeURIComponent(term)}`)
+    window.openDetailsFromAgenda = function(id) {
+        // We simulate finding the event in fullcalendar to launch the modal
+        const evt = calendar.getEventById(id);
+        if (evt) {
+            window.showEventModal(evt);
+        } else {
+            // Event is somehow not in current calendar view, fallback manually
+            fetch(`/Citas/GetEventDetail/${id}`)
                 .then(r => r.json())
-                .then(data => {
-                    let html = '';
-
-                    if (data.patients.length > 0) {
-                        html += '<div class="search-section-label">Pacientes</div>';
-                        data.patients.forEach(p => {
-                            html += `
-                                <a href="/Pacientes/Details/${p.id}" class="search-result-item">
-                                    <div class="result-icon patient"><i class="fas fa-user"></i></div>
-                                    <div class="result-info">
-                                        <div class="result-name">${p.nombre}</div>
-                                        <div class="result-meta">${p.identificacion}</div>
-                                    </div>
-                                </a>
-                            `;
-                        });
-                    }
-
-                    if (data.appointments.length > 0) {
-                        html += '<div class="search-section-label">Citas</div>';
-                        data.appointments.forEach(a => {
-                            html += `
-                                <a href="/Citas/Details/${a.id}" class="search-result-item">
-                                    <div class="result-icon appointment"><i class="fas fa-calendar-alt"></i></div>
-                                    <div class="result-info">
-                                        <div class="result-name">${a.paciente}</div>
-                                        <div class="result-meta">${a.fecha} ${a.hora} · ${a.tratamiento}</div>
-                                    </div>
-                                </a>
-                            `;
-                        });
-                    }
-
-                    if (data.patients.length === 0 && data.appointments.length === 0) {
-                        html = '<div class="search-no-results"><i class="fas fa-search"></i> Sin resultados</div>';
-                    }
-
-                    searchDropdown.innerHTML = html;
-                    searchDropdown.classList.add('active');
-                })
-                .catch(err => console.error('Search error:', err));
-        }, 300);
-    });
-
-    // Close search dropdown on outside click
-    document.addEventListener('click', function (e) {
-        if (searchDropdown && !searchDropdown.contains(e.target) && e.target !== searchInput) {
-            searchDropdown.classList.remove('active');
+                .then(data => showEventModalWithData(data));
         }
-    });
+    };
 
-    // ── Create Modal ──
-    const modalBackdrop = document.getElementById('createModalBackdrop');
-    const modalEl = document.getElementById('createModal');
-    const btnOpenCreate = document.getElementById('btnCreateCita');
-    const btnCloseModal = document.getElementById('btnCloseModal');
 
-    btnOpenCreate?.addEventListener('click', () => openCreateModal());
-    btnCloseModal?.addEventListener('click', () => closeCreateModal());
-    modalBackdrop?.addEventListener('click', () => closeCreateModal());
-
-    function openCreateModal() {
-        modalBackdrop?.classList.add('active');
-        modalEl?.classList.add('active');
-        // Reset form
-        const form = document.getElementById('createCitaForm');
+    // 6. Create Modal Functions (Simplified Redesign)
+    window.openCreateModal = function(startTime) {
+        if (!modalCrearEl) return;
+        const form = document.getElementById('formCita');
         if (form) form.reset();
-        const alert = document.getElementById('modalAlert');
-        if (alert) {
-            alert.className = 'modal-alert';
-            alert.textContent = '';
-        }
-        // Set default date to today
-        const dateInput = form?.querySelector('[name="Fecha"]');
+        
+        const dateInput = document.getElementById('modalFecha');
+        const start = (startTime && !isNaN(new Date(startTime))) ? new Date(startTime) : new Date();
+        
         if (dateInput) {
-            const today = new Date().toISOString().split('T')[0];
-            dateInput.value = today;
-            dateInput.min = today;
+            const year = start.getFullYear();
+            const month = String(start.getMonth() + 1).padStart(2, '0');
+            const day = String(start.getDate()).padStart(2, '0');
+            dateInput.value = `${year}-${month}-${day}`;
+        }
+        
+        document.getElementById('HoraInicio').value = start.toTimeString().slice(0,5);
+        const end = new Date(start.getTime() + 30 * 60000);
+        document.getElementById('HoraFin').value = end.toTimeString().slice(0,5);
+
+        // UI Reset
+        document.getElementById('modalAlert').classList.add('d-none');
+        document.getElementById('tipoPacienteExistente').checked = true;
+        toggleFields('paciente');
+        
+        // Clear Search Results
+        document.getElementById('pacienteSearchResults').style.display = 'none';
+        document.getElementById('tratamientoSearchResults').style.display = 'none';
+        document.getElementById('modalTratamientoId').value = "";
+        document.getElementById('modalTratamientoSearch').value = "";
+        document.getElementById('PacienteId').value = "";
+        document.getElementById('PosiblePacienteId').value = "";
+
+        const modal = new bootstrap.Modal(modalCrearEl);
+        modal.show();
+    };
+
+    // Toggle Visibility
+    const radios = document.querySelectorAll('input[name="tipoPaciente"]');
+    radios.forEach(r => r.addEventListener('change', (e) => toggleFields(e.target.value)));
+
+    function toggleFields(type) {
+        const secPaciente = document.getElementById('sectionPaciente');
+        const secProspecto = document.getElementById('sectionProspecto');
+        const patientSearch = document.getElementById('modalPacienteSearch');
+        const pNombre = document.getElementById('prospectoNombre');
+        const pApellido = document.getElementById('prospectoApellido');
+
+        if (type === 'paciente') {
+            secPaciente.classList.remove('d-none');
+            secProspecto.classList.add('d-none');
+            patientSearch.required = true;
+            pNombre.required = false;
+            pApellido.required = false;
+        } else {
+            secPaciente.classList.add('d-none');
+            secProspecto.classList.remove('d-none');
+            patientSearch.required = false;
+            pNombre.required = true;
+            pApellido.required = true;
         }
     }
 
-    function closeCreateModal() {
-        modalBackdrop?.classList.remove('active');
-        modalEl?.classList.remove('active');
-        document.getElementById('pacienteSearchResults').style.display = 'none';
-        document.getElementById('modalPacienteSearch').value = '';
-        document.getElementById('modalPaciente').value = '';
-    }
+    // Phone Lookup Logic
+    const phoneInput = document.getElementById('modalTelefono');
+    let phoneTimeout = null;
 
-    // Modal Patient Autocomplete
-    const mPacienteSearch = document.getElementById('modalPacienteSearch');
-    const mPacienteHidden = document.getElementById('modalPaciente');
-    const mSearchResults = document.getElementById('pacienteSearchResults');
-    let mSearchTimeout;
+    phoneInput?.addEventListener('input', function() {
+        clearTimeout(phoneTimeout);
+        const phone = this.value.trim();
+        if (phone.length < 4) return;
 
-    mPacienteSearch?.addEventListener('input', function() {
-        clearTimeout(mSearchTimeout);
-        mPacienteHidden.value = ''; // clear hidden value if they type
+        phoneTimeout = setTimeout(() => {
+            fetch(`/Citas/BuscarPacientePorTelefono?telefono=${encodeURIComponent(phone)}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        if (data.isProspect) {
+                            document.getElementById('tipoNuevoProspecto').checked = true;
+                            toggleFields('prospecto');
+                            document.getElementById('prospectoNombre').value = data.nombre.split(' ')[0] || "";
+                            document.getElementById('prospectoApellido').value = data.nombre.split(' ')[1] || "";
+                            document.getElementById('PosiblePacienteId').value = data.id;
+                            document.getElementById('PacienteId').value = "";
+                        } else {
+                            document.getElementById('tipoPacienteExistente').checked = true;
+                            toggleFields('paciente');
+                            document.getElementById('modalPacienteSearch').value = data.nombre;
+                            document.getElementById('PacienteId').value = data.id;
+                            document.getElementById('PosiblePacienteId').value = "";
+                        }
+                    }
+                });
+        }, 800);
+    });
+
+    // Patient Search Autocomplete
+    const patientSearch = document.getElementById('modalPacienteSearch');
+    const patientResults = document.getElementById('pacienteSearchResults');
+
+    patientSearch?.addEventListener('input', function() {
         const term = this.value.trim();
+        if (term.length < 2) { patientResults.style.display = 'none'; return; }
+        
+        fetch(`/Citas/BuscarPacientes?term=${encodeURIComponent(term)}`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.length === 0) {
+                    patientResults.innerHTML = '<div class="list-group-item text-muted text-center py-2" style="font-size: 0.8rem;">No se encontraron resultados</div>';
+                } else {
+                    let html = '';
+                    data.forEach(item => {
+                        html += `<button type="button" class="list-group-item list-group-item-action py-2" style="font-size: 0.8rem;" onclick="seleccionarPaciente('${item.id}', '${item.label}', ${item.isProspect}, '${item.telefono || ''}')">${item.label}</button>`;
+                    });
+                    patientResults.innerHTML = html;
+                }
+                patientResults.style.display = 'block';
+            });
+    });
 
-        if (term.length < 2) {
-            mSearchResults.style.display = 'none';
+    window.seleccionarPaciente = function(id, label, isProspect, phone) {
+        document.getElementById('modalPacienteSearch').value = label;
+        if (phone) {
+            document.getElementById('modalTelefono').value = phone;
+        }
+        if (isProspect) {
+            document.getElementById('PacienteId').value = ""; 
+            document.getElementById('PosiblePacienteId').value = id;
+            document.getElementById('tipoNuevoProspecto').checked = true;
+            toggleFields('prospecto');
+        } else {
+            document.getElementById('PacienteId').value = id;
+            document.getElementById('PosiblePacienteId').value = "";
+            document.getElementById('tipoPacienteExistente').checked = true;
+            toggleFields('paciente');
+        }
+        document.getElementById('pacienteSearchResults').style.display = 'none';
+        document.getElementById('modalAlert').classList.add('d-none');
+    };
+
+    // Treatment Autocomplete
+    const treatmentSearch = document.getElementById('modalTratamientoSearch');
+    const treatmentResults = document.getElementById('tratamientoSearchResults');
+    const treatmentId = document.getElementById('modalTratamientoId');
+
+    treatmentSearch?.addEventListener('input', function() {
+        const term = this.value.trim();
+        if (term.length < 1) { treatmentResults.style.display = 'none'; return; }
+        
+        fetch(`/Citas/BuscarTratamientos?term=${encodeURIComponent(term)}`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.length === 0) {
+                    treatmentResults.innerHTML = '<div class="list-group-item text-muted text-center py-2" style="font-size: 0.8rem;">No hay sugerencias</div>';
+                } else {
+                    let html = '';
+                    data.forEach(item => {
+                        html += `<button type="button" class="list-group-item list-group-item-action py-2" style="font-size: 0.8rem;" onclick="seleccionarTratamiento('${item.id}', '${item.nombre}')">${item.nombre}</button>`;
+                    });
+                    treatmentResults.innerHTML = html;
+                }
+                treatmentResults.style.display = 'block';
+            });
+    });
+
+    window.seleccionarTratamiento = function(id, nombre) {
+        treatmentSearch.value = nombre;
+        treatmentId.value = id;
+        treatmentResults.style.display = 'none';
+        document.getElementById('modalAlert').classList.add('d-none');
+    };
+
+    // Global click listener to close results
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('#sectionPaciente')) patientResults.style.display = 'none';
+        if (!e.target.closest('#tratamientoSearchResults') && e.target !== treatmentSearch) treatmentResults.style.display = 'none';
+    });
+
+    // Guardar Cita Logic
+    window.guardarCita = function() {
+        const type = document.querySelector('input[name="tipoPaciente"]:checked').value;
+        const form = document.getElementById('formCita');
+        
+        // Limpiar teléfono (solo dígitos) según sugerencia de usuario
+        const rawPhone = phoneInput.value;
+        const cleanPhone = rawPhone.replace(/\D/g, '');
+        phoneInput.value = cleanPhone;
+        if (type === 'prospecto') {
+            if (!document.getElementById('prospectoNombre').value || !document.getElementById('prospectoApellido').value) {
+                alert("Por favor complete nombre y apellido del prospecto.");
+                return;
+            }
+        } else {
+            if (!document.getElementById('PacienteId').value && !document.getElementById('PosiblePacienteId').value) {
+                alert("Por favor seleccione un paciente de la lista.");
+                return;
+            }
+        }
+
+        if (!treatmentId.value) {
+            alert("Por favor seleccione un tratamiento de la lista de sugerencias.");
             return;
         }
 
-        mSearchTimeout = setTimeout(() => {
-            fetch(`/Citas/BuscarPacientes?term=${encodeURIComponent(term)}`)
+        const btn = document.getElementById('btnGuardarCita');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...';
+
+        // 1. If it's a NEW prospect (manual entry, no PosPId yet)
+        if (type === 'prospecto' && !document.getElementById('PosiblePacienteId').value) {
+            const propFormData = new FormData();
+            propFormData.append('primerNombre', document.getElementById('prospectoNombre').value);
+            propFormData.append('primerApellido', document.getElementById('prospectoApellido').value);
+            propFormData.append('telefono', phoneInput.value);
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            propFormData.append('__RequestVerificationToken', token);
+
+            fetch('/Citas/CreateProspectoJson', { method: 'POST', body: propFormData })
                 .then(r => r.json())
                 .then(data => {
-                    let html = '';
-                    if (data.length > 0) {
-                        data.forEach(p => {
-                            html += `
-                                <a href="javascript:void(0)" class="list-group-item list-group-item-action py-2" data-id="${p.id}" data-name="${p.label}">
-                                    <i class="fas fa-user-circle me-2 text-secondary"></i> ${p.label}
-                                </a>
-                            `;
-                        });
+                    if (data.success) {
+                        document.getElementById('PosiblePacienteId').value = data.id;
+                        submitAppointment();
                     } else {
-                        html = '<div class="list-group-item text-muted"><i class="fas fa-search"></i> No se encontraron pacientes</div>';
+                        alert(data.message);
+                        btn.disabled = false;
+                        btn.innerHTML = 'Agendar Cita';
                     }
-                    mSearchResults.innerHTML = html;
-                    mSearchResults.style.display = 'block';
-
-                    // Attach click events
-                    mSearchResults.querySelectorAll('a').forEach(item => {
-                        item.addEventListener('click', function() {
-                            mPacienteHidden.value = this.dataset.id;
-                            mPacienteSearch.value = this.dataset.name;
-                            mSearchResults.style.display = 'none';
-                        });
-                    });
-                })
-                .catch(err => console.error('Patient search error:', err));
-        }, 300);
-    });
-
-    document.addEventListener('click', function (e) {
-        if (mSearchResults && !mSearchResults.contains(e.target) && e.target !== mPacienteSearch) {
-            mSearchResults.style.display = 'none';
+                });
+        } else {
+            submitAppointment();
         }
-    });
+    };
 
-    // Handle modal form submission
-    const createForm = document.getElementById('createCitaForm');
-    createForm?.addEventListener('submit', function (e) {
-        e.preventDefault();
-        const alertEl = document.getElementById('modalAlert');
-        const submitBtn = createForm.querySelector('button[type="submit"]');
+    function submitAppointment() {
+        const form = document.getElementById('formCita');
+        const formData = new FormData(form);
+        const btn = document.getElementById('btnGuardarCita');
 
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
-
-        const formData = new FormData(createForm);
-
-        fetch('/Citas/CreateJson', {
-            method: 'POST',
-            body: formData
-        })
+        fetch('/Citas/CreateJson', { method: 'POST', body: formData })
             .then(r => r.json())
             .then(data => {
                 if (data.success) {
-                    alertEl.className = 'modal-alert success';
-                    alertEl.textContent = '¡Cita creada correctamente!';
-                    // Refresh calendar and timeline
                     calendar.refetchEvents();
-                    loadTodayAgenda();
-                    setTimeout(() => closeCreateModal(), 800);
+                    window.loadTodayAgenda();
+                    bootstrap.Modal.getInstance(modalCrearEl).hide();
                 } else {
-                    alertEl.className = 'modal-alert error';
-                    alertEl.textContent = data.message || 'Error al crear la cita.';
+                    document.getElementById('modalAlert').classList.remove('d-none');
+                    document.getElementById('modalAlert').textContent = data.message;
                 }
             })
-            .catch(() => {
-                alertEl.className = 'modal-alert error';
-                alertEl.textContent = 'Error de conexión.';
-            })
             .finally(() => {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="fas fa-save"></i> Guardar Cita';
+                btn.disabled = false;
+                btn.innerHTML = 'Agendar Cita';
             });
-    });
+    }
 
-    // ── Keyboard shortcuts ──
-    document.addEventListener('keydown', function (e) {
-        // Escape closes popover and modal
-        if (e.key === 'Escape') {
-            popoverEl?.classList.remove('active');
-            closeCreateModal();
+    // 7. Modal Details Logic
+    window.showEventModal = function(event) {
+        fetch(`/Citas/GetEventDetail/${event.id}`)
+            .then(r => r.json())
+            .then(data => showEventModalWithData(data));
+    };
+
+    function showEventModalWithData(data) {
+        if (!modalDetalleEl) return;
+
+        document.getElementById('detailPacienteNombre').textContent = data.paciente;
+        document.getElementById('detailPacienteId').textContent = data.identificacion ? `Cédula: ${data.identificacion}` : '';
+        document.getElementById('detailHorario').textContent = `${data.horaInicio} - ${data.horaFin}`;
+        document.getElementById('detailFecha').textContent = data.fecha;
+        document.getElementById('detailTelefono').textContent = data.telefono || 'No especificado';
+        document.getElementById('detailTratamiento').textContent = data.tratamiento;
+
+        const obsRow = document.getElementById('detailObsRow');
+        if(data.observaciones && data.observaciones.trim() !== '') {
+            document.getElementById('detailObservaciones').textContent = data.observaciones;
+            obsRow.style.display = 'flex';
+        } else {
+            obsRow.style.setProperty('display', 'none', 'important');
         }
-    });
 
+        const badge = document.getElementById('detailProspectBadge');
+        if(data.pacienteId === null) {
+            badge.style.display = 'inline-block';
+        } else {
+            badge.style.display = 'none';
+        }
+
+        const btnGroupActions = document.getElementById('btnGroupActions');
+        btnGroupActions.innerHTML = ''; 
+
+        if (data.pacienteId === null) {
+            btnGroupActions.innerHTML = `<button type="button" class="btn text-white w-100 fw-semibold py-2" style="background-color: #4F46E5; border-radius: 8px;" onclick="abrirModalConversionJS(${data.id}, ${data.posiblePacienteId})"><i class="bi bi-person-check me-1"></i> Convertir a Paciente</button>`;
+        } else {
+            if (data.estadoId === 1) { 
+                btnGroupActions.innerHTML = `<button type="button" class="btn btn-success text-white w-100 fw-semibold py-2 shadow-sm" style="border-radius: 8px;" onclick="marcarAtendida(${data.id})"><i class="bi bi-check2-circle me-1"></i> Confirmar Llegada</button>
+                                             <button type="button" class="btn text-white fw-semibold py-2" style="background-color: #4F46E5; border-radius: 8px;" onclick="window.location.href='/Pacientes/Ficha/${data.pacienteId}'"><i class="bi bi-folder2-open"></i></button>`;
+            } else if (data.estadoId === 2) { 
+                btnGroupActions.innerHTML = `<button type="button" class="btn text-white w-100 fw-semibold py-2 shadow-sm" style="background-color: #4F46E5; border-radius: 8px;" onclick="window.location.href='/Consultas/Atender/${data.id}'"><i class="bi bi-stethoscope me-1"></i> Iniciar Consulta</button>`;
+            } else {
+                btnGroupActions.innerHTML = `<span class="badge bg-danger w-100 p-3 fs-6 rounded-3">Cita Cancelada</span>`;
+            }
+        }
+
+        const btnCancel = document.getElementById('btnCancelCita');
+        if (data.estadoId === 3 || data.estadoId === 2) {
+            btnCancel.style.display = 'none';
+        } else {
+            btnCancel.style.display = 'block';
+            btnCancel.onclick = function() {
+                if(confirm('¿Está seguro de cancelar esta cita?')) {
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = `/Citas/Cancel/${data.id}`;
+                    const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+                    const tokenInput = document.createElement('input');
+                    tokenInput.type = 'hidden'; tokenInput.name = '__RequestVerificationToken'; tokenInput.value = token;
+                    form.appendChild(tokenInput);
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            };
+        }
+
+        const bsModal = new bootstrap.Modal(modalDetalleEl);
+        bsModal.show();
+    }
+
+    window.abrirModalConversionJS = function(idCita, idPosP) {
+        bootstrap.Modal.getInstance(modalDetalleEl).hide();
+        document.getElementById('convertIdCita').value = idCita;
+        document.getElementById('convertIdPosiblePaciente').value = idPosP;
+        const m = new bootstrap.Modal(document.getElementById('modalConvertir'));
+        m.show();
+    }
+
+    window.marcarAtendida = function(idCita) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/Citas/MarcarAtendida/${idCita}`;
+        const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+        const tokenInput = document.createElement('input');
+        tokenInput.type = 'hidden'; tokenInput.name = '__RequestVerificationToken'; tokenInput.value = token;
+        form.appendChild(tokenInput);
+        document.body.appendChild(form);
+        form.submit();
+    }
+
+    window.ejecutarConversion = function() {
+        const form = document.getElementById('formConvertir');
+        if (!form.checkValidity()) { form.reportValidity(); return; }
+        
+        const btn = document.getElementById('btnConfirmConversion');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Procesando...';
+
+        fetch('/Citas/ConvertirProspecto', {
+            method: 'POST',
+            body: new FormData(form)
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                const idCita = document.getElementById('convertIdCita').value;
+                calendar.refetchEvents();
+                bootstrap.Modal.getInstance(document.getElementById('modalConvertir')).hide();
+                // Redirigir al flujo de consulta según requerimiento
+                window.location.href = `/Consultas/Atender/${idCita}`;
+            } else {
+                alert(data.message);
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-check-circle me-1"></i> Finalizar Conversión';
+            }
+        });
+    };
+
+    // 9. Initial Render & Load
+    calendar.render();
+    window.loadTodayAgenda();
+    
+    // Sync initial view button state (default is week)
+    if (btnViewWeek) updateActiveButton(btnViewWeek);
 });

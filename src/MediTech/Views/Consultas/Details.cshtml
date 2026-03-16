@@ -1,0 +1,157 @@
+@model MediTech.Models.Consulta
+@{
+    ViewData["Title"] = "Expediente de Consulta";
+}
+
+<style>
+    .medical-record-paper {
+        background: #ffffff;
+        border-radius: 2px;
+        box-shadow: 0 0 20px rgba(0,0,0,0.05);
+        border: 1px solid #e2e8f0;
+        min-height: 800px;
+        position: relative;
+    }
+    .header-band {
+        height: 6px;
+        background: var(--primary);
+        width: 100%;
+    }
+    .vital-sign-pill {
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 10px 15px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-width: 100px;
+    }
+    .pill-label {
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        color: #64748b;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+    }
+    .pill-value {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #1e293b;
+    }
+</style>
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 noprint">
+        <h2 class="fw-bold mb-0 text-dark">Detalle de Atención</h2>
+        <div class="d-flex gap-2">
+            <button onclick="window.print()" class="btn btn-light shadow-sm" style="border-radius: 10px;">
+                <i class="fas fa-print me-1"></i> Imprimir
+            </button>
+            <a href="@Url.Action("Index")" class="btn btn-primary" style="border-radius: 10px;">
+                <i class="fas fa-arrow-left me-1"></i> Volver al Listado
+            </a>
+        </div>
+    </div>
+
+    <div class="medical-record-paper">
+        <div class="header-band"></div>
+        <div class="p-5">
+            <div class="row mb-5 border-bottom pb-4">
+                <div class="col-md-6">
+                    <h3 class="fw-bold text-primary mb-1">MEDITECH CLINIC</h3>
+                    <p class="text-muted small mb-0">Atención Médica Especializada</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <div class="fw-bold">Consulta Médica #@Model.IdConsulta</div>
+                    <div class="text-muted">Fecha: @Model.FechaConsulta.ToString("D")</div>
+                </div>
+            </div>
+
+            <div class="row mb-5">
+                <div class="col-md-6">
+                    <div class="mb-4">
+                        <label class="text-muted small text-uppercase fw-bold d-block mb-1">Información del Paciente</label>
+                        <h4 class="fw-bold mb-0">@Model.Cita?.Paciente?.Persona?.PrimerNombre @Model.Cita?.Paciente?.Persona?.PrimerApellido</h4>
+                        <p class="mb-0">Expediente: #@Model.Cita?.Paciente?.IdPaciente</p>
+                        <p class="mb-0 text-muted">Tel: @Model.Cita?.Paciente?.Persona?.Telefono</p>
+                    </div>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <div class="mb-4">
+                        <label class="text-muted small text-uppercase fw-bold d-block mb-1">Médico Tratante</label>
+                        <h4 class="fw-bold mb-0">Dr. @Model.Medico?.Persona?.PrimerNombre @Model.Medico?.Persona?.PrimerApellido</h4>
+                        <p class="mb-0">Especialidad: Odontología General</p>
+                    </div>
+                </div>
+            </div>
+
+            @if (Model.SignosVitales != null)
+            {
+                <div class="mb-5">
+                    <h5 class="fw-bold text-dark mb-3"><i class="fas fa-heartbeat text-danger me-2"></i>Signos Vitales</h5>
+                    <div class="d-flex flex-wrap gap-3">
+                        <div class="vital-sign-pill">
+                            <span class="pill-label">P. Arterial</span>
+                            <span class="pill-value">@(Model.SignosVitales.PresionArterial ?? "N/A")</span>
+                        </div>
+                        <div class="vital-sign-pill">
+                            <span class="pill-label">Temp.</span>
+                            <span class="pill-value">@(Model.SignosVitales.Temperatura?.ToString("0.0") ?? "N/A")°C</span>
+                        </div>
+                        <div class="vital-sign-pill">
+                            <span class="pill-label">Frec. Card.</span>
+                            <span class="pill-value">@(Model.SignosVitales.FrecuenciaCardiaca?.ToString() ?? "N/A") <small>LPM</small></span>
+                        </div>
+                        <div class="vital-sign-pill">
+                            <span class="pill-label">Sat. O2</span>
+                            <span class="pill-value">@(Model.SignosVitales.SaturacionOxigeno?.ToString() ?? "N/A")%</span>
+                        </div>
+                        <div class="vital-sign-pill">
+                            <span class="pill-label">Peso</span>
+                            <span class="pill-value">@(Model.SignosVitales.Peso?.ToString("0.00") ?? "N/A") <small>kg</small></span>
+                        </div>
+                        <div class="vital-sign-pill">
+                            <span class="pill-label">Altura</span>
+                            <span class="pill-value">@(Model.SignosVitales.Altura?.ToString("0") ?? "N/A") <small>cm</small></span>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <div class="mb-5">
+                <h5 class="fw-bold text-dark mb-2"><i class="fas fa-notes-medical text-primary me-2"></i>Historial de Atención</h5>
+                <div class="p-3 bg-light rounded" style="border-left: 4px solid var(--primary);">
+                    <label class="small fw-bold text-muted text-uppercase d-block mb-1">Motivo de consulta</label>
+                    <p class="mb-0">@(string.IsNullOrEmpty(Model.MotivoConsulta) ? "No registrado" : Model.MotivoConsulta)</p>
+                </div>
+            </div>
+
+            <div class="mb-5">
+                <h5 class="fw-bold text-dark mb-2"><i class="fas fa-stethoscope text-success me-2"></i>Diagnóstico</h5>
+                <div class="p-3 bg-light rounded" style="border-left: 4px solid #10b981;">
+                    <label class="small fw-bold text-muted text-uppercase d-block mb-1">Diagnóstico Principal</label>
+                    <p class="fs-5 fw-bold mb-0 text-dark">@(string.IsNullOrEmpty(Model.DiagnosticoPrincipal) ? "En proceso" : Model.DiagnosticoPrincipal)</p>
+                </div>
+            </div>
+
+            <div class="mb-5">
+                <h5 class="fw-bold text-dark mb-2"><i class="fas fa-clipboard-list text-info me-2"></i>Observaciones y Recomendaciones</h5>
+                <div class="p-3 rounded border">
+                    <p class="mb-0" style="white-space: pre-wrap;">@(string.IsNullOrEmpty(Model.Observaciones) ? "Sin observaciones adicionales" : Model.Observaciones)</p>
+                </div>
+            </div>
+
+            <div class="row mt-5 pt-5">
+                <div class="col-6 text-center">
+                    <div style="border-top: 1px solid #000; width: 200px; margin: 0 auto;" class="mt-4"></div>
+                    <small class="text-muted">Firma del Médico</small>
+                </div>
+                <div class="col-6 text-center">
+                    <div style="border-top: 1px solid #000; width: 200px; margin: 0 auto;" class="mt-4"></div>
+                    <small class="text-muted">Sello de la Clínica</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

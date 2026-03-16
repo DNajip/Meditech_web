@@ -1,0 +1,421 @@
+Documento de Diseño de Software (SDD)
+Sistema: MediTech – Sistema de Gestión Clínica
+
+Versión: 1.0
+Tipo de aplicación: Aplicación Web
+Arquitectura: ASP.NET Core MVC
+Base de datos: SQL Server
+
+1. Introducción
+1.1 Propósito del documento
+
+El presente documento describe el diseño técnico del sistema MediTech, especificando la arquitectura, componentes, módulos y flujo de información necesarios para la implementación del software.
+
+Este documento servirá como guía para:
+
+desarrolladores del sistema
+
+arquitectos de software
+
+mantenimiento futuro del sistema
+
+evolución del sistema
+
+2. Visión general del sistema
+
+MediTech es una aplicación web diseñada para gestionar clínicas médicas y consultorios privados, permitiendo administrar información de pacientes, citas, consultas médicas, tratamientos, documentos clínicos y control financiero.
+
+El sistema busca digitalizar los procesos clínicos y administrativos, mejorando la organización de la información médica y la eficiencia operativa de la clínica.
+
+3. Arquitectura del sistema
+
+El sistema MediTech seguirá una arquitectura MVC (Model-View-Controller).
+
+Arquitectura general
+Usuario
+   │
+   ▼
+Navegador Web
+   │
+   ▼
+ASP.NET Core MVC
+   │
+   ├── Controllers
+   ├── Services
+   ├── Models
+   └── Views
+   │
+   ▼
+SQL Server Database
+   │
+   ▼
+Integraciones externas
+(Google Calendar API)
+4. Capas del sistema
+
+El sistema estará organizado en las siguientes capas.
+
+4.1 Capa de presentación
+
+La capa de presentación es responsable de la interacción con el usuario.
+
+Tecnologías:
+
+HTML
+
+CSS
+
+Bootstrap
+
+JavaScript
+
+Razor Views
+
+Funciones principales:
+
+renderizar las interfaces del sistema
+
+capturar datos del usuario
+
+mostrar información al usuario
+
+Componentes principales:
+
+Layout general
+
+Sidebar de navegación
+
+Dashboard
+
+Formularios clínicos
+
+Paneles de administración
+
+4.2 Capa de controladores
+
+Los controladores gestionan las solicitudes del usuario y coordinan las acciones entre la interfaz y la lógica del sistema.
+
+Controladores principales:
+
+HomeController
+Gestiona el dashboard principal.
+
+CitasController
+Gestiona la agenda médica.
+
+PacientesController
+Gestiona el registro de pacientes.
+
+ConsultaController
+Gestiona la atención médica.
+
+TratamientosController
+Gestiona los tratamientos médicos.
+
+CajaController
+Gestiona pagos y facturación.
+
+ReportesController
+Gestiona la generación de reportes.
+
+AdminController
+Gestiona usuarios y configuraciones del sistema.
+
+4.3 Capa de lógica de negocio
+
+Esta capa implementa las reglas del sistema.
+
+Servicios principales:
+
+ServicioPacientes
+Gestiona la creación y actualización de pacientes.
+
+ServicioCitas
+Gestiona la agenda médica y la integración con Google Calendar.
+
+ServicioConsultas
+Gestiona el flujo clínico de consultas.
+
+ServicioConsentimientos
+Gestiona documentos de consentimiento firmado.
+
+ServicioFotosPaciente
+Gestiona el almacenamiento de imágenes clínicas.
+
+ServicioCaja
+Gestiona pagos y registros financieros.
+
+ServicioReportes
+Genera reportes estadísticos.
+
+4.4 Capa de acceso a datos
+
+Esta capa gestiona la comunicación con la base de datos.
+
+Responsabilidades:
+
+ejecutar consultas SQL
+
+insertar registros
+
+actualizar datos
+
+eliminar registros
+
+Tecnologías posibles:
+
+Entity Framework Core
+
+ADO.NET
+
+5. Diseño de módulos del sistema
+5.1 Módulo de autenticación
+
+Este módulo gestiona el acceso al sistema.
+
+Funciones:
+
+inicio de sesión
+
+cierre de sesión
+
+control de roles
+
+gestión de sesiones
+
+Seguridad:
+
+Las contraseñas se almacenarán utilizando hash seguro.
+
+5.2 Dashboard
+
+El dashboard será la vista principal del sistema.
+
+Mostrará información relevante como:
+
+citas del día
+
+pacientes programados
+
+ingresos del día
+
+accesos rápidos a módulos
+
+5.3 Módulo de gestión de citas
+
+El sistema integrará Google Calendar para gestionar la agenda médica.
+
+Funciones:
+
+registrar citas
+
+editar citas
+
+cancelar citas
+
+visualizar agenda
+
+Cada cita incluirá:
+
+nombre del paciente
+
+teléfono
+
+tratamiento solicitado
+
+observaciones
+
+Las citas se sincronizarán con Google Calendar.
+
+5.4 Módulo de recepción del paciente
+
+Este módulo permite iniciar el proceso de atención médica.
+
+Cuando el paciente llega a la clínica:
+
+se selecciona la cita
+
+se confirma la llegada
+
+se inicia la consulta médica
+
+5.5 Módulo de consulta médica
+
+Este módulo es el núcleo clínico del sistema.
+
+Permite registrar la información médica generada durante la atención del paciente.
+
+Datos registrados:
+
+motivo de consulta
+
+diagnóstico
+
+observaciones
+
+recomendaciones
+
+También incluye registro de:
+
+signos vitales
+
+tratamientos
+
+procedimientos
+
+5.6 Módulo de expediente clínico
+
+Cada paciente tendrá un expediente clínico digital.
+
+El expediente incluirá:
+
+datos personales
+
+historial de consultas
+
+citas pasadas
+
+tratamientos realizados
+
+consentimientos firmados
+
+fotografías clínicas
+
+5.7 Módulo de consentimiento informado
+
+El sistema almacenará plantillas de documentos de consentimiento médico.
+
+Durante la consulta el paciente podrá firmar el documento mediante:
+
+tablet
+
+mouse
+
+pantalla táctil
+
+La firma digital será almacenada junto con el documento.
+
+5.8 Módulo de gestión de imágenes clínicas
+
+Permite almacenar fotografías médicas del paciente.
+
+Cada paciente tendrá un álbum clínico.
+
+Las imágenes podrán asociarse a:
+
+consultas
+
+tratamientos
+
+El sistema permitirá visualizar comparaciones antes y después.
+
+5.9 Módulo de tratamientos
+
+Permite administrar los tratamientos disponibles en la clínica.
+
+Cada tratamiento tendrá:
+
+nombre
+
+descripción
+
+precio
+
+Los tratamientos podrán asociarse a consultas.
+
+5.10 Módulo de caja y facturación
+
+Permite registrar pagos realizados por pacientes.
+
+Cada pago incluirá:
+
+paciente
+
+tratamiento
+
+monto
+
+método de pago
+
+fecha
+
+El sistema permitirá visualizar ingresos diarios.
+
+5.11 Módulo de reportes
+
+El sistema generará reportes administrativos.
+
+Reportes disponibles:
+
+ingresos diarios
+
+citas realizadas
+
+pacientes atendidos
+
+tratamientos aplicados
+
+5.12 Módulo de administración del sistema
+
+Este módulo permitirá administrar configuraciones del sistema.
+
+Funciones:
+
+gestión de usuarios
+
+asignación de roles
+
+administración de catálogos
+
+6. Diseño de la base de datos
+
+La base de datos se organizará en los siguientes esquemas.
+
+CAT
+Contendrá catálogos del sistema.
+
+ADM
+Contendrá tablas administrativas del sistema.
+
+CLI
+Contendrá tablas clínicas relacionadas con pacientes y consultas.
+
+CAJA
+Contendrá información financiera.
+
+7. Integraciones externas
+
+El sistema se integrará con servicios externos.
+
+Google Calendar API
+Permitirá sincronizar la agenda médica con Google Calendar.
+
+8. Seguridad del sistema
+
+El sistema implementará medidas de seguridad como:
+
+autenticación de usuarios
+
+control de acceso por roles
+
+almacenamiento seguro de contraseñas
+
+control de sesiones
+
+9. Requerimientos de rendimiento
+
+El sistema debe responder a las acciones del usuario en menos de tres segundos.
+
+El sistema debe soportar múltiples usuarios conectados simultáneamente.
+
+10. Escalabilidad
+
+La arquitectura permitirá futuras integraciones como:
+
+recordatorios automáticos de citas
+
+integración con WhatsApp
+
+almacenamiento en la nube
+
+portal del paciente

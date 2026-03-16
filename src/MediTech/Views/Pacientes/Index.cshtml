@@ -137,17 +137,22 @@
     </a>
 </div>
 
-<form method="get" class="search-bar">
-    <input type="text" name="search" value="@ViewBag.Search" placeholder="Buscar por nombre, identificación o teléfono..." />
-    <button type="submit" class="btn btn-outline-primary" style="border-radius:8px;">
-        <i class="fas fa-search"></i>
-    </button>
-    @if (!string.IsNullOrEmpty(ViewBag.Search as string))
-    {
-        <a href="@Url.Action("Index")" class="btn btn-outline-secondary" style="border-radius:8px;">
-            <i class="fas fa-times"></i>
-        </a>
-    }
+<form method="get" class="mb-4">
+    <div class="input-group" style="max-width: 100%; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+        <input type="text" name="search" value="@ViewBag.Search" class="form-control border-end-0" 
+               placeholder="Buscar por nombre, identificación o teléfono..." 
+               style="border-radius: 10px 0 0 10px; padding: 12px 20px; font-size: 0.9rem;">
+        <button type="submit" class="btn btn-outline-primary border-start-0 bg-white" 
+                style="border-radius: 0 10px 10px 0; border-color: #E2E8F0; color: #3B82F6; padding: 0 20px;">
+            <i class="fas fa-search"></i>
+        </button>
+        @if (!string.IsNullOrEmpty(ViewBag.Search as string))
+        {
+            <a href="@Url.Action("Index")" class="btn btn-link text-muted ms-2 align-self-center text-decoration-none">
+                <i class="fas fa-times me-1"></i> Limpiar
+            </a>
+        }
+    </div>
 </form>
 
 <div class="patients-table">

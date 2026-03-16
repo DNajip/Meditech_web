@@ -189,12 +189,14 @@
             <li><a href="@Url.Action("Index","Home")" class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "active" : "")"><i class="fas fa-th-large"></i> Dashboard</a></li>
             <li><a href="@Url.Action("Index","Citas")" class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Citas" ? "active" : "")"><i class="fas fa-calendar-alt"></i> Citas</a></li>
             <li><a href="@Url.Action("Index","Pacientes")" class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Pacientes" ? "active" : "")"><i class="fas fa-user-injured"></i> Pacientes</a></li>
-            <li><a href="#"><i class="fas fa-stethoscope"></i> Consultas</a></li>
+            <li><a href="@Url.Action("Index","Tratamientos")" class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Tratamientos" ? "active" : "")"><i class="fas fa-hand-holding-medical"></i> Tratamientos</a></li>
+            <li><a href="@Url.Action("Index","Consultas")" class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Consultas" ? "active" : "")"><i class="fas fa-stethoscope"></i> Consultas</a></li>
+            <li><a href="@Url.Action("Index","Inventario")" class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Inventario" ? "active" : "")"><i class="fas fa-boxes"></i> Inventario</a></li>
         </ul>
 
         <div class="sidebar-section-label">Administración</div>
         <ul class="sidebar-nav">
-            <li><a href="#"><i class="fas fa-cash-register"></i> Caja y Pagos</a></li>
+            <li><a href="@Url.Action("Index","Caja")" class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Caja" ? "active" : "")"><i class="fas fa-cash-register"></i> Caja y Pagos</a></li>
             <li><a href="#"><i class="fas fa-chart-bar"></i> Reportes</a></li>
             <li><a href="#"><i class="fas fa-cog"></i> Configuración</a></li>
         </ul>
@@ -211,17 +213,7 @@
 
     <!-- TOPBAR -->
     <div class="topbar">
-        @if (ViewContext.RouteData.Values["controller"]?.ToString() != "Pacientes")
-        {
-            <div class="topbar-search">
-                <i class="fas fa-search" style="color: var(--text-secondary);"></i>
-                <input type="text" placeholder="Buscar pacientes, expediente..." />
-            </div>
-        }
-        else
-        {
-            <div></div> <!-- Spacer -->
-        }
+        <div></div> <!-- Spacer for layout -->
 
         <div class="topbar-user">
             <div class="user-info">

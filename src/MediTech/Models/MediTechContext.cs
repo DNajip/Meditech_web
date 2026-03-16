@@ -11,13 +11,25 @@ namespace MediTech.Models
         public DbSet<Estado> Estados { get; set; } = null!;
         public DbSet<TipoIdentificacion> TiposIdentificacion { get; set; } = null!;
         public DbSet<Genero> Generos { get; set; } = null!;
+        public DbSet<Moneda> Monedas { get; set; } = null!;
         public DbSet<Persona> Personas { get; set; } = null!;
         public DbSet<Empleado> Empleados { get; set; } = null!;
         public DbSet<Role> Roles { get; set; } = null!;
         public DbSet<Usuario> Usuarios { get; set; } = null!;
         public DbSet<Paciente> Pacientes { get; set; } = null!;
+        public DbSet<PosiblePaciente> PosiblePacientes { get; set; } = null!;
         public DbSet<Tratamiento> Tratamientos { get; set; } = null!;
+        public DbSet<EstadoCita> EstadosCita { get; set; } = null!;
         public DbSet<Cita> Citas { get; set; } = null!;
+        public DbSet<Consulta> Consultas { get; set; } = null!;
+        public DbSet<SignosVitales> SignosVitales { get; set; } = null!;
+        public DbSet<Diagnostico> Diagnosticos { get; set; } = null!;
+        public DbSet<Producto> Productos { get; set; } = null!;
+        public DbSet<MovimientoInventario> MovimientosInventario { get; set; } = null!;
+        public DbSet<ConfiguracionMoneda> ConfiguracionesMoneda { get; set; } = null!;
+        public DbSet<Cuenta> Cuentas { get; set; } = null!;
+        public DbSet<CuentaDetalle> CuentaDetalles { get; set; } = null!;
+        public DbSet<Pago> Pagos { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -58,6 +70,18 @@ namespace MediTech.Models
             modelBuilder.Entity<Cita>()
                 .Property(c => c.FechaCreacion)
                 .HasDefaultValueSql("SYSDATETIME()");
+
+            modelBuilder.Entity<Producto>(p =>
+            {
+                p.Property(x => x.FechaCreacion).HasDefaultValueSql("SYSDATETIME()");
+                p.ToTable(tb => tb.HasTrigger("TR_ACTUALIZAR_STOCK_POR_CUENTA")); // Por futuros triggers de ventas
+            });
+
+            modelBuilder.Entity<MovimientoInventario>(m =>
+            {
+                m.Property(x => x.FechaMovimiento).HasDefaultValueSql("SYSDATETIME()");
+                m.ToTable(tb => tb.HasTrigger("TR_ACTUALIZAR_STOCK_MOVIMIENTO"));
+            });
         }
     }
 }

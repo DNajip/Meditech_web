@@ -34,7 +34,12 @@ builder.Configuration
 
 
 // Add services to the container.
-builder.Services.AddControllersWithViews();
+var mvcBuilder = builder.Services.AddControllersWithViews();
+
+if (builder.Environment.IsDevelopment())
+{
+    mvcBuilder.AddRazorRuntimeCompilation();
+}
 
 // Database Context — validate connection string
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");

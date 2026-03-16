@@ -1,0 +1,8 @@
+E:\Programación\Antigravity\Meditech\db_checker\obj\Debug\net10.0\db_checker.csproj.AssemblyReference.cache
+E:\Programación\Antigravity\Meditech\db_checker\obj\Debug\net10.0\rpswa.dswa.cache.json
+E:\Programación\Antigravity\Meditech\db_checker\obj\Debug\net10.0\db_checker.GeneratedMSBuildEditorConfig.editorconfig
+E:\Programación\Antigravity\Meditech\db_checker\obj\Debug\net10.0\db_checker.AssemblyInfoInputs.cache
+E:\Programación\Antigravity\Meditech\db_checker\obj\Debug\net10.0\db_checker.AssemblyInfo.cs
+E:\Programación\Antigravity\Meditech\db_checker\obj\Debug\net10.0\db_checker.csproj.CoreCompileInputs.cache
+E:\Programación\Antigravity\Meditech\db_checker\obj\Debug\net10.0\db_checker.MvcApplicationPartsAssemblyInfo.cache
+E:\Programación\Antigravity\Meditech\db_checker\obj\Debug\net10.0\db_checker.sourcelink.json

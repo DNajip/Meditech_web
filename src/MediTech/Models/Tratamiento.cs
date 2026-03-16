@@ -17,9 +17,35 @@ public class Tratamiento
     [Column("PRECIO")]
     public decimal? Precio { get; set; }
 
+    [Column("ID_MONEDA")]
+    public int? IdMoneda { get; set; }
+
+    [Column("DOSIS")]
+    [StringLength(100)]
+    public string? Dosis { get; set; }
+
+    [Column("VIA_ADMINISTRACION")]
+    [StringLength(100)]
+    public string? ViaAdministracion { get; set; }
+
+    [Column("FRECUENCIA")]
+    [StringLength(100)]
+    public string? Frecuencia { get; set; }
+
+    [Column("DURACION_TRATAMIENTO")]
+    [StringLength(100)]
+    public string? DuracionTratamiento { get; set; }
+
     [Column("ID_ESTADO")]
     public int? IdEstado { get; set; }
 
+    [Column("FECHA_ACTUALIZACION")]
+    public DateTime? FechaActualizacion { get; set; }
+
+    // Navigation properties
     [ForeignKey("IdEstado")]
     public virtual Estado? Estado { get; set; }
+
+    [ForeignKey("IdMoneda")]
+    public virtual Moneda? Moneda { get; set; }
 }

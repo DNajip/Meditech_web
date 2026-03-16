@@ -1,0 +1,265 @@
+@model IEnumerable<MediTech.Models.Producto>
+
+@{
+    ViewData["Title"] = "Inventario de Productos";
+}
+
+<div class="container-fluid py-4">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="display-6 fw-bold text-gradient-primary mb-0">Gestión de Inventario</h2>
+            <p class="text-muted">Control de existencias e insumos médicos</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-action="Create" class="btn btn-primary-premium shadow-sm">
+                <i class="fas fa-plus-circle me-2"></i>Nuevo Producto
+            </a>
+            <button class="btn btn-outline-secondary-premium shadow-sm" onclick="window.print()">
+                <i class="fas fa-print me-2"></i>Reporte
+            </button>
+        </div>
+    </div>    <!-- Stats Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card card-premium h-100 border-0 shadow-sm overflow-hidden">
+                <div class="card-body d-flex align-items-center">
+                    <div class="icon-shape bg-soft-primary rounded-circle me-3">
+                        <i class="fas fa-boxes text-primary"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted mb-0 small uppercase fw-bold ls-1">Total Productos</h6>
+                        <h3 class="mb-0 fw-bold">@ViewBag.TotalItemsGlobal</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-premium h-100 border-0 shadow-sm overflow-hidden border-start border-4 border-warning">
+                <div class="card-body d-flex align-items-center">
+                    <div class="icon-shape bg-soft-warning rounded-circle me-3">
+                        <i class="fas fa-exclamation-triangle text-warning"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted mb-0 small uppercase fw-bold ls-1">Stock Bajo</h6>
+                        <h3 class="mb-0 fw-bold text-warning">@ViewBag.StockBajoCount</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-premium h-100 border-0 shadow-sm overflow-hidden border-start border-4 border-danger">
+                <div class="card-body d-flex align-items-center">
+                    <div class="icon-shape bg-soft-danger rounded-circle me-3">
+                        <i class="fas fa-times-circle text-danger"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted mb-0 small uppercase fw-bold ls-1">Sin Stock</h6>
+                        <h3 class="mb-0 fw-bold text-danger">@ViewBag.SinStockCount</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-premium h-100 border-0 shadow-sm overflow-hidden border-start border-4 border-info">
+                <div class="card-body d-flex align-items-center">
+                    <div class="icon-shape bg-soft-info rounded-circle me-3">
+                        <i class="fas fa-coins text-info"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted mb-0 small uppercase fw-bold ls-1">Valorización (Est.)</h6>
+                        <h3 class="mb-0 fw-bold text-info" style="font-size: 1.1rem;">C$ @ViewBag.ValorizacionTotalNio.ToString("N2")</h3>
+                        <div class="text-muted small">$ @ViewBag.ValorizacionTotalUsd.ToString("N2")</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filter -->
+    <div class="card card-premium border-0 shadow-sm mb-4">
+        <div class="card-body p-3">
+            <form asp-action="Index" method="get" class="row g-2">
+                <div class="col-md-10">
+                    <div class="input-group">
+                        <span class="input-group-text bg-transparent border-end-0 text-muted">
+                            <i class="fas fa-search"></i>
+                        </span>
+                        <input type="text" name="searchString" class="form-control border-start-0" placeholder="Buscar por nombre o descripción..." value="@ViewBag.SearchString">
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-secondary w-100">Filtrar</button>
+                </div>
+            </form>
+            <div class="text-end mt-2">
+                <small class="text-muted"><i class="fas fa-info-circle me-1"></i>Tasa de Cambio: 1 USD = @ViewBag.TasaCambio NIO</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table Section -->
+    <div class="card card-premium border-0 shadow-sm overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light-faded">
+                    <tr>
+                        <th class="ps-4">Producto</th>
+                        <th>Precio Unit.</th>
+                        <th>Stock Actual</th>
+                        <th>Valor Total (Dual)</th>
+                        <th>Estado</th>
+                        <th class="text-end pe-4">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        var stockClass = item.Stock <= 0 ? "text-danger" : (item.Stock <= item.StockMinimo ? "text-warning" : "text-success");
+                        var badgeClass = item.Stock <= 0 ? "bg-soft-danger text-danger" : (item.Stock <= item.StockMinimo ? "bg-soft-warning text-warning" : "bg-soft-success text-success");
+                        var statusText = item.Stock <= 0 ? "Agotado" : (item.Stock <= item.StockMinimo ? "Crítico" : "Disponible");
+                        
+                        double montoOriginal = (double)(item.Precio ?? 0) * item.Stock;
+                        string montoConvertido = "";
+                        double tc = (double)ViewBag.TasaCambio;
+
+                        if (item.Moneda?.Codigo == "USD")
+                        {
+                            montoConvertido = "C$ " + (montoOriginal * tc).ToString("N2");
+                        }
+                        else
+                        {
+                            montoConvertido = "$ " + (montoOriginal / tc).ToString("N2");
+                        }
+
+                        <tr>
+                            <td class="ps-4">
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-sm bg-soft-primary rounded-circle me-3 d-flex align-items-center justify-content-center">
+                                        <i class="fas fa-box text-primary fs-5"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold text-dark">@item.Nombre</div>
+                                        <div class="text-muted small">@item.Descripcion</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="fw-bold">@item.Moneda?.Simbolo @item.Precio?.ToString("N2")</span>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <span class="fw-bold @stockClass me-2">@item.Stock</span>
+                                    <span class="text-muted small">/ @item.StockMinimo mín.</span>
+                                </div>
+                                <div class="progress mt-1" style="height: 4px; width: 60px;">
+                                    @{
+                                        var percent = item.StockMinimo > 0 ? (item.Stock * 100 / (item.StockMinimo * 2)) : 100;
+                                        percent = Math.Min(percent, 100);
+                                        var pClass = item.Stock <= item.StockMinimo ? "bg-warning" : "bg-success";
+                                        if (item.Stock <= 0) pClass = "bg-danger";
+                                    }
+                                    <div class="progress-bar @pClass" role="progressbar" style="width: @percent%"></div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="fw-bold text-dark">@item.Moneda?.Simbolo @montoOriginal.ToString("N2")</div>
+                                <div class="text-muted extra-small">@montoConvertido</div>
+                            </td>
+                            <td>
+                                <span class="badge @badgeClass rounded-pill">@statusText</span>
+                            </td>
+                            <td class="text-end pe-4">
+                                <div class="btn-group">
+                                    <a asp-action="Ajustar" asp-route-id="@item.IdProducto" class="btn btn-sm btn-outline-info" title="Ajustar Stock">
+                                        <i class="fas fa-exchange-alt"></i>
+                                    </a>
+                                    <a asp-action="Edit" asp-route-id="@item.IdProducto" class="btn btn-sm btn-outline-primary" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a asp-action="Details" asp-route-id="@item.IdProducto" class="btn btn-sm btn-outline-secondary" title="Ver Detalle">
+                                        <i class="fas fa-info-circle"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Paginación de Inventario -->
+        @if (ViewBag.TotalPages > 1)
+        {
+            <div class="card-footer bg-white border-0 py-3">
+                <nav aria-label="Page navigation">
+                    <ul class="pagination pagination-sm justify-content-center mb-0 gap-1">
+                        <li class="page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
+                            <a class="page-link border-0 bg-light rounded shadow-none" asp-action="Index" asp-route-page="@(ViewBag.CurrentPage - 1)" asp-route-searchString="@ViewBag.SearchString">
+                                <i class="fas fa-chevron-left small"></i>
+                            </a>
+                        </li>
+                        
+                        @for (int i = 1; i <= ViewBag.TotalPages; i++)
+                        {
+                            <li class="page-item @(ViewBag.CurrentPage == i ? "active" : "")">
+                                <a class="page-link border-0 @(ViewBag.CurrentPage == i ? "bg-primary text-white" : "bg-light text-dark shadow-none") rounded" asp-action="Index" asp-route-page="@i" asp-route-searchString="@ViewBag.SearchString">@i</a>
+                            </li>
+                        }
+
+                        <li class="page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
+                            <a class="page-link border-0 bg-light rounded shadow-none" asp-action="Index" asp-route-page="@(ViewBag.CurrentPage + 1)" asp-route-searchString="@ViewBag.SearchString">
+                                <i class="fas fa-chevron-right small"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .text-gradient-primary {
+        background: linear-gradient(135deg, #2D3E50 0%, #4A90E2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .card-premium {
+        border-radius: 15px;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .icon-shape {
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+    }
+
+    .bg-soft-primary { background: rgba(13, 110, 253, 0.1); }
+    .bg-soft-warning { background: rgba(255, 193, 7, 0.1); }
+    .bg-soft-danger { background: rgba(220, 53, 69, 0.1); }
+    .bg-soft-info { background: rgba(13, 202, 240, 0.1); }
+    .bg-soft-success { background: rgba(25, 135, 84, 0.1); }
+
+    .btn-primary-premium {
+        background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%);
+        color: white;
+        border: none;
+        padding: 0.6rem 1.5rem;
+        border-radius: 10px;
+    }
+
+    .btn-outline-secondary-premium {
+        border: 2px solid #e9ecef;
+        padding: 0.6rem 1.5rem;
+        border-radius: 10px;
+        color: #6c757d;
+    }
+
+    .bg-light-faded { background-color: rgba(248, 249, 250, 0.7); }
+</style>

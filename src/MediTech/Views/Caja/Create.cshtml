@@ -1,0 +1,314 @@
+@{
+    ViewData["Title"] = "Nueva Cuenta";
+    var pacientes = ViewBag.Pacientes as List<MediTech.Models.Paciente>;
+    var tratamientos = ViewBag.Tratamientos as List<MediTech.Models.Tratamiento>;
+    var productos = ViewBag.Productos as List<MediTech.Models.Producto>;
+    var monedas = ViewBag.Monedas as List<MediTech.Models.Moneda>;
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="display-6 fw-bold text-gradient-primary mb-0">Nueva Cuenta</h2>
+            <p class="text-muted">Registrar una nueva cuenta de cobro para un paciente</p>
+        </div>
+        <a asp-action="Index" class="btn btn-outline-secondary shadow-sm">
+            <i class="fas fa-arrow-left me-2"></i>Volver
+        </a>
+    </div>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>@TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <form asp-action="Create" method="post" id="formCuenta">
+        <div class="row g-4">
+            <!-- Left Panel: Datos de la Cuenta -->
+            <div class="col-md-4">
+                <div class="card card-premium border-0 shadow-sm">
+                    <div class="card-header bg-white border-0 pt-4 px-4">
+                        <h5 class="fw-bold mb-0"><i class="fas fa-user-circle text-primary me-2"></i>Datos de Cuenta</h5>
+                    </div>
+                    <div class="card-body px-4">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Paciente <span class="text-danger">*</span></label>
+                            <select name="idPaciente" class="form-select" required id="selectPaciente">
+                                <option value="">-- Seleccionar Paciente --</option>
+                                @if (pacientes != null)
+                                {
+                                    @foreach (var p in pacientes)
+                                    {
+                                        <option value="@p.IdPaciente">@p.Persona?.PrimerNombre @p.Persona?.PrimerApellido</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Moneda Base</label>
+                            <select name="idMonedaBase" class="form-select" id="selectMoneda">
+                                @if (monedas != null)
+                                {
+                                    @foreach (var m in monedas)
+                                    {
+                                        <option value="@m.IdMoneda">@m.Nombre (@m.Simbolo)</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Descuento</label>
+                            <div class="input-group">
+                                <span class="input-group-text">C$</span>
+                                <input type="number" name="descuento" class="form-control" value="0" step="0.01" min="0" id="inputDescuento">
+                            </div>
+                        </div>
+
+                        <hr>
+                        <div class="bg-light rounded-3 p-3">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted">Subtotal:</span>
+                                <span class="fw-bold" id="lblSubtotal">C$ 0.00</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted">Descuento:</span>
+                                <span class="fw-bold text-danger" id="lblDescuento">- C$ 0.00</span>
+                            </div>
+                            <hr class="my-2">
+                            <div class="d-flex justify-content-between">
+                                <span class="fw-bold fs-5">Total:</span>
+                                <span class="fw-bold fs-5 text-primary" id="lblTotal">C$ 0.00</span>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary-premium w-100 mt-3 shadow-sm" id="btnGuardar" disabled>
+                            <i class="fas fa-save me-2"></i>Guardar Cuenta
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Items -->
+            <div class="col-md-8">
+                <div class="card card-premium border-0 shadow-sm">
+                    <div class="card-header bg-white border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+                        <h5 class="fw-bold mb-0"><i class="fas fa-list text-primary me-2"></i>Ítems de la Cuenta</h5>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-sm btn-outline-success" id="btnAddTratamiento">
+                                <i class="fas fa-plus me-1"></i>Tratamiento
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-info" id="btnAddProducto">
+                                <i class="fas fa-plus me-1"></i>Producto
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body px-4">
+                        <div class="table-responsive">
+                            <table class="table align-middle mb-0" id="tablaItems">
+                                <thead class="bg-light-faded">
+                                    <tr>
+                                        <th>Tipo</th>
+                                        <th>Descripción</th>
+                                        <th width="100">Cant.</th>
+                                        <th width="140">Precio Unit.</th>
+                                        <th width="140">Subtotal</th>
+                                        <th width="60"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodyItems">
+                                    <tr id="emptyRow">
+                                        <td colspan="6" class="text-center py-5 text-muted">
+                                            <i class="fas fa-cart-plus fa-3x mb-3 d-block opacity-25"></i>
+                                            Agregue tratamientos o productos usando los botones de arriba
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Modal Agregar Tratamiento -->
+<div class="modal fade" id="modalTratamiento" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-success bg-opacity-10 border-0">
+                <h5 class="modal-title fw-bold"><i class="fas fa-hand-holding-medical text-success me-2"></i>Agregar Tratamiento</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Tratamiento</label>
+                    <select class="form-select" id="selectTratamiento">
+                        <option value="">-- Seleccionar --</option>
+                        @if (tratamientos != null)
+                        {
+                            @foreach (var t in tratamientos)
+                            {
+                                <option value="@t.IdTratamiento" data-nombre="@t.NombreTratamiento" data-precio="@t.Precio">
+                                    @t.NombreTratamiento - @t.Moneda?.Simbolo @t.Precio?.ToString("N2")
+                                </option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Cantidad</label>
+                    <input type="number" class="form-control" id="cantTratamiento" value="1" min="1">
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-success" id="btnConfirmTratamiento">Agregar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Agregar Producto -->
+<div class="modal fade" id="modalProducto" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-info bg-opacity-10 border-0">
+                <h5 class="modal-title fw-bold"><i class="fas fa-box text-info me-2"></i>Agregar Producto</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Producto</label>
+                    <select class="form-select" id="selectProducto">
+                        <option value="">-- Seleccionar --</option>
+                        @if (productos != null)
+                        {
+                            @foreach (var p in productos)
+                            {
+                                <option value="@p.IdProducto" data-nombre="@p.Nombre" data-precio="@p.Precio" data-stock="@p.Stock">
+                                    @p.Nombre (Stock: @p.Stock) - @p.Moneda?.Simbolo @p.Precio?.ToString("N2")
+                                </option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Cantidad</label>
+                    <input type="number" class="form-control" id="cantProducto" value="1" min="1">
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-info text-white" id="btnConfirmProducto">Agregar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .text-gradient-primary { background: linear-gradient(135deg, #2D3E50 0%, #4A90E2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .card-premium { border-radius: 15px; }
+    .btn-primary-premium { background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%); color: white; border: none; padding: 0.6rem 1.5rem; border-radius: 10px; }
+    .bg-light-faded { background-color: rgba(248, 249, 250, 0.7); }
+</style>
+
+@section Scripts {
+<script>
+    let rowIndex = 0;
+
+    document.getElementById('btnAddTratamiento').addEventListener('click', () => {
+        new bootstrap.Modal(document.getElementById('modalTratamiento')).show();
+    });
+
+    document.getElementById('btnAddProducto').addEventListener('click', () => {
+        new bootstrap.Modal(document.getElementById('modalProducto')).show();
+    });
+
+    document.getElementById('btnConfirmTratamiento').addEventListener('click', () => {
+        const sel = document.getElementById('selectTratamiento');
+        const opt = sel.options[sel.selectedIndex];
+        if (!sel.value) return;
+        addRow('TRATAMIENTO', sel.value, opt.dataset.nombre, parseInt(document.getElementById('cantTratamiento').value) || 1, parseFloat(opt.dataset.precio) || 0);
+        bootstrap.Modal.getInstance(document.getElementById('modalTratamiento')).hide();
+        sel.selectedIndex = 0;
+        document.getElementById('cantTratamiento').value = 1;
+    });
+
+    document.getElementById('btnConfirmProducto').addEventListener('click', () => {
+        const sel = document.getElementById('selectProducto');
+        const opt = sel.options[sel.selectedIndex];
+        if (!sel.value) return;
+        const cant = parseInt(document.getElementById('cantProducto').value) || 1;
+        const stock = parseInt(opt.dataset.stock) || 0;
+        if (cant > stock) { alert('Stock insuficiente. Disponible: ' + stock); return; }
+        addRow('PRODUCTO', sel.value, opt.dataset.nombre, cant, parseFloat(opt.dataset.precio) || 0);
+        bootstrap.Modal.getInstance(document.getElementById('modalProducto')).hide();
+        sel.selectedIndex = 0;
+        document.getElementById('cantProducto').value = 1;
+    });
+
+    function addRow(tipo, idRef, desc, cant, precio) {
+        const empty = document.getElementById('emptyRow');
+        if (empty) empty.remove();
+
+        const subtotal = cant * precio;
+        const tbody = document.getElementById('tbodyItems');
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><span class="badge ${tipo === 'TRATAMIENTO' ? 'bg-soft-success text-success' : 'bg-soft-info text-info'} rounded-pill">${tipo}</span>
+                <input type="hidden" name="tipoItem" value="${tipo}">
+                <input type="hidden" name="idReferencia" value="${idRef}">
+                <input type="hidden" name="descripcionItem" value="${desc}">
+            </td>
+            <td class="fw-semibold">${desc}</td>
+            <td><input type="number" name="cantidad" class="form-control form-control-sm" value="${cant}" min="1" onchange="updateRow(this)">
+            </td>
+            <td><input type="number" name="precioUnitario" class="form-control form-control-sm" value="${precio.toFixed(2)}" step="0.01" onchange="updateRow(this)">
+            </td>
+            <td class="fw-bold subtotal-cell">${subtotal.toFixed(2)}</td>
+            <td><button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(this)"><i class="fas fa-trash"></i></button></td>
+        `;
+        tbody.appendChild(tr);
+        rowIndex++;
+        recalculate();
+    }
+
+    function removeRow(btn) {
+        btn.closest('tr').remove();
+        recalculate();
+        if (document.getElementById('tbodyItems').children.length === 0) {
+            document.getElementById('tbodyItems').innerHTML = `<tr id="emptyRow"><td colspan="6" class="text-center py-5 text-muted"><i class="fas fa-cart-plus fa-3x mb-3 d-block opacity-25"></i>Agregue tratamientos o productos</td></tr>`;
+        }
+    }
+
+    function updateRow(input) {
+        const tr = input.closest('tr');
+        const cant = parseFloat(tr.querySelector('[name="cantidad"]').value) || 0;
+        const precio = parseFloat(tr.querySelector('[name="precioUnitario"]').value) || 0;
+        tr.querySelector('.subtotal-cell').textContent = (cant * precio).toFixed(2);
+        recalculate();
+    }
+
+    function recalculate() {
+        let subtotal = 0;
+        document.querySelectorAll('.subtotal-cell').forEach(cell => {
+            subtotal += parseFloat(cell.textContent) || 0;
+        });
+        const descuento = parseFloat(document.getElementById('inputDescuento').value) || 0;
+        const total = subtotal - descuento;
+
+        document.getElementById('lblSubtotal').textContent = 'C$ ' + subtotal.toFixed(2);
+        document.getElementById('lblDescuento').textContent = '- C$ ' + descuento.toFixed(2);
+        document.getElementById('lblTotal').textContent = 'C$ ' + total.toFixed(2);
+
+        const hasItems = document.querySelectorAll('.subtotal-cell').length > 0;
+        document.getElementById('btnGuardar').disabled = !hasItems;
+    }
+
+    document.getElementById('inputDescuento').addEventListener('input', recalculate);
+</script>
+}
