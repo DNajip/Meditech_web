@@ -385,6 +385,61 @@ namespace MediTech.Models
                 END
             ");
 
+            // 5. Create ADM.SP_CONVERTIR_POSIBLE_A_PACIENTE
+            context.Database.ExecuteSqlRaw(@"
+                CREATE OR ALTER PROCEDURE ADM.SP_CONVERTIR_POSIBLE_A_PACIENTE
+                    @IdPosiblePaciente INT,
+                    @IdCita INT,
+                    @IdTipoIdentificacion INT,
+                    @NumIdentificacion VARCHAR(25),
+                    @IdGenero INT,
+                    @FechaNacimiento DATE,
+                    @Email VARCHAR(120) = NULL,
+                    @Direccion VARCHAR(250) = NULL,
+                    @ContactoEmergencia VARCHAR(120) = NULL,
+                    @TelefonoEmergencia VARCHAR(20) = NULL
+                AS
+                BEGIN
+                    SET NOCOUNT ON;
+                    BEGIN TRANSACTION;
+                    BEGIN TRY
+                        DECLARE @NewPersonaId INT;
+                        DECLARE @NewPacienteId INT;
+                        DECLARE @PNombre VARCHAR(40), @SNombre VARCHAR(40), @PApellido VARCHAR(40), @SApellido VARCHAR(40), @Tel VARCHAR(20);
+
+                        SELECT @PNombre = PRIMER_NOMBRE, @SNombre = SEGUNDO_NOMBRE, 
+                               @PApellido = PRIMER_APELLIDO, @SApellido = SEGUNDO_APELLIDO,
+                               @Tel = TELEFONO
+                        FROM CLI.POSIBLES_PACIENTES WHERE ID_POSIBLE_PACIENTE = @IdPosiblePaciente;
+
+                        IF @PNombre IS NULL THROW 50001, 'Posible paciente no encontrado.', 1;
+
+                        INSERT INTO ADM.PERSONAS (PRIMER_NOMBRE, SEGUNDO_NOMBRE, PRIMER_APELLIDO, SEGUNDO_APELLIDO, 
+                                                 ID_TIPO_IDENTIFICACION, NUM_IDENTIFICACION, ID_GENERO, FECHA_NACIMIENTO, 
+                                                 EMAIL, TELEFONO, DIRECCION, ID_ESTADO)
+                        VALUES (@PNombre, @SNombre, @PApellido, @SApellido, @IdTipoIdentificacion, @NumIdentificacion, @IdGenero, @FechaNacimiento, 
+                                @Email, @Tel, @Direccion, 1);
+                        
+                        SET @NewPersonaId = SCOPE_IDENTITY();
+
+                        INSERT INTO CLI.PACIENTES (ID_PERSONA, CONTACTO_EMERGENCIA, TELEFONO_EMERGENCIA, ID_ESTADO)
+                        VALUES (@NewPersonaId, @ContactoEmergencia, @TelefonoEmergencia, 1);
+                        SET @NewPacienteId = SCOPE_IDENTITY();
+
+                        UPDATE CLI.CITAS SET ID_PACIENTE = @NewPacienteId, ID_POSIBLE_PACIENTE = NULL, ID_ESTADO_CITA = 2 WHERE ID_CITA = @IdCita;
+
+                        UPDATE CLI.POSIBLES_PACIENTES SET ID_ESTADO = 2 WHERE ID_POSIBLE_PACIENTE = @IdPosiblePaciente;
+
+                        COMMIT;
+                        SELECT @NewPacienteId AS ID_PACIENTE_GENERADO;
+                    END TRY
+                    BEGIN CATCH
+                        ROLLBACK;
+                        THROW;
+                    END CATCH
+                END
+            ");
+
             Console.WriteLine("Schema migrations applied.");
         }
 

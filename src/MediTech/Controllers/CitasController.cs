@@ -194,6 +194,7 @@ public class CitasController : Controller
             id = cita.IdCita,
             paciente = $"{cita.Paciente?.Persona?.PrimerNombre} {cita.Paciente?.Persona?.PrimerApellido}",
             pacienteId = cita.IdPaciente,
+            posiblePacienteId = cita.IdPosiblePaciente,
             identificacion = cita.Paciente?.Persona?.NumIdentificacion ?? "",
             tratamiento = cita.Tratamiento?.NombreTratamiento ?? "General",
             color = "#3B82F6",
@@ -558,6 +559,12 @@ public class CitasController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ConvertirProspecto(int idCita, int idPosiblePaciente, int idTipoIdentificacion, string numIdentificacion, int idGenero, DateTime fechaNacimiento, string? email, string? direccion, string? contactoEmergencia, string? telefonoEmergencia)
     {
+        // Validación de rango de fecha para evitar SqlDateTime overflow
+        if (fechaNacimiento < new DateTime(1753, 1, 1) || fechaNacimiento > new DateTime(9999, 12, 31))
+        {
+            return Json(new { success = false, message = "La fecha de nacimiento no es válida para el sistema." });
+        }
+
         try
         {
             var rawSql = "EXEC ADM.SP_CONVERTIR_POSIBLE_A_PACIENTE @IdPosiblePaciente, @IdCita, @IdTipoIdentificacion, @NumIdentificacion, @IdGenero, @FechaNacimiento, @Email, @Direccion, @ContactoEmergencia, @TelefonoEmergencia";

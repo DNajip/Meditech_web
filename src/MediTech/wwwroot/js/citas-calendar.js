@@ -484,9 +484,9 @@ document.addEventListener('DOMContentLoaded', function () {
         } else {
             if (data.estadoId === 1) { 
                 btnGroupActions.innerHTML = `<button type="button" class="btn btn-success text-white w-100 fw-semibold py-2 shadow-sm" style="border-radius: 8px;" onclick="marcarAtendida(${data.id})"><i class="bi bi-check2-circle me-1"></i> Confirmar Llegada</button>
-                                             <button type="button" class="btn text-white fw-semibold py-2" style="background-color: #4F46E5; border-radius: 8px;" onclick="window.location.href='/Pacientes/Ficha/${data.pacienteId}'"><i class="bi bi-folder2-open"></i></button>`;
+                                             <a href="/Pacientes/Ficha/${data.pacienteId}" class="btn text-white fw-semibold py-2" style="background-color: #4F46E5; border-radius: 8px;"><i class="bi bi-folder2-open"></i></a>`;
             } else if (data.estadoId === 2) { 
-                btnGroupActions.innerHTML = `<button type="button" class="btn text-white w-100 fw-semibold py-2 shadow-sm" style="background-color: #4F46E5; border-radius: 8px;" onclick="window.location.href='/Consultas/Atender/${data.id}'"><i class="bi bi-stethoscope me-1"></i> Iniciar Consulta</button>`;
+                btnGroupActions.innerHTML = `<a href="/Consultas/Atender/${data.id}" class="btn text-white w-100 fw-semibold py-2 shadow-sm" style="background-color: #4F46E5; border-radius: 8px;"><i class="bi bi-stethoscope me-1"></i> Iniciar Consulta</a>`;
             } else {
                 btnGroupActions.innerHTML = `<span class="badge bg-danger w-100 p-3 fs-6 rounded-3">Cita Cancelada</span>`;
             }
