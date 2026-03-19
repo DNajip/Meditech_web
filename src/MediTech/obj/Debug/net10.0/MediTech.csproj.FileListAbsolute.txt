@@ -695,5 +695,6 @@ E:\Programación\Antigravity\Meditech\src\MediTech\bin\Debug\net10.0\refs\Window
 E:\Programación\Antigravity\Meditech\src\MediTech\bin\Debug\net10.0\Microsoft.AspNetCore.Mvc.Razor.Extensions.dll
 E:\Programación\Antigravity\Meditech\src\MediTech\bin\Debug\net10.0\Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation.dll
 E:\Programación\Antigravity\Meditech\src\MediTech\obj\Debug\net10.0\MediTech.MvcApplicationPartsAssemblyInfo.cs
-E:\Programación\Antigravity\Meditech\src\MediTech\obj\Debug\net10.0\compressed\omrglcp0px-{0}-p4kz9fc5o1-p4kz9fc5o1.gz
 E:\Programación\Antigravity\Meditech\src\MediTech\obj\Debug\net10.0\compressed\eukzba4kwk-{0}-cvyakovmv8-cvyakovmv8.gz
+E:\Programación\Antigravity\Meditech\src\MediTech\obj\Debug\net10.0\compressed\omrglcp0px-{0}-2tbztrqhii-2tbztrqhii.gz
+E:\Programación\Antigravity\Meditech\src\MediTech\obj\Debug\net10.0\compressed\eukzba4kwk-{0}-5ub7y0vbqq-5ub7y0vbqq.gz

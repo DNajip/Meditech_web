@@ -506,8 +506,12 @@ public class CitasController : Controller
             .Take(10)
             .ToListAsync();
 
+        var normalizedTermForProspect = term.ToLower();
         var prospects = await _context.PosiblePacientes
-            .Where(p => p.IdEstado == 1 && (p.PrimerNombre.Contains(term) || p.PrimerApellido.Contains(term) || p.Telefono.Contains(term)))
+            .Where(p => p.IdEstado == 1 && (
+                p.PrimerNombre.ToLower().Contains(normalizedTermForProspect) || 
+                p.PrimerApellido.ToLower().Contains(normalizedTermForProspect) || 
+                p.Telefono.Contains(normalizedTermForProspect)))
             .Select(p => new {
                 id = p.IdPosiblePaciente,
                 label = "[PROSPECTO] " + p.PrimerNombre + " " + p.PrimerApellido + " - " + p.Telefono,
@@ -557,7 +561,7 @@ public class CitasController : Controller
     // POST: Citas/ConvertirProspecto
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> ConvertirProspecto(int idCita, int idPosiblePaciente, int idTipoIdentificacion, string numIdentificacion, int idGenero, DateTime fechaNacimiento, string? email, string? direccion, string? contactoEmergencia, string? telefonoEmergencia)
+    public async Task<IActionResult> ConvertirProspecto(int idCita, int idPosiblePaciente, int idTipoIdentificacion, string numIdentificacion, int idGenero, DateTime fechaNacimiento, string? direccion, string? contactoEmergencia, string? telefonoEmergencia)
     {
         // Validación de rango de fecha para evitar SqlDateTime overflow
         if (fechaNacimiento < new DateTime(1753, 1, 1) || fechaNacimiento > new DateTime(9999, 12, 31))
@@ -576,7 +580,7 @@ public class CitasController : Controller
                 new Microsoft.Data.SqlClient.SqlParameter("@NumIdentificacion", numIdentificacion),
                 new Microsoft.Data.SqlClient.SqlParameter("@IdGenero", idGenero),
                 new Microsoft.Data.SqlClient.SqlParameter("@FechaNacimiento", fechaNacimiento),
-                new Microsoft.Data.SqlClient.SqlParameter("@Email", (object?)email ?? DBNull.Value),
+                new Microsoft.Data.SqlClient.SqlParameter("@Email", DBNull.Value),
                 new Microsoft.Data.SqlClient.SqlParameter("@Direccion", (object?)direccion ?? DBNull.Value),
                 new Microsoft.Data.SqlClient.SqlParameter("@ContactoEmergencia", (object?)contactoEmergencia ?? DBNull.Value),
                 new Microsoft.Data.SqlClient.SqlParameter("@TelefonoEmergencia", (object?)telefonoEmergencia ?? DBNull.Value)

@@ -18,6 +18,11 @@ document.addEventListener('DOMContentLoaded', function () {
     const modalCrearEl = document.getElementById('modalCrearCita');
     const modalDetalleEl = document.getElementById('modalDetalleCita');
 
+    const phoneInput = document.getElementById('modalTelefono');
+    const phoneAlert = document.getElementById('phoneMatchAlert');
+    let phoneTimeout = null;
+    let lastMatchData = null;
+
     if (!calendarEl) return;
 
     // 2. Helper Functions
@@ -210,7 +215,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // UI Reset
         document.getElementById('modalAlert').classList.add('d-none');
         document.getElementById('tipoPacienteExistente').checked = true;
-        toggleFields('paciente');
+        window.toggleFields('paciente');
         
         // Clear Search Results
         document.getElementById('pacienteSearchResults').style.display = 'none';
@@ -220,42 +225,19 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('PacienteId').value = "";
         document.getElementById('PosiblePacienteId').value = "";
 
+        // Reset Phone Alert
+        if (phoneAlert) phoneAlert.classList.add('d-none');
+        lastMatchData = null;
+
         const modal = new bootstrap.Modal(modalCrearEl);
         modal.show();
     };
 
-    // Toggle Visibility
-    const radios = document.querySelectorAll('input[name="tipoPaciente"]');
-    radios.forEach(r => r.addEventListener('change', (e) => toggleFields(e.target.value)));
-
-    function toggleFields(type) {
-        const secPaciente = document.getElementById('sectionPaciente');
-        const secProspecto = document.getElementById('sectionProspecto');
-        const patientSearch = document.getElementById('modalPacienteSearch');
-        const pNombre = document.getElementById('prospectoNombre');
-        const pApellido = document.getElementById('prospectoApellido');
-
-        if (type === 'paciente') {
-            secPaciente.classList.remove('d-none');
-            secProspecto.classList.add('d-none');
-            patientSearch.required = true;
-            pNombre.required = false;
-            pApellido.required = false;
-        } else {
-            secPaciente.classList.add('d-none');
-            secProspecto.classList.remove('d-none');
-            patientSearch.required = false;
-            pNombre.required = true;
-            pApellido.required = true;
-        }
-    }
-
     // Phone Lookup Logic
-    const phoneInput = document.getElementById('modalTelefono');
-    let phoneTimeout = null;
-
     phoneInput?.addEventListener('input', function() {
         clearTimeout(phoneTimeout);
+        if (phoneAlert) phoneAlert.classList.add('d-none');
+        
         const phone = this.value.trim();
         if (phone.length < 4) return;
 
@@ -264,24 +246,79 @@ document.addEventListener('DOMContentLoaded', function () {
                 .then(r => r.json())
                 .then(data => {
                     if (data.success) {
-                        if (data.isProspect) {
-                            document.getElementById('tipoNuevoProspecto').checked = true;
-                            toggleFields('prospecto');
-                            document.getElementById('prospectoNombre').value = data.nombre.split(' ')[0] || "";
-                            document.getElementById('prospectoApellido').value = data.nombre.split(' ')[1] || "";
-                            document.getElementById('PosiblePacienteId').value = data.id;
-                            document.getElementById('PacienteId').value = "";
-                        } else {
-                            document.getElementById('tipoPacienteExistente').checked = true;
-                            toggleFields('paciente');
-                            document.getElementById('modalPacienteSearch').value = data.nombre;
-                            document.getElementById('PacienteId').value = data.id;
-                            document.getElementById('PosiblePacienteId').value = "";
+                        lastMatchData = data;
+                        if (phoneAlert) {
+                            phoneAlert.innerHTML = `<i class="bi bi-exclamation-triangle-fill me-1"></i> Teléfono registrado a nombre de <strong>${data.nombre}</strong>. <button type="button" class="btn btn-link p-0 fw-bold text-decoration-none" style="font-size: 0.75rem;" onclick="useExistingRecord()">Vincular perfil</button>`;
+                            phoneAlert.classList.remove('alert-info');
+                            phoneAlert.classList.add('alert-warning');
+                            phoneAlert.classList.remove('d-none');
+                        }
+                        
+                        const selectedType = document.querySelector('input[name="tipoPaciente"]:checked')?.value;
+                        if (selectedType === 'prospecto') {
+                             document.getElementById('btnGuardarCita').disabled = true;
+                        }
+                    } else {
+                        lastMatchData = null;
+                        document.getElementById('btnGuardarCita').disabled = false;
+                        const selectedType = document.querySelector('input[name="tipoPaciente"]:checked')?.value;
+                        if (selectedType === 'prospecto') {
+                             document.getElementById('PosiblePacienteId').value = "";
+                             document.getElementById('PacienteId').value = "";
                         }
                     }
                 });
         }, 800);
     });
+
+    window.useExistingRecord = function() {
+        if (!lastMatchData) return;
+        
+        if (lastMatchData.isProspect) {
+            document.getElementById('tipoNuevoProspecto').checked = true;
+            toggleFields('prospecto');
+            document.getElementById('modalProspectoNombre').value = lastMatchData.nombre.split(' ')[0] || "";
+            document.getElementById('modalProspectoApellido').value = lastMatchData.nombre.split(' ')[1] || "";
+            document.getElementById('PosiblePacienteId').value = lastMatchData.id;
+            document.getElementById('PacienteId').value = "";
+        } else {
+            document.getElementById('tipoPacienteExistente').checked = true;
+            toggleFields('paciente');
+            document.getElementById('modalPacienteSearch').value = lastMatchData.nombre;
+            document.getElementById('PacienteId').value = lastMatchData.id;
+            document.getElementById('PosiblePacienteId').value = "";
+        }
+        phoneAlert.classList.add('d-none');
+        document.getElementById('btnGuardarCita').disabled = false;
+    };
+
+    // Al cambiar de tipo de paciente, limpiamos el estado
+    window.toggleFields = function(type) {
+        document.getElementById('pacientePanel').style.display = type === 'paciente' ? 'block' : 'none';
+        document.getElementById('prospectoPanel').style.display = type === 'prospecto' ? 'block' : 'none';
+        
+        // Reset IDs if switching
+        if (type === 'paciente') {
+            document.getElementById('modalProspectoNombre').value = "";
+            document.getElementById('modalProspectoSegundoNombre').value = "";
+            document.getElementById('modalProspectoApellido').value = "";
+            document.getElementById('modalProspectoSegundoApellido').value = "";
+            document.getElementById('PosiblePacienteId').value = "";
+        } else {
+            document.getElementById('modalPacienteSearch').value = "";
+            document.getElementById('PacienteId').value = "";
+        }
+        
+        // Si el teléfono actual tenía match, re-validar bloqueo
+        if (lastMatchData) {
+            if (type === 'prospecto' && !document.getElementById('PosiblePacienteId').value) {
+                document.getElementById('btnGuardarCita').disabled = true;
+                phoneAlert.classList.remove('d-none');
+            } else {
+                document.getElementById('btnGuardarCita').disabled = false;
+            }
+        }
+    };
 
     // Patient Search Autocomplete
     const patientSearch = document.getElementById('modalPacienteSearch');
@@ -361,7 +398,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Global click listener to close results
     document.addEventListener('click', function(e) {
-        if (!e.target.closest('#sectionPaciente')) patientResults.style.display = 'none';
+        if (!e.target.closest('#pacientePanel')) patientResults.style.display = 'none';
         if (!e.target.closest('#tratamientoSearchResults') && e.target !== treatmentSearch) treatmentResults.style.display = 'none';
     });
 
@@ -375,7 +412,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const cleanPhone = rawPhone.replace(/\D/g, '');
         phoneInput.value = cleanPhone;
         if (type === 'prospecto') {
-            if (!document.getElementById('prospectoNombre').value || !document.getElementById('prospectoApellido').value) {
+            if (!document.getElementById('modalProspectoNombre').value || !document.getElementById('modalProspectoApellido').value) {
                 alert("Por favor complete nombre y apellido del prospecto.");
                 return;
             }
@@ -397,14 +434,23 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // 1. If it's a NEW prospect (manual entry, no PosPId yet)
         if (type === 'prospecto' && !document.getElementById('PosiblePacienteId').value) {
-            const propFormData = new FormData();
-            propFormData.append('primerNombre', document.getElementById('prospectoNombre').value);
-            propFormData.append('primerApellido', document.getElementById('prospectoApellido').value);
-            propFormData.append('telefono', phoneInput.value);
+            const prospectoData = {
+                primerNombre: document.getElementById('modalProspectoNombre').value,
+                segundoNombre: document.getElementById('modalProspectoSegundoNombre').value,
+                primerApellido: document.getElementById('modalProspectoApellido').value,
+                segundoApellido: document.getElementById('modalProspectoSegundoApellido').value,
+                telefono: cleanPhone
+            };
+            
+            // Build query params including all 4 names
+            const params = new URLSearchParams(prospectoData);
             const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
-            propFormData.append('__RequestVerificationToken', token);
-
-            fetch('/Citas/CreateProspectoJson', { method: 'POST', body: propFormData })
+            
+            fetch(`/Citas/CreateProspectoJson`, {
+                method: 'POST',
+                headers: { 'RequestVerificationToken': token, 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: params.toString()
+            })
                 .then(r => r.json())
                 .then(data => {
                     if (data.success) {
@@ -433,6 +479,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     calendar.refetchEvents();
                     window.loadTodayAgenda();
                     bootstrap.Modal.getInstance(modalCrearEl).hide();
+
+                    // Limpieza de estados de match
+                    const phoneAlert = document.getElementById('phoneMatchAlert');
+                    if (phoneAlert) phoneAlert.classList.add('d-none');
+                    // Nota: lastMatchData se resetea al abrir el modal o al limpiar el form
                 } else {
                     document.getElementById('modalAlert').classList.remove('d-none');
                     document.getElementById('modalAlert').textContent = data.message;

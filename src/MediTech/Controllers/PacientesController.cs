@@ -16,8 +16,10 @@ public class PacientesController : Controller
     }
 
     // GET: /Pacientes
-    public async Task<IActionResult> Index(string? search)
+    public async Task<IActionResult> Index(string? search, int page = 1)
     {
+        int pageSize = 15;
+
         var query = _context.Pacientes
             .Include(p => p.Persona)
             .Where(p => p.IdEstado == 1);
@@ -25,7 +27,6 @@ public class PacientesController : Controller
         if (!string.IsNullOrWhiteSpace(search))
         {
             search = search.Trim();
-            var searchLower = search.ToLower();
             query = query.Where(p =>
                 p.Persona!.PrimerNombre.Contains(search) ||
                 p.Persona.PrimerApellido.Contains(search) ||
@@ -34,8 +35,18 @@ public class PacientesController : Controller
             );
         }
 
-        var pacientes = await query.OrderByDescending(p => p.FechaRegistro).ToListAsync();
+        var totalItems = await query.CountAsync();
+        var pacientes = await query
+            .OrderByDescending(p => p.FechaRegistro)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
         ViewBag.Search = search;
+        ViewBag.CurrentPage = page;
+        ViewBag.TotalPages = (int)Math.Ceiling((double)totalItems / pageSize);
+        ViewBag.TotalItems = totalItems;
+
         return View(pacientes);
     }
 
