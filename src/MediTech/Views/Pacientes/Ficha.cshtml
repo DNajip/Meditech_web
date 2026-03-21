@@ -354,6 +354,53 @@
         margin: 0 8px;
     }
 
+    /* DOCUMENT LIST */
+    .doc-list { display: flex; flex-direction: column; gap: 10px; }
+    .doc-item {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 14px 18px;
+        background: #F8FAFC;
+        border-radius: 12px;
+        border: 1px solid #E2E8F0;
+        transition: all 0.2s;
+    }
+    .doc-item:hover { background: #EEF2FF; border-color: #C7D2FE; }
+    .doc-icon {
+        width: 44px; height: 44px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.3rem;
+        flex-shrink: 0;
+    }
+    .doc-icon.pdf { background: #FEE2E2; color: #DC2626; }
+    .doc-icon.word { background: #DBEAFE; color: #2563EB; }
+    .doc-icon.excel { background: #D1FAE5; color: #059669; }
+    .doc-icon.image { background: #FEF3C7; color: #D97706; }
+    .doc-icon.other { background: #F1F5F9; color: #64748B; }
+    .doc-info { flex: 1; min-width: 0; }
+    .doc-name { font-weight: 600; color: #1E293B; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .doc-meta { font-size: 0.78rem; color: #94A3B8; margin-top: 2px; }
+    .doc-actions { display: flex; gap: 6px; flex-shrink: 0; }
+    .doc-actions button {
+        width: 34px; height: 34px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.85rem;
+        transition: 0.2s;
+    }
+    .btn-doc-download { background: #DBEAFE; color: #2563EB; }
+    .btn-doc-download:hover { background: #BFDBFE; }
+    .btn-doc-delete { background: #FEE2E2; color: #DC2626; }
+    .btn-doc-delete:hover { background: #FECACA; }
+
     /* PHOTO MODAL */
     .photo-modal {
         display: none;
@@ -799,7 +846,43 @@
         <div id="panel-documentos" class="tab-panel-content d-none">
             <div class="content-card">
                 <div class="card-header"><h6 class="card-title"><i class="fas fa-file-pdf"></i> Documentos y Consentimientos</h6></div>
-                <div class="placeholder-content"><i class="fas fa-file-alt"></i><p>Módulo de documentos en desarrollo.</p></div>
+                
+                <!-- Upload Section -->
+                <div class="upload-container mb-4">
+                    <div class="upload-zone" id="docDropZone" onclick="document.getElementById('docFileInput').click()">
+                        <div id="docDropZoneContent">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <p class="mb-1 fw-bold text-dark">Arrastra documentos aquí o haz clic para seleccionar</p>
+                            <p class="small text-muted mb-0">Soporta PDF, DOCX, XLSX, JPG, PNG</p>
+                        </div>
+                        <div id="docFilePreview" class="mt-2 d-none">
+                            <div class="d-flex align-items-center gap-2">
+                                <i id="docPreviewIcon" class="fas fa-file fs-4"></i>
+                                <div>
+                                    <div class="fw-bold small text-primary" id="docFileNameDisp"></div>
+                                    <div class="small text-muted" id="docFileSizeDisp"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-center gap-2 mt-3">
+                        <input type="text" id="docTitulo" class="form-control form-control-sm" placeholder="Título opcional..." style="max-width: 300px; border-radius: 8px;">
+                        <button id="btnSubirDoc" class="btn btn-success btn-sm px-4" onclick="uploadDocumento()" style="border-radius: 8px;">
+                            <i class="fas fa-save me-1"></i> Guardar Documento
+                        </button>
+                    </div>
+                    <input type="file" id="docFileInput" class="d-none" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png" onchange="handleDocFileSelect(event)">
+                </div>
+
+                <!-- Document List -->
+                <div id="documentosList" class="doc-list">
+                    <div class="text-center w-100 py-5 text-muted">
+                        <div class="spinner-border spinner-border-sm me-2"></div> Cargando documentos...
+                    </div>
+                </div>
+                <!-- Pagination -->
+                <div id="docsPagination" class="gallery-pagination"></div>
             </div>
         </div>
 
@@ -864,6 +947,8 @@
 <script>
     let historialData = null;
     const pacienteId = @Model.IdPaciente;
+    let galeriaLoaded = false;
+    let documentosLoaded = false;
 
     function switchTab(tabName) {
         console.log('Switching to tab:', tabName);
@@ -895,6 +980,10 @@
         // Special load for Galeria
         if (tabName === 'galeria' && !galeriaLoaded) {
             cargarGaleria();
+        }
+        // Special load for Documentos
+        if (tabName === 'documentos' && !documentosLoaded) {
+            cargarDocumentos();
         }
     }
 
@@ -1022,7 +1111,6 @@
     }
 
     // --- GALLERY LOGIC ---
-    let galeriaLoaded = false;
     let selectedFile = null;
 
     // Drag and drop helper
@@ -1240,7 +1328,192 @@
         }
     }
 
+    // ============ DOCUMENTOS MODULE ============
+    let selectedDocFile = null;
+    const DOCS_PER_PAGE = 8;
+    let allDocs = [];
+    let currentDocPage = 1;
+
+    function initDocDragAndDrop() {
+        const zone = document.getElementById('docDropZone');
+        if (!zone) return;
+        ['dragenter','dragover','dragleave','drop'].forEach(e => {
+            zone.addEventListener(e, ev => { ev.preventDefault(); ev.stopPropagation(); });
+        });
+        zone.addEventListener('dragenter', () => zone.classList.add('drag-over'));
+        zone.addEventListener('dragover', () => zone.classList.add('drag-over'));
+        zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+        zone.addEventListener('drop', e => {
+            zone.classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            if (file) prepareDocFile(file);
+        });
+    }
+
+    function handleDocFileSelect(event) {
+        const file = event.target.files[0];
+        if (file) prepareDocFile(file);
+    }
+
+    function getDocIconClass(contentType, fileName) {
+        if (contentType.includes('pdf')) return { icon: 'fas fa-file-pdf', css: 'pdf' };
+        if (contentType.includes('word') || contentType.includes('document') || fileName.endsWith('.docx') || fileName.endsWith('.doc')) return { icon: 'fas fa-file-word', css: 'word' };
+        if (contentType.includes('excel') || contentType.includes('sheet') || fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) return { icon: 'fas fa-file-excel', css: 'excel' };
+        if (contentType.startsWith('image/')) return { icon: 'fas fa-file-image', css: 'image' };
+        return { icon: 'fas fa-file', css: 'other' };
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / 1048576).toFixed(1) + ' MB';
+    }
+
+    function prepareDocFile(file) {
+        selectedDocFile = file;
+        const preview = document.getElementById('docFilePreview');
+        const icon = document.getElementById('docPreviewIcon');
+        const nameDisp = document.getElementById('docFileNameDisp');
+        const sizeDisp = document.getElementById('docFileSizeDisp');
+        const dropContent = document.getElementById('docDropZoneContent');
+
+        if (preview && nameDisp) {
+            const iconInfo = getDocIconClass(file.type, file.name);
+            icon.className = iconInfo.icon + ' fs-4';
+            nameDisp.textContent = file.name;
+            sizeDisp.textContent = formatFileSize(file.size);
+            preview.classList.remove('d-none');
+            if (dropContent) dropContent.classList.add('d-none');
+        }
+    }
+
+    async function uploadDocumento() {
+        if (!selectedDocFile) { alert('Seleccione un archivo primero.'); return; }
+
+        const formData = new FormData();
+        formData.append('idPaciente', pacienteId);
+        formData.append('titulo', document.getElementById('docTitulo').value || '');
+        formData.append('file', selectedDocFile);
+
+        const btn = document.getElementById('btnSubirDoc');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Subiendo...';
+        btn.disabled = true;
+
+        try {
+            const response = await fetch('/Documentos/UploadDocumento', { method: 'POST', body: formData });
+            const result = await response.json();
+            if (result.success) {
+                selectedDocFile = null;
+                document.getElementById('docFileInput').value = '';
+                document.getElementById('docTitulo').value = '';
+                document.getElementById('docFilePreview').classList.add('d-none');
+                const dropContent = document.getElementById('docDropZoneContent');
+                if (dropContent) dropContent.classList.remove('d-none');
+                cargarDocumentos();
+                alert('\u00a1Documento guardado con \u00e9xito!');
+            } else {
+                alert('Error: ' + result.message);
+            }
+        } catch (e) {
+            console.error(e);
+            alert('Error al conectar con el servidor.');
+        } finally {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    }
+
+    async function cargarDocumentos() {
+        const list = document.getElementById('documentosList');
+        try {
+            const response = await fetch(`/Documentos/GetDocumentos/${pacienteId}`);
+            const result = await response.json();
+            if (result.success) {
+                allDocs = result.data;
+                currentDocPage = 1;
+                renderDocsPage();
+            }
+        } catch (e) {
+            console.error(e);
+            list.innerHTML = '<div class="text-center w-100 py-4 text-danger">Error al cargar documentos.</div>';
+        } finally {
+            documentosLoaded = true;
+        }
+    }
+
+    function renderDocsPage() {
+        const list = document.getElementById('documentosList');
+        const pag = document.getElementById('docsPagination');
+        if (!list) return;
+
+        if (allDocs.length === 0) {
+            list.innerHTML = '<div class="text-center w-100 py-5 text-muted"><i class="fas fa-folder-open fs-2 d-block mb-3 opacity-25"></i>No hay documentos registrados a\u00fan.</div>';
+            if (pag) pag.innerHTML = '';
+            return;
+        }
+
+        const totalPages = Math.ceil(allDocs.length / DOCS_PER_PAGE);
+        if (currentDocPage > totalPages) currentDocPage = totalPages;
+        const start = (currentDocPage - 1) * DOCS_PER_PAGE;
+        const pageDocs = allDocs.slice(start, start + DOCS_PER_PAGE);
+
+        list.innerHTML = pageDocs.map(doc => {
+            const iconInfo = getDocIconClass(doc.contentType, doc.nombreArchivo);
+            const displayName = doc.titulo || doc.nombreArchivo;
+            return `
+                <div class="doc-item">
+                    <div class="doc-icon ${iconInfo.css}"><i class="${iconInfo.icon}"></i></div>
+                    <div class="doc-info">
+                        <div class="doc-name" title="${doc.nombreArchivo}">${displayName}</div>
+                        <div class="doc-meta">${doc.nombreArchivo} &bull; ${formatFileSize(doc.tamano)} &bull; ${doc.fecha}</div>
+                    </div>
+                    <div class="doc-actions">
+                        <button class="btn-doc-download" onclick="descargarDocumento(${doc.idDocumento})" title="Descargar"><i class="fas fa-download"></i></button>
+                        <button class="btn-doc-delete" onclick="eliminarDocumento(${doc.idDocumento})" title="Eliminar"><i class="fas fa-trash-alt"></i></button>
+                    </div>
+                </div>`;
+        }).join('');
+
+        // Pagination
+        if (pag) {
+            if (totalPages <= 1) { pag.innerHTML = ''; return; }
+            let html = `<button onclick="goToDocPage(${currentDocPage - 1})" ${currentDocPage === 1 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i></button>`;
+            for (let i = 1; i <= totalPages; i++) {
+                html += `<button class="${i === currentDocPage ? 'active' : ''}" onclick="goToDocPage(${i})">${i}</button>`;
+            }
+            html += `<button onclick="goToDocPage(${currentDocPage + 1})" ${currentDocPage === totalPages ? 'disabled' : ''}><i class="fas fa-chevron-right"></i></button>`;
+            html += `<span class="page-info">${allDocs.length} documentos</span>`;
+            pag.innerHTML = html;
+        }
+    }
+
+    function goToDocPage(page) {
+        const totalPages = Math.ceil(allDocs.length / DOCS_PER_PAGE);
+        if (page < 1 || page > totalPages) return;
+        currentDocPage = page;
+        renderDocsPage();
+        document.getElementById('documentosList')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function descargarDocumento(id) {
+        window.open(`/Documentos/DownloadDocumento/${id}`, '_blank');
+    }
+
+    async function eliminarDocumento(id) {
+        if (!confirm('\u00bfEst\u00e1 seguro de eliminar este documento?')) return;
+        try {
+            const response = await fetch(`/Documentos/DeleteDocumento/${id}`, { method: 'POST' });
+            const result = await response.json();
+            if (result.success) cargarDocumentos();
+            else alert(result.message);
+        } catch (e) { console.error(e); alert('Error al eliminar.'); }
+    }
+
     // Initialize D&D on load
-    document.addEventListener('DOMContentLoaded', initDragAndDrop);
+    document.addEventListener('DOMContentLoaded', () => {
+        initDragAndDrop();
+        initDocDragAndDrop();
+    });
 </script>
 }

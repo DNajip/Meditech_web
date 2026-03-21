@@ -303,6 +303,26 @@ namespace MediTech.Models
                         FOREIGN KEY(ID_PACIENTE) REFERENCES CLI.PACIENTES(ID_PACIENTE)
                     );
                 END
+
+                -- 1.6 Create DOC schema if it doesn't exist
+                IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name = 'DOC')
+                    EXEC('CREATE SCHEMA DOC');
+
+                -- 1.7 Create DOC.DOCUMENTOS_CLINICOS if it doesn't exist
+                IF NOT EXISTS (SELECT 1 FROM sys.tables t JOIN sys.schemas s ON t.schema_id = s.schema_id WHERE s.name = 'DOC' AND t.name = 'DOCUMENTOS_CLINICOS')
+                BEGIN
+                    CREATE TABLE DOC.DOCUMENTOS_CLINICOS (
+                        ID_DOCUMENTO INT IDENTITY CONSTRAINT PK_DOCUMENTOS_CLINICOS PRIMARY KEY,
+                        ID_PACIENTE INT NOT NULL,
+                        NOMBRE_ARCHIVO NVARCHAR(200) NOT NULL,
+                        TITULO NVARCHAR(200),
+                        CONTENIDO VARBINARY(MAX) NOT NULL,
+                        CONTENT_TYPE NVARCHAR(100) NOT NULL,
+                        TAMANO_BYTES BIGINT NOT NULL DEFAULT 0,
+                        FECHA_REGISTRO DATETIME2 DEFAULT SYSDATETIME(),
+                        FOREIGN KEY(ID_PACIENTE) REFERENCES CLI.PACIENTES(ID_PACIENTE)
+                    );
+                END
             ");
 
             // 2. Add TELEFONO column to CLI.CITAS
