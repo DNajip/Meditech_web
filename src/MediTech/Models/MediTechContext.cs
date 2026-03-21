@@ -33,6 +33,7 @@ namespace MediTech.Models
         public DbSet<HistorialClinico> HistorialesClinicos { get; set; } = null!;
         public DbSet<FotoClinica> FotosClinicas { get; set; } = null!;
         public DbSet<DocumentoClinico> DocumentosClinicos { get; set; } = null!;
+        public DbSet<ConsultaDetalle> ConsultaDetalles { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

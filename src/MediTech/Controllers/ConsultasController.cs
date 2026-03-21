@@ -335,6 +335,147 @@ namespace MediTech.Controllers
             return View(consulta);
         }
 
+        // POST: Consultas/CerrarConsulta
+        [HttpPost]
+        public async Task<IActionResult> CerrarConsulta([FromBody] CerrarConsultaDto data)
+        {
+            if (data == null || data.IdConsulta <= 0)
+                return Json(new { success = false, message = "Datos inválidos." });
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var consulta = await _context.Consultas
+                    .Include(c => c.Cita)
+                    .FirstOrDefaultAsync(c => c.IdConsulta == data.IdConsulta);
+
+                if (consulta == null)
+                    return Json(new { success = false, message = "Consulta no encontrada." });
+
+                var estadoFinalizada = await _context.Estados.FirstOrDefaultAsync(e => e.DescEstado == "FINALIZADA");
+                var idEstadoFinalizada = estadoFinalizada?.IdEstado ?? 3;
+
+                if (consulta.IdEstado == idEstadoFinalizada)
+                    return Json(new { success = false, message = "La consulta ya fue finalizada previamente." });
+
+                // 1. Actualizar Consulta
+                consulta.DiagnosticoPrincipal = data.DiagnosticoFinal;
+                consulta.Observaciones = data.Observaciones;
+                consulta.IdEstado = idEstadoFinalizada;
+                _context.Update(consulta);
+
+                // 2. Crear Cuenta en CAJA
+                var monedaUsd = await _context.Monedas.FirstOrDefaultAsync(m => m.Codigo == "USD");
+                decimal total = data.Items.Sum(i => i.Subtotal);
+
+                var nuevaCuenta = new Cuenta
+                {
+                    IdPaciente = consulta.Cita?.IdPaciente,
+                    IdConsulta = consulta.IdConsulta,
+                    TotalBruto = total,
+                    Descuento = 0,
+                    TotalFinal = total,
+                    IdMonedaBase = monedaUsd?.IdMoneda,
+                    FechaCreacion = DateTime.Now
+                };
+                _context.Cuentas.Add(nuevaCuenta);
+                await _context.SaveChangesAsync(); // Para obtener IdCuenta
+
+                // 3. Procesar Items (Detalles clínicos, Cuenta Detalles e Inventario)
+                foreach (var item in data.Items)
+                {
+                    // Detalle Clínico
+                    var consultaDetalle = new ConsultaDetalle
+                    {
+                        IdConsulta = consulta.IdConsulta,
+                        TipoItem = item.TipoItem?.ToUpper(),
+                        IdReferencia = item.IdReferencia,
+                        Descripcion = item.Descripcion,
+                        Cantidad = item.Cantidad,
+                        PrecioUnitario = item.PrecioUnitario,
+                        Subtotal = item.Subtotal
+                    };
+                    _context.ConsultaDetalles.Add(consultaDetalle);
+
+                    // Detalle Cuenta (Caja)
+                    var cuentaDetalle = new CuentaDetalle
+                    {
+                        IdCuenta = nuevaCuenta.IdCuenta,
+                        TipoItem = item.TipoItem?.ToUpper(),
+                        IdReferencia = item.IdReferencia,
+                        Descripcion = item.Descripcion,
+                        Cantidad = item.Cantidad,
+                        PrecioUnitario = item.PrecioUnitario,
+                        Subtotal = item.Subtotal
+                    };
+                    _context.CuentaDetalles.Add(cuentaDetalle);
+
+                    // Inventario (si es PRODUCTO)
+                    if (item.TipoItem?.ToUpper() == "PRODUCTO")
+                    {
+                        var producto = await _context.Productos.FindAsync(item.IdReferencia);
+                        if (producto == null)
+                            throw new Exception($"Producto no encontrado (ID: {item.IdReferencia}).");
+
+                        if (producto.Stock < item.Cantidad)
+                            throw new Exception($"Stock insuficiente para el producto: {producto.Nombre}. Stock actual: {producto.Stock}. Req: {item.Cantidad}");
+
+                        producto.Stock -= item.Cantidad;
+                        _context.Update(producto);
+
+                        var movInventario = new MovimientoInventario
+                        {
+                            IdProducto = producto.IdProducto,
+                            TipoMovimiento = "VENTA",
+                            Cantidad = item.Cantidad, // Cantidad en positivo (representa la salida porque es VENTA u otro flujo interno lo asume, para reportes lo dejaremos positivo, restado de stock)
+                            Observacion = $"Cierre de consulta #{consulta.IdConsulta}",
+                            FechaMovimiento = DateTime.Now
+                        };
+                        _context.MovimientosInventario.Add(movInventario);
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return Json(new { success = true, idConsulta = consulta.IdConsulta });
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetCatTratamientos()
+        {
+            var tratamientos = await _context.Tratamientos
+                .Where(t => t.IdEstado == 1) // 1 ACTIVO
+                .Select(t => new { 
+                    id = t.IdTratamiento, 
+                    nombre = t.NombreTratamiento, 
+                    precio = t.Precio ?? 0 
+                })
+                .ToListAsync();
+            return Json(tratamientos);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetCatProductos()
+        {
+            var productos = await _context.Productos
+                .Where(p => p.Activo && p.Stock > 0)
+                .Select(p => new { 
+                    id = p.IdProducto, 
+                    nombre = p.Nombre, 
+                    precio = p.Precio ?? 0,
+                    stock = p.Stock 
+                })
+                .ToListAsync();
+            return Json(productos);
+        }
+
         private bool ConsultaExists(int id)
         {
             return _context.Consultas.Any(e => e.IdConsulta == id);

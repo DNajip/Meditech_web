@@ -354,6 +354,22 @@
         margin: 0 8px;
     }
 
+    /* CIERRE CONSULTA MODAL */
+    .cierre-section {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 20px;
+    }
+    .cierre-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    .cierre-table th { background: #e2e8f0; padding: 8px; font-size: 0.85rem; font-weight: 600; text-align: left; }
+    .cierre-table td { padding: 8px; border-bottom: 1px solid #e2e8f0; font-size: 0.9rem; }
+    .cierre-table td.num { text-align: right; }
+    .total-box { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 16px; }
+    .total-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.95rem; }
+    .total-final { font-size: 1.25rem; font-weight: bold; color: #1e40af; border-top: 2px solid #bfdbfe; padding-top: 8px; }
+
     /* DOCUMENT LIST */
     .doc-list { display: flex; flex-direction: column; gap: 10px; }
     .doc-item {
@@ -654,10 +670,7 @@
                     <h5 class="fw-bold mb-2">Continuar con la Atención Médica</h5>
                     <p class="text-muted small mb-4">El paciente ya pasó por el área de recepción. Proceda a registrar el diagnóstico final y tratamiento.</p>
                     <div class="d-flex gap-2 justify-content-center">
-                        <a href="@Url.Action("Edit", "Consultas", new { id = consultaActiva?.IdConsulta })" class="btn btn-primary px-4 py-2 fw-bold" style="border-radius: 8px;">
-                            <i class="fas fa-edit me-2"></i> Completar Evaluación Clínica
-                        </a>
-                        <button class="btn btn-outline-danger px-4 py-2 fw-bold" style="border-radius: 8px;">Finalizar Consulta</button>
+                        <button class="btn btn-success px-4 py-2 fw-bold shadow-sm" style="border-radius: 8px; color: white" onclick="abrirModalCierre()">Cerrar Consulta</button>
                     </div>
                 </div>
             </div>
@@ -927,6 +940,102 @@
                             <i class="fas fa-pen-nib"></i>
                             <p class="small mb-0">Pendientes de firma.</p>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL CIERRE DE CONSULTA -->
+        <div class="modal fade" id="modalCierreConsulta" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+            <div class="modal-dialog modal-xl modal-dialog-scrollable">
+                <div class="modal-content border-0 shadow-lg">
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title fw-bold"><i class="fas fa-check-circle me-2"></i>Cierre de Consulta</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <!-- Sección 1: Diagnóstico Final y Observaciones -->
+                        <div class="cierre-section">
+                            <h6 class="fw-bold mb-3"><i class="fas fa-notes-medical text-primary me-2"></i>1. Diagnóstico y Observaciones</h6>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label small fw-bold text-muted">Diagnóstico Final</label>
+                                    <textarea id="cierreDiagnostico" class="form-control" rows="3" placeholder="Diagnóstico definitivo de la consulta..."></textarea>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label small fw-bold text-muted">Observaciones Adicionales</label>
+                                    <textarea id="cierreObservaciones" class="form-control" rows="3" placeholder="Recomendaciones, notas clínicas..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sección 2: Tratamientos -->
+                        <div class="cierre-section">
+                            <h6 class="fw-bold mb-3"><i class="fas fa-hand-holding-medical text-info me-2"></i>2. Tratamientos Aplicados</h6>
+                            <div class="row align-items-end mb-3">
+                                <div class="col-md-7">
+                                    <label class="form-label small fw-bold text-muted">Seleccionar Tratamiento</label>
+                                    <select id="selCierreTratamiento" class="form-select" onchange="actualizarPrecioCierre('TRATAMIENTO')">
+                                        <option value="">-- Seleccione --</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small fw-bold text-muted">Precio ($)</label>
+                                    <input type="number" id="precioCierreTratamiento" class="form-control" step="0.01" readonly style="background-color: #f1f5f9;">
+                                </div>
+                                <div class="col-md-3">
+                                    <button class="btn btn-outline-primary w-100" type="button" onclick="agregarItemCierre('TRATAMIENTO')"><i class="fas fa-plus me-1"></i> Agregar</button>
+                                </div>
+                            </div>
+                            <table class="cierre-table">
+                                <thead><tr><th>Tratamiento</th><th class="text-end">Precio</th><th class="text-center">Remover</th></tr></thead>
+                                <tbody id="tbodyCierreTratamientos"></tbody>
+                            </table>
+                        </div>
+
+                        <!-- Sección 3: Productos -->
+                        <div class="cierre-section">
+                            <h6 class="fw-bold mb-3"><i class="fas fa-box-open text-warning me-2"></i>3. Productos</h6>
+                            <div class="row align-items-end mb-3">
+                                <div class="col-md-5">
+                                    <label class="form-label small fw-bold text-muted">Seleccionar Producto</label>
+                                    <select id="selCierreProducto" class="form-select" onchange="actualizarPrecioCierre('PRODUCTO')">
+                                        <option value="">-- Seleccione --</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small fw-bold text-muted">Precio ($)</label>
+                                    <input type="number" id="precioCierreProducto" class="form-control" step="0.01" readonly style="background-color: #f1f5f9;">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small fw-bold text-muted">Cantidad</label>
+                                    <input type="number" id="cantCierreProducto" class="form-control" value="1" min="1">
+                                </div>
+                                <div class="col-md-3">
+                                    <button class="btn btn-outline-warning w-100 text-dark" type="button" onclick="agregarItemCierre('PRODUCTO')"><i class="fas fa-plus me-1"></i> Agregar</button>
+                                </div>
+                            </div>
+                            <table class="cierre-table">
+                                <thead><tr><th>Producto</th><th class="text-center">Cant.</th><th class="text-end">Precio</th><th class="text-end">Subtotal</th><th class="text-center" style="width: 80px;">Remover</th></tr></thead>
+                                <tbody id="tbodyCierreProductos"></tbody>
+                            </table>
+                        </div>
+
+                        <!-- Sección 4: Resumen -->
+                        <div class="row justify-content-end mt-4">
+                            <div class="col-md-5">
+                                <div class="total-box shadow-sm">
+                                    <h6 class="fw-bold mb-3 text-center"><i class="fas fa-file-invoice-dollar me-2" style="color:#1e40af;"></i>Resumen de la Cuenta</h6>
+                                    <div class="total-row"><span>Subtotal Tratamientos:</span> <span>$<span id="resCierreTrat">0.00</span></span></div>
+                                    <div class="total-row"><span>Subtotal Productos:</span> <span>$<span id="resCierreProd">0.00</span></span></div>
+                                    <div class="total-row total-final"><span>TOTAL FINAL:</span> <span>$<span id="resCierreTotal">0.00</span></span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-light">
+                        <button type="button" class="btn btn-secondary px-4 fw-bold" data-bs-dismiss="modal" style="border-radius: 8px;">Cancelar</button>
+                        <button type="button" class="btn btn-success px-4 fw-bold shadow-sm" id="btnConfirmarCierre" onclick="submitCierreConsulta()" style="border-radius: 8px;"><i class="fas fa-check me-2"></i>Confirmar y Facturar</button>
                     </div>
                 </div>
             </div>
@@ -1515,5 +1624,186 @@
         initDragAndDrop();
         initDocDragAndDrop();
     });
+
+    // ============ CIERRE CONSULTA LOGIC ============
+    let catTratamientos = [];
+    let catProductos = [];
+    let itemsCierre = [];
+    let modalCierreObj = null;
+    const idConsultaActivaParaCierre = @(ViewBag.ConsultaActiva != null ? ((MediTech.Models.Consulta)ViewBag.ConsultaActiva).IdConsulta : 0);
+
+    async function abrirModalCierre() {
+        if (!modalCierreObj) {
+            modalCierreObj = new bootstrap.Modal(document.getElementById('modalCierreConsulta'));
+        }
+        
+        // Load catalogs if not loaded
+        if (catTratamientos.length === 0) {
+            try { 
+                const resT = await fetch('/Consultas/GetCatTratamientos');
+                catTratamientos = await resT.json(); 
+                const selT = document.getElementById('selCierreTratamiento');
+                catTratamientos.forEach(t => selT.add(new Option(t.nombre, t.id)));
+                
+                const resP = await fetch('/Consultas/GetCatProductos');
+                catProductos = await resP.json(); 
+                const selP = document.getElementById('selCierreProducto');
+                catProductos.forEach(p => selP.add(new Option(`${p.nombre} (Stock: ${p.stock})`, p.id)));
+            } catch(e) { console.error('Error loading catalogs', e); }
+        }
+        
+        modalCierreObj.show();
+    }
+
+    function actualizarPrecioCierre(tipo) {
+        if (tipo === 'TRATAMIENTO') {
+            const id = parseInt(document.getElementById('selCierreTratamiento').value);
+            const item = catTratamientos.find(t => t.id === id);
+            document.getElementById('precioCierreTratamiento').value = item ? item.precio : '';
+        } else {
+            const id = parseInt(document.getElementById('selCierreProducto').value);
+            const item = catProductos.find(p => p.id === id);
+            document.getElementById('precioCierreProducto').value = item ? item.precio : '';
+        }
+    }
+
+    function agregarItemCierre(tipo) {
+        const isTrat = tipo === 'TRATAMIENTO';
+        const sel = document.getElementById(isTrat ? 'selCierreTratamiento' : 'selCierreProducto');
+        const inpPrecio = document.getElementById(isTrat ? 'precioCierreTratamiento' : 'precioCierreProducto');
+        
+        const idRef = parseInt(sel.value);
+        if (!idRef) return alert('Seleccione un ítem.');
+        const precio = parseFloat(inpPrecio.value);
+        if (isNaN(precio) || precio < 0) return alert('Precio inválido.');
+        
+        // Tratamientos always have quantity 1. Products take quantity from input.
+        let cant = 1;
+        if (!isTrat) {
+            const inpCant = document.getElementById('cantCierreProducto');
+            cant = parseInt(inpCant.value);
+            if (isNaN(cant) || cant <= 0) return alert('Cantidad inválida.');
+        }
+
+        let desc = sel.options[sel.selectedIndex].text;
+        
+        // Validate stock logic for PRODUCTO
+        if (!isTrat) {
+            const prod = catProductos.find(p => p.id === idRef);
+            // Current quantity in cart
+            const cantInCart = itemsCierre.filter(i => i.tipoItem === 'PRODUCTO' && i.idReferencia === idRef).reduce((acc, curr) => acc + curr.cantidad, 0);
+            
+            if (prod && (cant + cantInCart) > prod.stock) {
+                return alert(`Stock insuficiente. Solo hay ${prod.stock} unidades de ${prod.nombre} (ya tiene ${cantInCart} agregadas).`);
+            }
+            desc = desc.split(' (Stock')[0]; // Limpiar el texto visual del select para guardar nomás el nombre
+        }
+
+        itemsCierre.push({
+            id: Date.now(), // ID temporal
+            tipoItem: tipo,
+            idReferencia: idRef,
+            descripcion: desc,
+            cantidad: cant,
+            precioUnitario: precio,
+            subtotal: parseFloat((precio * cant).toFixed(2))
+        });
+
+        // Reset inputs
+        sel.value = ''; inpPrecio.value = ''; 
+        if (!isTrat) document.getElementById('cantCierreProducto').value = '1';
+        
+        renderItemsCierre();
+    }
+
+    function eliminarItemCierre(tempId) {
+        itemsCierre = itemsCierre.filter(i => i.id !== tempId);
+        renderItemsCierre();
+    }
+
+    function renderItemsCierre() {
+        const tbTrat = document.getElementById('tbodyCierreTratamientos');
+        const tbProd = document.getElementById('tbodyCierreProductos');
+        tbTrat.innerHTML = ''; tbProd.innerHTML = '';
+        
+        let subTrat = 0, subProd = 0;
+
+        itemsCierre.forEach(item => {
+            if (item.tipoItem === 'TRATAMIENTO') {
+                tbTrat.innerHTML += `<tr>
+                    <td>${item.descripcion}</td>
+                    <td class="text-end">$${item.precioUnitario.toFixed(2)}</td>
+                    <td class="text-center"><button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="eliminarItemCierre(${item.id})"><i class="fas fa-trash-alt"></i></button></td>
+                </tr>`;
+                subTrat += item.subtotal;
+            } else {
+                tbProd.innerHTML += `<tr>
+                    <td>${item.descripcion}</td>
+                    <td class="text-center">${item.cantidad}</td>
+                    <td class="text-end">$${item.precioUnitario.toFixed(2)}</td>
+                    <td class="text-end fw-bold">$${item.subtotal.toFixed(2)}</td>
+                    <td class="text-center"><button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="eliminarItemCierre(${item.id})"><i class="fas fa-trash-alt"></i></button></td>
+                </tr>`;
+                subProd += item.subtotal;
+            }
+        });
+
+        document.getElementById('resCierreTrat').textContent = subTrat.toFixed(2);
+        document.getElementById('resCierreProd').textContent = subProd.toFixed(2);
+        document.getElementById('resCierreTotal').textContent = (subTrat + subProd).toFixed(2);
+    }
+
+    async function submitCierreConsulta() {
+        if (itemsCierre.length === 0) {
+            if (!confirm('No ha agregado tratamientos ni productos a la cuenta. ¿Está seguro de que desea cerrar la consulta de todos modos?')) return;
+        } else {
+            if (!confirm('¿Está seguro de cerrar la consulta y generar la facturación?')) return;
+        }
+        
+        if (idConsultaActivaParaCierre <= 0) {
+            return alert('Error: No se encontró la consulta activa.');
+        }
+
+        const btn = document.getElementById('btnConfirmarCierre');
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Facturando...';
+        btn.disabled = true;
+
+        const payload = {
+            idConsulta: idConsultaActivaParaCierre,
+            diagnosticoFinal: document.getElementById('cierreDiagnostico').value,
+            observaciones: document.getElementById('cierreObservaciones').value,
+            items: itemsCierre.map(i => ({
+                tipoItem: i.tipoItem,
+                idReferencia: i.idReferencia,
+                descripcion: i.descripcion,
+                cantidad: i.cantidad,
+                precioUnitario: i.precioUnitario,
+                subtotal: i.subtotal
+            }))
+        };
+
+        try {
+            const response = await fetch('/Consultas/CerrarConsulta', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const result = await response.json();
+            
+            if (result.success) {
+                alert('\u00a1Consulta finalizada y cuenta generada exitosamente!');
+                window.location.href = '/Citas/Index';
+            } else {
+                alert('Ocurrió un error: ' + result.message);
+                btn.innerHTML = '<i class="fas fa-check me-2"></i>Confirmar y Facturar';
+                btn.disabled = false;
+            }
+        } catch (e) {
+            console.error(e);
+            alert('Error de red o conexión al intentar cerrar.');
+            btn.innerHTML = '<i class="fas fa-check me-2"></i>Confirmar y Facturar';
+            btn.disabled = false;
+        }
+    }
 </script>
 }

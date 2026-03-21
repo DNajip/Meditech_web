@@ -323,6 +323,22 @@ namespace MediTech.Models
                         FOREIGN KEY(ID_PACIENTE) REFERENCES CLI.PACIENTES(ID_PACIENTE)
                     );
                 END
+
+                -- 1.8 Create CLI.CONSULTA_DETALLE if it doesn't exist
+                IF NOT EXISTS (SELECT 1 FROM sys.tables t JOIN sys.schemas s ON t.schema_id = s.schema_id WHERE s.name = 'CLI' AND t.name = 'CONSULTA_DETALLE')
+                BEGIN
+                    CREATE TABLE CLI.CONSULTA_DETALLE (
+                        ID_DETALLE_CONSULTA INT IDENTITY CONSTRAINT PK_CONSULTA_DETALLE PRIMARY KEY,
+                        ID_CONSULTA INT NOT NULL,
+                        TIPO_ITEM VARCHAR(20),
+                        ID_REFERENCIA INT,
+                        DESCRIPCION NVARCHAR(200),
+                        CANTIDAD INT,
+                        PRECIO_UNITARIO DECIMAL(12,2),
+                        SUBTOTAL DECIMAL(12,2),
+                        FOREIGN KEY(ID_CONSULTA) REFERENCES CLI.CONSULTAS(ID_CONSULTA)
+                    );
+                END
             ");
 
             // 2. Add TELEFONO column to CLI.CITAS
