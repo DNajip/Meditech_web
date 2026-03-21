@@ -7,16 +7,10 @@ using Microsoft.AspNetCore.Authorization;
 namespace MediTech.Controllers;
 
 [Authorize]
-public class HomeController : Controller
+public class HomeController(ILogger<HomeController> logger, MediTechContext context) : Controller
 {
-    private readonly ILogger<HomeController> _logger;
-    private readonly MediTechContext _context;
-
-    public HomeController(ILogger<HomeController> logger, MediTechContext context)
-    {
-        _logger = logger;
-        _context = context;
-    }
+    private readonly ILogger<HomeController> _logger = logger;
+    private readonly MediTechContext _context = context;
 
     public async Task<IActionResult> Index()
     {

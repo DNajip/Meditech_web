@@ -5,16 +5,10 @@ using Microsoft.EntityFrameworkCore;
 using MediTech.Models;namespace MediTech.Controllers;
 
 [Authorize]
-public class CitasController : Controller
+public class CitasController(MediTechContext context, ILogger<CitasController> logger) : Controller
 {
-    private readonly MediTechContext _context;
-    private readonly ILogger<CitasController> _logger;
-
-    public CitasController(MediTechContext context, ILogger<CitasController> logger)
-    {
-        _context = context;
-        _logger = logger;
-    }
+    private readonly MediTechContext _context = context;
+    private readonly ILogger<CitasController> _logger = logger;
 
     // GET: Citas — FullCalendar view
     public async Task<IActionResult> Index()
@@ -128,9 +122,9 @@ public class CitasController : Controller
         var patients = await _context.Pacientes
             .Include(p => p.Persona)
             .Where(p => p.IdEstado == 1 &&
-                (p.Persona!.PrimerNombre.ToUpper().Contains(normalizedTerm) ||
-                 p.Persona.PrimerApellido.ToUpper().Contains(normalizedTerm) ||
-                 p.Persona.NumIdentificacion.ToUpper().Contains(normalizedTerm)))
+                (p.Persona!.PrimerNombre.Contains(term) ||
+                 p.Persona.PrimerApellido.Contains(term) ||
+                 p.Persona.NumIdentificacion.Contains(term)))
             .Take(5)
             .Select(p => new
             {
@@ -143,9 +137,9 @@ public class CitasController : Controller
         var appointments = await _context.Citas
             .Include(c => c.Paciente).ThenInclude(p => p!.Persona)
             .Include(c => c.Tratamiento)
-            .Where(c => c.Paciente!.Persona!.PrimerNombre.ToUpper().Contains(normalizedTerm) ||
-                        c.Paciente.Persona!.PrimerApellido.ToUpper().Contains(normalizedTerm) ||
-                        c.Paciente.Persona!.NumIdentificacion.ToUpper().Contains(normalizedTerm))
+            .Where(c => c.Paciente!.Persona!.PrimerNombre.Contains(term) ||
+                        c.Paciente.Persona!.PrimerApellido.Contains(term) ||
+                        c.Paciente.Persona!.NumIdentificacion.Contains(term))
             .OrderByDescending(c => c.Fecha)
             .Take(5)
             .Select(c => new
@@ -489,9 +483,9 @@ public class CitasController : Controller
         {
             query = query.Where(p => 
                 p.Persona != null && (
-                    (p.Persona.PrimerNombre != null && p.Persona.PrimerNombre.ToLower().Contains(t)) ||
-                    (p.Persona.PrimerApellido != null && p.Persona.PrimerApellido.ToLower().Contains(t)) ||
-                    (p.Persona.NumIdentificacion != null && p.Persona.NumIdentificacion.ToLower().Contains(t))
+                    (p.Persona.PrimerNombre != null && p.Persona.PrimerNombre.Contains(t)) ||
+                    (p.Persona.PrimerApellido != null && p.Persona.PrimerApellido.Contains(t)) ||
+                    (p.Persona.NumIdentificacion != null && p.Persona.NumIdentificacion.Contains(t))
                 )
             );
         }
@@ -499,7 +493,7 @@ public class CitasController : Controller
         var patients = await query
             .Select(p => new {
                 id = p.IdPaciente,
-                label = (p.Persona.PrimerNombre ?? "S/N") + " " + (p.Persona.PrimerApellido ?? "") + " - " + (p.Persona.NumIdentificacion ?? "S/I"),
+                label = (p.Persona!.PrimerNombre ?? "S/N") + " " + (p.Persona.PrimerApellido ?? "") + " - " + (p.Persona.NumIdentificacion ?? "S/I"),
                 isProspect = false,
                 telefono = p.Persona.Telefono
             })
@@ -509,9 +503,9 @@ public class CitasController : Controller
         var normalizedTermForProspect = term.ToLower();
         var prospects = await _context.PosiblePacientes
             .Where(p => p.IdEstado == 1 && (
-                p.PrimerNombre.ToLower().Contains(normalizedTermForProspect) || 
-                p.PrimerApellido.ToLower().Contains(normalizedTermForProspect) || 
-                p.Telefono.Contains(normalizedTermForProspect)))
+                p.PrimerNombre.Contains(term) || 
+                p.PrimerApellido.Contains(term) || 
+                p.Telefono.Contains(term)))
             .Select(p => new {
                 id = p.IdPosiblePaciente,
                 label = "[PROSPECTO] " + p.PrimerNombre + " " + p.PrimerApellido + " - " + p.Telefono,
@@ -613,7 +607,7 @@ public class CitasController : Controller
             return Json(new List<object>());
 
         var query = _context.Tratamientos
-            .Where(t => t.IdEstado == 1 && t.NombreTratamiento.Contains(term));
+            .Where(t => t.IdEstado == 1 && t.NombreTratamiento != null && t.NombreTratamiento.Contains(term));
 
         var results = await query
             .Select(t => new {
@@ -661,5 +655,182 @@ public class CitasController : Controller
         }
 
         return Json(new { success = false });
+    }
+
+    // GET: Citas/GetRecepcionData/5 — JSON data for the triage modal
+    [HttpGet]
+    public async Task<IActionResult> GetRecepcionData(int id)
+    {
+        var cita = await _context.Citas
+            .Include(c => c.Paciente).ThenInclude(p => p!.Persona)
+            .Include(c => c.Tratamiento)
+            .FirstOrDefaultAsync(m => m.IdCita == id);
+
+        if (cita == null)
+            return Json(new { success = false, error = "Cita no encontrada." });
+
+        // Obtener usuario logueado (resiliente a reinicio de servidor)
+        Usuario? usuario = null;
+        var userIdStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (int.TryParse(userIdStr, out int userId))
+        {
+            usuario = await _context.Usuarios
+                .Include(u => u.Empleado)
+                .FirstOrDefaultAsync(u => u.IdUsuario == userId);
+        }
+
+        // Fallback: buscar por nombre de usuario si el ID no coincide (sesión obsoleta)
+        if (usuario == null)
+        {
+            var allNames = User.FindAll(System.Security.Claims.ClaimTypes.Name).Select(c => c.Value).ToList();
+            foreach (var name in allNames)
+            {
+                usuario = await _context.Usuarios
+                    .Include(u => u.Empleado)
+                    .FirstOrDefaultAsync(u => u.Username == name);
+                if (usuario != null) break;
+            }
+        }
+
+        if (usuario == null)
+            return Json(new { success = false, error = "Sesión expirada. Por favor cierre sesión e ingrese de nuevo." });
+
+        // Admin: si no tiene empleado, buscar cualquier empleado activo como fallback
+        int idMedico;
+        if (usuario.IdEmpleado != null)
+        {
+            idMedico = usuario.IdEmpleado.Value;
+        }
+        else
+        {
+            var fallbackEmpleado = await _context.Empleados.FirstOrDefaultAsync(e => e.IdEstado == 1);
+            idMedico = fallbackEmpleado?.IdEmpleado ?? 1;
+        }
+
+        // Buscar consulta existente EN_PROCESO
+        var estadoEnProceso = await _context.Estados.FirstOrDefaultAsync(e => e.DescEstado == "EN PROCESO");
+        var consultaExistente = await _context.Consultas
+            .Include(c => c.SignosVitales)
+            .FirstOrDefaultAsync(c => c.IdCita == id && c.IdEstado == (estadoEnProceso != null ? estadoEnProceso.IdEstado : 0));
+
+        int idConsulta = 0;
+        SignosVitales? signosExistentes = null;
+        string? motivoExistente = null, diagnosticoExistente = null, observacionesExistentes = null;
+
+        if (consultaExistente != null)
+        {
+            idConsulta = consultaExistente.IdConsulta;
+            signosExistentes = consultaExistente.SignosVitales;
+            motivoExistente = consultaExistente.MotivoConsulta;
+            diagnosticoExistente = consultaExistente.DiagnosticoPrincipal;
+            observacionesExistentes = consultaExistente.Observaciones;
+        }
+
+        var patientName = cita.IdPaciente != null
+            ? $"{cita.Paciente?.Persona?.PrimerNombre} {cita.Paciente?.Persona?.PrimerApellido}"
+            : "Paciente";
+        var fechaHora = $"{cita.Fecha:dd/MM/yyyy} - {DateTime.Today.Add(cita.HoraInicio):hh:mm tt}";
+
+        return Json(new
+        {
+            success = true,
+            idCita = cita.IdCita,
+            idMedico,
+            idEstado = estadoEnProceso?.IdEstado ?? 1,
+            idConsulta,
+            pacienteNombre = patientName,
+            fechaHora,
+            tratamiento = cita.Tratamiento?.NombreTratamiento ?? "Consulta General",
+            observacionesCita = cita.Observaciones,
+            signos = signosExistentes != null ? new
+            {
+                presionArterial = signosExistentes.PresionArterial,
+                temperatura = signosExistentes.Temperatura,
+                frecuenciaCardiaca = signosExistentes.FrecuenciaCardiaca,
+                saturacionOxigeno = signosExistentes.SaturacionOxigeno,
+                peso = signosExistentes.Peso,
+                altura = signosExistentes.Altura
+            } : null,
+            motivo = motivoExistente,
+            diagnostico = diagnosticoExistente,
+            observaciones = observacionesExistentes
+        });
+    }
+
+    // POST: Citas/GuardarRecepcion — Save triage data via AJAX
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> GuardarRecepcion(
+        [FromForm] int IdCita, [FromForm] int IdMedico, [FromForm] int IdEstado, [FromForm] int IdConsulta,
+        [FromForm] string? MotivoConsulta, [FromForm] string? DiagnosticoPrincipal, [FromForm] string? Observaciones,
+        [Bind(Prefix = "signos")] SignosVitales signos)
+    {
+        using var transaction = await _context.Database.BeginTransactionAsync();
+        try
+        {
+            Consulta consulta;
+
+            if (IdConsulta > 0)
+            {
+                // Actualizar consulta existente
+                consulta = await _context.Consultas.Include(c => c.SignosVitales)
+                    .FirstAsync(c => c.IdConsulta == IdConsulta);
+                consulta.MotivoConsulta = MotivoConsulta;
+                consulta.DiagnosticoPrincipal = DiagnosticoPrincipal;
+                consulta.Observaciones = Observaciones;
+                _context.Update(consulta);
+            }
+            else
+            {
+                // Crear nueva consulta
+                consulta = new Consulta
+                {
+                    IdCita = IdCita,
+                    IdMedico = IdMedico,
+                    IdEstado = IdEstado,
+                    FechaConsulta = DateTime.Now,
+                    MotivoConsulta = MotivoConsulta,
+                    DiagnosticoPrincipal = DiagnosticoPrincipal,
+                    Observaciones = Observaciones
+                };
+                _context.Consultas.Add(consulta);
+                await _context.SaveChangesAsync();
+            }
+
+            // Guardar/Actualizar Signos Vitales
+            var svExistente = await _context.SignosVitales.FirstOrDefaultAsync(s => s.IdConsulta == consulta.IdConsulta);
+            if (svExistente != null)
+            {
+                svExistente.PresionArterial = signos.PresionArterial;
+                svExistente.Temperatura = signos.Temperatura;
+                svExistente.FrecuenciaCardiaca = signos.FrecuenciaCardiaca;
+                svExistente.SaturacionOxigeno = signos.SaturacionOxigeno;
+                svExistente.Peso = signos.Peso;
+                svExistente.Altura = signos.Altura;
+                _context.Update(svExistente);
+            }
+            else
+            {
+                signos.IdConsulta = consulta.IdConsulta;
+                _context.Add(signos);
+            }
+
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            // Obtener IdPaciente para la redirección
+            var cita = await _context.Citas.FindAsync(IdCita);
+            return Json(new
+            {
+                success = true,
+                idPaciente = cita?.IdPaciente,
+                idConsulta = consulta.IdConsulta
+            });
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            return Json(new { success = false, error = "Error al guardar: " + ex.Message });
+        }
     }
 }

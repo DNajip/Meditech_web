@@ -132,7 +132,67 @@
     }
 
     .nav-tab:hover { background: #F1F5F9; color: #334155; }
-    .nav-tab.active { background: #3B82F6; color: white; }
+    .nav-tab.active { background: #3B82F6; color: white !important; }
+
+    /* Estilos para Toggles de Historial */
+    .toggle-group {
+        display: flex;
+        background: #F1F5F9;
+        padding: 4px;
+        border-radius: 20px;
+        width: fit-content;
+    }
+    .toggle-btn {
+        padding: 4px 16px;
+        border-radius: 16px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: none;
+        color: #64748B;
+        background: transparent;
+    }
+    .toggle-btn.active-si { background: #DC2626; color: white; }
+    .toggle-btn.active-no { background: #94A3B8; color: white; }
+    
+    .historial-section-title {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: #64748B;
+        border-bottom: 1px solid #E2E8F0;
+        padding-bottom: 8px;
+        margin-top: 24px;
+        margin-bottom: 16px;
+    }
+
+    .historial-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+    }
+
+    .historial-label {
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: #1E293B;
+    }
+
+    .especifique-input {
+        border: none;
+        border-bottom: 1px solid #E2E8F0;
+        border-radius: 0;
+        padding: 2px 0;
+        font-size: 0.85rem;
+        width: 100%;
+        margin-bottom: 10px;
+        background: transparent;
+    }
+    .especifique-input:focus {
+        box-shadow: none;
+        border-color: #3B82F6;
+    }
 
     .btn-ficha-action {
         background: #F1F5F9;
@@ -145,6 +205,218 @@
         transition: all 0.2s;
     }
     .btn-ficha-action:hover { background: #E2E8F0; color: #1E293B; }
+
+    .active-consultation-banner {
+        background: linear-gradient(135deg, #1e40af, #3b82f6);
+        color: white;
+        padding: 16px 24px;
+        border-radius: 12px;
+        margin-bottom: 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
+    }
+    .pulse-dot-white {
+        width: 8px;
+        height: 8px;
+        background-color: #fff;
+        border-radius: 50%;
+        display: inline-block;
+        animation: pulse-white 2s infinite;
+        margin-right: 8px;
+    }
+    @@keyframes pulse-white {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(255, 255, 255, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
+    }
+    .badge-consultation {
+        background: rgba(255,255,255,0.2);
+        color: white;
+        border: 1px solid rgba(255,255,255,0.3);
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+    }
+    .photo-delete {
+        position: absolute;
+        top: 8px; right: 8px;
+        width: 28px; height: 28px;
+        background: rgba(239, 68, 68, 0.9);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+        opacity: 0;
+        transition: opacity 0.2s;
+        z-index: 10;
+        cursor: pointer;
+    }
+    .photo-item:hover .photo-delete { opacity: 1; }
+
+    /* --- GALLERY UI STYLES --- */
+    .upload-zone {
+        background: #F8FAFC;
+        border: 2px dashed #CBD5E1;
+        border-radius: 16px;
+        padding: 30px;
+        text-align: center;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        margin-bottom: 24px;
+        position: relative;
+    }
+    .upload-zone:hover, .upload-zone.dragover {
+        border-color: #3B82F6;
+        background: #EFF6FF;
+    }
+    .upload-zone i { font-size: 2.5rem; color: #94A3B8; margin-bottom: 12px; display: block; }
+
+    .photo-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 16px;
+        margin-top: 24px;
+    }
+    .photo-item {
+        background: #FFFFFF;
+        border-radius: 12px;
+        border: 1px solid #E2E8F0;
+        overflow: hidden;
+        transition: all 0.2s;
+        position: relative;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+    }
+    .photo-item:hover { transform: translateY(-4px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+    .photo-thumb-container {
+        height: 140px;
+        background: #F1F5F9;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        overflow: hidden;
+    }
+    .photo-thumb { width: 100%; height: 100%; object-fit: cover; }
+    .photo-info { padding: 10px; background: white; }
+    .photo-title {
+        font-size: 0.85rem; font-weight: 600; color: #1E293B;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        margin-bottom: 2px;
+    }
+    .photo-date { font-size: 0.75rem; color: #64748B; }
+
+    /* GALLERY PAGINATION */
+    .gallery-pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+        margin-top: 20px;
+        padding: 12px 0;
+    }
+    .gallery-pagination button {
+        width: 36px; height: 36px;
+        border-radius: 10px;
+        border: 1px solid #E2E8F0;
+        background: #fff;
+        color: #64748B;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .gallery-pagination button:hover:not(:disabled) {
+        background: #EEF2FF;
+        border-color: #818CF8;
+        color: #4F46E5;
+    }
+    .gallery-pagination button.active {
+        background: linear-gradient(135deg, #6366F1, #4F46E5);
+        color: #fff;
+        border-color: transparent;
+        box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+    }
+    .gallery-pagination button:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+    .gallery-pagination .page-info {
+        font-size: 0.8rem;
+        color: #94A3B8;
+        margin: 0 8px;
+    }
+
+    /* PHOTO MODAL */
+    .photo-modal {
+        display: none;
+        position: fixed;
+        z-index: 9999;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.85);
+        backdrop-filter: blur(8px);
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+    .modal-content-wrapper {
+        position: relative;
+        max-width: 90%;
+        max-height: 90%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        animation: modalZoom 0.3s ease;
+    }
+    @@keyframes modalZoom {
+        from { transform: scale(0.8); opacity: 0; }
+        to { transform: scale(1); opacity: 1; }
+    }
+    .modal-photo {
+        max-width: 100%;
+        max-height: 80vh;
+        border-radius: 12px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        object-fit: contain;
+        background: #000;
+    }
+    .modal-caption {
+        margin-top: 15px;
+        color: white;
+        font-size: 1.2rem;
+        font-weight: 600;
+        text-align: center;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    }
+    .close-modal {
+        position: absolute;
+        top: 20px;
+        right: 30px;
+        color: white;
+        font-size: 35px;
+        font-weight: bold;
+        cursor: pointer;
+        z-index: 10000;
+        width: 44px;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255,255,255,0.1);
+        border-radius: 50%;
+        transition: 0.2s;
+    }
+    .close-modal:hover { background: rgba(255,255,255,0.2); transform: scale(1.1); }
 </style>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -203,78 +475,772 @@
 
     <!-- MAIN CONTENT: Clinical Modules -->
     <div class="main-ficha-content">
+        <!-- Banner de Consulta Activa -->
+        @if (ViewBag.Modo == "consulta")
+        {
+            <div class="active-consultation-banner">
+                <div class="d-flex align-items-center">
+                    <span class="pulse-dot-white"></span>
+                    <div>
+                        <h6 class="mb-0 fw-bold">Consulta en proceso</h6>
+                        <span class="small opacity-75">Motivo: @(((MediTech.Models.Consulta)ViewBag.ConsultaActiva)?.MotivoConsulta ?? "No especificado")</span>
+                    </div>
+                </div>
+                <div class="d-flex gap-2">
+                    <span class="badge-consultation">@(((MediTech.Models.Consulta)ViewBag.ConsultaActiva)?.Cita?.Tratamiento?.NombreTratamiento)</span>
+                    <a href="@Url.Action("Recepcion", "Consultas", new { id = ((MediTech.Models.Consulta)ViewBag.ConsultaActiva)?.IdCita })" class="btn btn-sm btn-light fw-bold" style="border-radius: 8px; color: #1e40af;">Editar Recepción</a>
+                </div>
+            </div>
+        }
+
         <!-- Tabs Navigation -->
         <div class="nav-tabs-ficha">
-            <a href="#" class="nav-tab active">Resumen</a>
-            <a href="#" class="nav-tab">Citas</a>
-            <a href="#" class="nav-tab">Consultas</a>
-            <a href="#" class="nav-tab">Historial</a>
-            <a href="#" class="nav-tab">Galería</a>
-            <a href="#" class="nav-tab">Documentos</a>
-            <a href="#" class="nav-tab">Finanzas</a>
+            <a href="javascript:void(0)" onclick="switchTab('resumen')" id="tab-resumen" class="nav-tab @(ViewBag.Modo != "consulta" ? "active" : "")">Resumen</a>
+            <a href="javascript:void(0)" onclick="switchTab('citas')" id="tab-citas" class="nav-tab">Citas</a>
+            <a href="javascript:void(0)" onclick="switchTab('consulta')" id="tab-consulta" class="nav-tab @(ViewBag.Modo == "consulta" ? "active" : "")">@(ViewBag.Modo == "consulta" ? "Consulta Activa" : "Consultas")</a>
+            <a href="javascript:void(0)" onclick="switchTab('historial')" id="tab-historial" class="nav-tab">Historial</a>
+            <a href="javascript:void(0)" onclick="switchTab('galeria')" id="tab-galeria" class="nav-tab">Galería</a>
+            <a href="javascript:void(0)" onclick="switchTab('documentos')" id="tab-documentos" class="nav-tab">Documentos</a>
+            <a href="javascript:void(0)" onclick="switchTab('finanzas')" id="tab-finanzas" class="nav-tab">Finanzas</a>
         </div>
 
-        <!-- Historial de Citas Placeholder -->
-        <div class="content-card">
-            <div class="card-header">
-                <h6 class="card-title"><i class="fas fa-calendar-check" style="color:#3B82F6;"></i> Próximas Citas</h6>
-                <button class="btn-ficha-action">Agendar Nueva</button>
-            </div>
-            <div class="placeholder-content">
-                <i class="fas fa-calendar-day"></i>
-                <p class="mb-0">No hay citas programadas para este paciente.</p>
-            </div>
-        </div>
-
-        <!-- Consultas Médicas Placeholder -->
-        <div class="content-card">
-            <div class="card-header">
-                <h6 class="card-title"><i class="fas fa-stethoscope" style="color:#10B981;"></i> Consultas Recientes</h6>
-                <button class="btn-ficha-action">Nueva Consulta</button>
-            </div>
-            <div class="placeholder-content">
-                <i class="fas fa-notes-medical"></i>
-                <p class="mb-0">Aún no se han registrado consultas médicas.</p>
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="col-md-6">
-                <!-- Fotos Clínicas -->
-                <div class="content-card h-100">
-                    <div class="card-header">
-                        <h6 class="card-title"><i class="fas fa-camera" style="color:#8B5CF6;"></i> Fotos Clínicas</h6>
-                    </div>
-                    <div class="placeholder-content" style="padding: 24px;">
-                        <i class="fas fa-images"></i>
-                        <p class="small mb-0">Sin imágenes cargadas.</p>
-                    </div>
+        <!-- PANELS -->
+        <div id="panel-resumen" class="tab-panel-content @(ViewBag.Modo == "consulta" ? "d-none" : "")">
+            <!-- Historial de Citas Placeholder -->
+            <div class="content-card">
+                <div class="card-header">
+                    <h6 class="card-title"><i class="fas fa-calendar-check" style="color:#3B82F6;"></i> Próximas Citas</h6>
+                    <button class="btn-ficha-action">Agendar Nueva</button>
+                </div>
+                <div class="placeholder-content">
+                    <i class="fas fa-calendar-day"></i>
+                    <p class="mb-0">No hay citas programadas para este paciente.</p>
                 </div>
             </div>
-            <div class="col-md-6">
-                <!-- Consentimientos -->
-                <div class="content-card h-100">
-                    <div class="card-header">
-                        <h6 class="card-title"><i class="fas fa-file-signature" style="color:#F59E0B;"></i> Consentimientos</h6>
-                    </div>
-                    <div class="placeholder-content" style="padding: 24px;">
-                        <i class="fas fa-pen-nib"></i>
-                        <p class="small mb-0">Pendientes de firma.</p>
-                    </div>
+
+            <!-- Consultas Médicas Placeholder -->
+            <div class="content-card">
+                <div class="card-header">
+                    <h6 class="card-title"><i class="fas fa-stethoscope" style="color:#10B981;"></i> Consultas Recientes</h6>
+                    <button class="btn-ficha-action">Nueva Consulta</button>
+                </div>
+                <div class="placeholder-content">
+                    <i class="fas fa-notes-medical"></i>
+                    <p class="mb-0">Aún no se han registrado consultas médicas.</p>
                 </div>
             </div>
         </div>
 
-        <!-- Pagos / Finanzas -->
-        <div class="content-card">
-            <div class="card-header">
-                <h6 class="card-title"><i class="fas fa-hand-holding-usd" style="color:#EF4444;"></i> Historial de Pagos</h6>
-                <button class="btn-ficha-action">Ver Estado de Cuenta</button>
+        <div id="panel-citas" class="tab-panel-content d-none">
+            <div class="content-card">
+                <div class="card-header"><h6 class="card-title"><i class="fas fa-calendar-alt"></i> Agenda del Paciente</h6></div>
+                <div class="placeholder-content"><i class="fas fa-calendar-times"></i><p>Módulo de citas en desarrollo.</p></div>
             </div>
-            <div class="placeholder-content" style="padding: 30px;">
-                <i class="fas fa-receipt"></i>
-                <p class="mb-0">El paciente no tiene saldos pendientes ni historial de pagos.</p>
+        </div>
+        <div id="panel-consulta" class="tab-panel-content @(ViewBag.Modo == "consulta" ? "" : "d-none")">
+        @if (ViewBag.Modo == "consulta")
+        {
+            var consultaActiva = (MediTech.Models.Consulta)ViewBag.ConsultaActiva;
+            
+            <!-- SECCIÓN DE CONSULTA ACTIVA -->
+            <div class="content-card shadow-sm border-primary border-opacity-25">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="card-title m-0"><i class="fas fa-stethoscope" style="color:#10B981;"></i> Evaluación Clínica en Curso</h6>
+                    <span class="badge bg-primary-subtle text-primary fw-bold px-3 py-2" style="border-radius: 8px;">Estado: @(consultaActiva?.Estado?.DescEstado ?? "EN PROCESO")</span>
+                </div>
+
+                <div class="row mb-4 mt-2">
+                    <div class="col-md-5 border-end">
+                        <label class="small text-uppercase fw-bold text-secondary mb-3 d-block"><i class="fas fa-heartbeat me-1"></i> Signos Vitales de Recepción</label>
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <div class="p-3 bg-light rounded-3">
+                                    <div class="small text-muted mb-1">P. Arterial</div>
+                                    <div class="fw-bold">@((consultaActiva?.SignosVitales?.PresionArterial) ?? "--/--")</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="p-3 bg-light rounded-3">
+                                    <div class="small text-muted mb-1">Temperatura</div>
+                                    <div class="fw-bold">@((consultaActiva?.SignosVitales?.Temperatura)?.ToString("0.0") ?? "--")°C</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="p-3 bg-light rounded-3">
+                                    <div class="small text-muted mb-1">Frec. Cardíaca</div>
+                                    <div class="fw-bold">@((consultaActiva?.SignosVitales?.FrecuenciaCardiaca)?.ToString() ?? "--") <small class="text-muted">LPM</small></div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="p-3 bg-light rounded-3">
+                                    <div class="small text-muted mb-1">Saturación</div>
+                                    <div class="fw-bold">@((consultaActiva?.SignosVitales?.SaturacionOxigeno)?.ToString() ?? "--")% <small class="text-muted">O2</small></div>
+                                </div>
+                            </div>
+                            <div class="col-12 mt-3">
+                                <div class="p-2 border rounded-3 text-center bg-white shadow-xs">
+                                    <span class="small text-muted">IMC: </span>
+                                    <span class="fw-bold text-primary">@((consultaActiva?.SignosVitales?.BMI)?.ToString("0.0") ?? "--.-")</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-7 ps-md-4">
+                        <label class="small text-uppercase fw-bold text-secondary mb-3 d-block"><i class="fas fa-info-circle me-1"></i> Datos Clínicos Iniciales</label>
+                        <div class="mb-3">
+                            <div class="small text-muted mb-1">Motivo de Consulta:</div>
+                            <div class="p-3 bg-light rounded-3 border-start border-primary border-4">
+                                <em>"@((consultaActiva?.MotivoConsulta) ?? "No especificado")"</em>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="small text-muted mb-1">Observaciones de Triaje:</div>
+                            <p class="text-muted small">@((consultaActiva?.Observaciones) ?? "Sin observaciones adicionales.")</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-4 bg-light rounded-4 border-dashed mt-4" style="border: 2px dashed #cbd5e1; text-align: center;">
+                    <div class="mb-3">
+                        <i class="fas fa-user-md fs-1 text-primary opacity-25"></i>
+                    </div>
+                    <h5 class="fw-bold mb-2">Continuar con la Atención Médica</h5>
+                    <p class="text-muted small mb-4">El paciente ya pasó por el área de recepción. Proceda a registrar el diagnóstico final y tratamiento.</p>
+                    <div class="d-flex gap-2 justify-content-center">
+                        <a href="@Url.Action("Edit", "Consultas", new { id = consultaActiva?.IdConsulta })" class="btn btn-primary px-4 py-2 fw-bold" style="border-radius: 8px;">
+                            <i class="fas fa-edit me-2"></i> Completar Evaluación Clínica
+                        </a>
+                        <button class="btn btn-outline-danger px-4 py-2 fw-bold" style="border-radius: 8px;">Finalizar Consulta</button>
+                    </div>
+                </div>
+            </div>
+        }
+        </div>
+
+        <div id="panel-historial" class="tab-panel-content d-none">
+            <div class="content-card">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <h5 class="fw-bold m-0" style="color:#1e293b;">Historial clínico</h5>
+                    <div id="historialLoading" class="spinner-border spinner-border-sm text-primary d-none" role="status"></div>
+                </div>
+                
+                <div id="historialForm">
+                    <!-- SECTION 1 -->
+                    <div class="historial-section-title">Datos sobre estado de salud</div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="historial-row">
+                                <span class="historial-label">Posee alergias :</span>
+                                <div class="toggle-group" data-field="alergias">
+                                    <button type="button" class="toggle-btn" onclick="setToggle('alergias', true)">Sí</button>
+                                    <button type="button" class="toggle-btn active-no" onclick="setToggle('alergias', false)">No</button>
+                                </div>
+                            </div>
+                            <input type="text" id="histAlergiasDetalle" class="form-control especifique-input d-none" placeholder="Especifique...">
+
+                            <div class="historial-row">
+                                <span class="historial-label">Toma algún medicamento:</span>
+                                <div class="toggle-group" data-field="medicamento">
+                                    <button type="button" class="toggle-btn" onclick="setToggle('medicamento', true)">Sí</button>
+                                    <button type="button" class="toggle-btn active-no" onclick="setToggle('medicamento', false)">No</button>
+                                </div>
+                            </div>
+                            <input type="text" id="histMedicamentoDetalle" class="form-control especifique-input d-none" placeholder="Especifique...">
+
+                            <div class="historial-row">
+                                <span class="historial-label">Hipertensión :</span>
+                                <div class="toggle-group" data-field="hipertension">
+                                    <button type="button" class="toggle-btn" onclick="setToggle('hipertension', true)">Sí</button>
+                                    <button type="button" class="toggle-btn active-no" onclick="setToggle('hipertension', false)">No</button>
+                                </div>
+                            </div>
+
+                            <div class="historial-row">
+                                <span class="historial-label">Cardíacos :</span>
+                                <div class="toggle-group" data-field="cardiacos">
+                                    <button type="button" class="toggle-btn" onclick="setToggle('cardiacos', true)">Sí</button>
+                                    <button type="button" class="toggle-btn active-no" onclick="setToggle('cardiacos', false)">No</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="historial-row">
+                                <span class="historial-label">Diabetes :</span>
+                                <div class="toggle-group" data-field="diabetes">
+                                    <button type="button" class="toggle-btn" onclick="setToggle('diabetes', true)">Sí</button>
+                                    <button type="button" class="toggle-btn active-no" onclick="setToggle('diabetes', false)">No</button>
+                                </div>
+                            </div>
+
+                            <div class="historial-row">
+                                <span class="historial-label">Embarazada :</span>
+                                <div class="toggle-group" data-field="embarazada">
+                                    <button type="button" class="toggle-btn" onclick="setToggle('embarazada', true)">Sí</button>
+                                    <button type="button" class="toggle-btn active-no" onclick="setToggle('embarazada', false)">No</button>
+                                </div>
+                            </div>
+
+                            <div class="historial-row">
+                                <span class="historial-label">Antecedente oncológico :</span>
+                                <div class="toggle-group" data-field="oncologico">
+                                    <button type="button" class="toggle-btn" onclick="setToggle('oncologico', true)">Sí</button>
+                                    <button type="button" class="toggle-btn active-no" onclick="setToggle('oncologico', false)">No</button>
+                                </div>
+                            </div>
+
+                            <div class="historial-row">
+                                <span class="historial-label">Otros padecimientos:</span>
+                                <div class="toggle-group" data-field="otros">
+                                    <button type="button" class="toggle-btn" onclick="setToggle('otros', true)">Sí</button>
+                                    <button type="button" class="toggle-btn active-no" onclick="setToggle('otros', false)">No</button>
+                                </div>
+                            </div>
+                            <input type="text" id="histOtrosDetalle" class="form-control especifique-input d-none" placeholder="Especifique...">
+                        </div>
+                    </div>
+
+                    <!-- SECTION 2 -->
+                    <div class="historial-section-title">Habitos personales</div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="historial-row">
+                                <span class="historial-label">Consume alcohol :</span>
+                                <div class="toggle-group" data-field="alcohol">
+                                    <button type="button" class="toggle-btn" onclick="setToggle('alcohol', true)">Sí</button>
+                                    <button type="button" class="toggle-btn active-no" onclick="setToggle('alcohol', false)">No</button>
+                                </div>
+                            </div>
+                            <div class="historial-row">
+                                <span class="historial-label">Realiza ejercicio :</span>
+                                <div class="toggle-group" data-field="ejercicio">
+                                    <button type="button" class="toggle-btn" onclick="setToggle('ejercicio', true)">Sí</button>
+                                    <button type="button" class="toggle-btn active-no" onclick="setToggle('ejercicio', false)">No</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="historial-row">
+                                <span class="historial-label">Fuma cigarrillos :</span>
+                                <div class="toggle-group" data-field="fuma">
+                                    <button type="button" class="toggle-btn" onclick="setToggle('fuma', true)">Sí</button>
+                                    <button type="button" class="toggle-btn active-no" onclick="setToggle('fuma', false)">No</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SECTION 3 -->
+                    <div class="historial-section-title">Antecedentes estéticos</div>
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="historial-row justify-content-start gap-4">
+                                <span class="historial-label">cirugías estéticas previas :</span>
+                                <div class="toggle-group" data-field="cirugias">
+                                    <button type="button" class="toggle-btn" onclick="setToggle('cirugias', true)">Sí</button>
+                                    <button type="button" class="toggle-btn active-no" onclick="setToggle('cirugias', false)">No</button>
+                                </div>
+                            </div>
+                            <input type="text" id="histCirugiasDetalle" class="form-control especifique-input d-none" placeholder="Especifique...">
+                        </div>
+                    </div>
+
+                    <div class="text-center mt-4">
+                        <button type="button" class="btn fw-bold px-4 py-2" style="background-color:#EBFBF0; color:#10B981; border-radius:12px; border:1px solid #D1FAE5;" onclick="guardarHistorial()">
+                            <i class="fas fa-plus-circle me-1"></i> Guardar Historial
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="panel-galeria" class="tab-panel-content d-none">
+            <div class="content-card">
+                <div class="card-header">
+                    <h6 class="card-title"><i class="fas fa-camera"></i> Galería Clínica</h6>
+                </div>
+                
+                <!-- Upload Section -->
+                <div class="upload-container mb-4">
+                    <div class="upload-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+                        <div id="dropZoneContent">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <p class="mb-1 fw-bold text-dark">Arrastra tus fotos aquí o haz clic para seleccionar</p>
+                            <p class="small text-muted mb-0">Soporta PNG, JPG, JPEG</p>
+                        </div>
+                        <div id="filePreview" class="mt-2 d-none">
+                            <div class="position-relative d-inline-block">
+                                <img id="previewImg" src="#" alt="Vista previa" style="max-height: 150px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                                <div class="mt-2 small text-primary fw-bold" id="fileNameDisp"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-center gap-2 mt-3">
+                        <input type="text" id="fotoTitulo" class="form-control form-control-sm" placeholder="Título opcional..." style="max-width: 300px; border-radius: 8px;">
+                        <button id="btnSubir" class="btn btn-success btn-sm px-4" onclick="uploadSelectedFile()" style="border-radius: 8px;">
+                            <i class="fas fa-save me-1"></i> Guardar Imagen
+                        </button>
+                    </div>
+                    <input type="file" id="fileInput" class="d-none" accept="image/*" onchange="handleFileSelect(event)">
+                </div>
+
+                <!-- Gallery Grid -->
+                <div id="galeriaGrid" class="photo-grid">
+                    <!-- Loaded dynamically -->
+                    <div class="text-center w-100 py-5 text-muted">
+                        <div class="spinner-border spinner-border-sm me-2"></div> Cargando galería...
+                    </div>
+                </div>
+                <!-- Pagination -->
+                <div id="galeriaPagination" class="gallery-pagination"></div>
+            </div>
+        </div>
+        
+        <div id="panel-documentos" class="tab-panel-content d-none">
+            <div class="content-card">
+                <div class="card-header"><h6 class="card-title"><i class="fas fa-file-pdf"></i> Documentos y Consentimientos</h6></div>
+                <div class="placeholder-content"><i class="fas fa-file-alt"></i><p>Módulo de documentos en desarrollo.</p></div>
+            </div>
+        </div>
+
+        <div id="panel-finanzas" class="tab-panel-content d-none">
+            <div class="content-card">
+                <div class="card-header">
+                    <h6 class="card-title"><i class="fas fa-hand-holding-usd" style="color:#EF4444;"></i> Historial de Pagos</h6>
+                    <button class="btn-ficha-action">Ver Estado de Cuenta</button>
+                </div>
+                <div class="placeholder-content" style="padding: 30px;">
+                    <i class="fas fa-receipt"></i>
+                    <p class="mb-0">El paciente no tiene saldos pendientes ni historial de pagos.</p>
+                </div>
+            </div>
+            <div class="content-card">
+                <div class="card-header"><h6 class="card-title"><i class="fas fa-wallet"></i> Estado de Cuenta</h6></div>
+                <div class="placeholder-content"><i class="fas fa-hand-holding-usd"></i><p>Módulo de finanzas detallado en desarrollo.</p></div>
+            </div>
+        </div>
+
+        <div id="common-footer-panels" class="tab-panel-content @(ViewBag.Modo == "consulta" ? "d-none" : "")">
+            <div class="row">
+                <div class="col-md-6">
+                    <!-- Fotos Clínicas -->
+                    <div class="content-card h-100">
+                        <div class="card-header">
+                            <h6 class="card-title"><i class="fas fa-camera" style="color:#8B5CF6;"></i> Fotos Clínicas</h6>
+                        </div>
+                        <div class="placeholder-content" style="padding: 24px;">
+                            <i class="fas fa-images"></i>
+                            <p class="small mb-0">Sin imágenes cargadas.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <!-- Consentimientos -->
+                    <div class="content-card h-100">
+                        <div class="card-header">
+                            <h6 class="card-title"><i class="fas fa-file-signature" style="color:#F59E0B;"></i> Consentimientos</h6>
+                        </div>
+                        <div class="placeholder-content" style="padding: 24px;">
+                            <i class="fas fa-pen-nib"></i>
+                            <p class="small mb-0">Pendientes de firma.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- PHOTO MODAL -->
+        <div id="photoModal" class="photo-modal" onclick="closePhotoModal()">
+            <span class="close-modal">&times;</span>
+            <div class="modal-content-wrapper" onclick="event.stopPropagation()">
+                <img class="modal-photo" id="modalImg">
+                <div id="modalCaption" class="modal-caption"></div>
             </div>
         </div>
     </div>
 </div>
+
+@section Scripts {
+<script>
+    let historialData = null;
+    const pacienteId = @Model.IdPaciente;
+
+    function switchTab(tabName) {
+        console.log('Switching to tab:', tabName);
+        // Update tabs active state
+        document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+        const activeTab = document.getElementById('tab-' + tabName);
+        if (activeTab) activeTab.classList.add('active');
+
+        // Update panels visibility
+        document.querySelectorAll('.tab-panel-content').forEach(el => el.classList.add('d-none'));
+        const activePanel = document.getElementById('panel-' + tabName);
+        if (activePanel) activePanel.classList.remove('d-none');
+
+        // Also handle the common footer visibility (only for resumen/consulta)
+        const commonFooter = document.getElementById('common-footer-panels');
+        if (commonFooter) {
+            if (tabName === 'resumen' || tabName === 'consulta') {
+                commonFooter.classList.remove('d-none');
+            } else {
+                commonFooter.classList.add('d-none');
+            }
+        }
+
+        // Special load for Historial
+        if (tabName === 'historial' && !historialData) {
+            cargarHistorial();
+        }
+        
+        // Special load for Galeria
+        if (tabName === 'galeria' && !galeriaLoaded) {
+            cargarGaleria();
+        }
+    }
+
+    function setToggle(field, value) {
+        const group = document.querySelector(`.toggle-group[data-field="${field}"]`);
+        if (!group) return;
+        
+        const btns = group.querySelectorAll('.toggle-btn');
+        
+        // Reset classes
+        btns[0].classList.remove('active-si');
+        btns[1].classList.remove('active-no');
+
+        // Set active class
+        if (value === true) btns[0].classList.add('active-si');
+        else if (value === false) btns[1].classList.add('active-no');
+
+        // Show/hide detail if exists
+        const detailMap = {
+            'alergias': 'histAlergiasDetalle',
+            'medicamento': 'histMedicamentoDetalle',
+            'otros': 'histOtrosDetalle',
+            'cirugias': 'histCirugiasDetalle'
+        };
+
+        if (detailMap[field]) {
+            const input = document.getElementById(detailMap[field]);
+            if (value) input.classList.remove('d-none');
+            else input.classList.add('d-none');
+        }
+    }
+
+    async function cargarHistorial() {
+        document.getElementById('historialLoading').classList.remove('d-none');
+        try {
+            const response = await fetch(`/Pacientes/GetHistorial/${pacienteId}`);
+            const result = await response.json();
+            if (result.success && result.data) {
+                historialData = result.data;
+                fillForm(result.data);
+            }
+        } catch (e) {
+            console.error('Error loading history:', e);
+        } finally {
+            document.getElementById('historialLoading').classList.add('d-none');
+        }
+    }
+
+    function fillForm(data) {
+        setToggle('alergias', data.alergias);
+        document.getElementById('histAlergiasDetalle').value = data.alergiasDetalle || '';
+        
+        setToggle('medicamento', data.tomaMedicamento);
+        document.getElementById('histMedicamentoDetalle').value = data.medicamentoDetalle || '';
+
+        setToggle('hipertension', data.hipertension);
+        setToggle('diabetes', data.diabetes);
+        setToggle('embarazada', data.embarazada);
+        setToggle('cardiacos', data.cardiacos);
+        setToggle('oncologico', data.antecedenteOncologico);
+        
+        setToggle('otros', data.otrosPadecimientos);
+        document.getElementById('histOtrosDetalle').value = data.otrosPadecimientosDetalle || '';
+
+        setToggle('alcohol', data.consumeAlcohol);
+        setToggle('fuma', data.fumaCigarrillos);
+        setToggle('ejercicio', data.realizaEjercicio);
+
+        setToggle('cirugias', data.cirugiasEsteticas);
+        document.getElementById('histCirugiasDetalle').value = data.cirugiasEsteticasDetalle || '';
+    }
+
+    async function guardarHistorial() {
+        const data = {
+            idPaciente: pacienteId,
+            alergias: document.querySelector('.toggle-group[data-field="alergias"] .active-si') != null,
+            alergiasDetalle: document.getElementById('histAlergiasDetalle').value,
+            tomaMedicamento: document.querySelector('.toggle-group[data-field="medicamento"] .active-si') != null,
+            medicamentoDetalle: document.getElementById('histMedicamentoDetalle').value,
+            hipertension: document.querySelector('.toggle-group[data-field="hipertension"] .active-si') != null,
+            diabetes: document.querySelector('.toggle-group[data-field="diabetes"] .active-si') != null,
+            embarazada: document.querySelector('.toggle-group[data-field="embarazada"] .active-si') != null,
+            cardiacos: document.querySelector('.toggle-group[data-field="cardiacos"] .active-si') != null,
+            antecedenteOncologico: document.querySelector('.toggle-group[data-field="oncologico"] .active-si') != null,
+            otrosPadecimientos: document.querySelector('.toggle-group[data-field="otros"] .active-si') != null,
+            otrosPadecimientosDetalle: document.getElementById('histOtrosDetalle').value,
+            consumeAlcohol: document.querySelector('.toggle-group[data-field="alcohol"] .active-si') != null,
+            fumaCigarrillos: document.querySelector('.toggle-group[data-field="fuma"] .active-si') != null,
+            realizaEjercicio: document.querySelector('.toggle-group[data-field="ejercicio"] .active-si') != null,
+            cirugiasEsteticas: document.querySelector('.toggle-group[data-field="cirugias"] .active-si') != null,
+            cirugiasEsteticasDetalle: document.getElementById('histCirugiasDetalle').value
+        };
+
+        const btn = document.querySelector('button[onclick="guardarHistorial()"]');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+        btn.disabled = true;
+
+        try {
+            const response = await fetch('/Pacientes/GuardarHistorial', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await response.json();
+            if (result.success) {
+                // Success feedback
+                const check = document.createElement('i');
+                check.className = 'fas fa-check-circle ms-2';
+                btn.parentElement.appendChild(check);
+                setTimeout(() => check.remove(), 3000);
+                
+                historialData = data;
+                alert('¡Historial guardado exitosamente!');
+            } else {
+                alert('Error al guardar: ' + result.message);
+            }
+        } catch (e) {
+            console.error(e);
+            alert('Error al conectar con el servidor.');
+        } finally {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    }
+
+    // --- GALLERY LOGIC ---
+    let galeriaLoaded = false;
+    let selectedFile = null;
+
+    // Drag and drop helper
+    function initDragAndDrop() {
+        const dropZone = document.getElementById('dropZone');
+        if (!dropZone) return;
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, e => {
+                e.preventDefault();
+                e.stopPropagation();
+            }, false);
+        });
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'), false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
+        });
+
+        dropZone.addEventListener('drop', e => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files.length > 0) prepareFile(files[0]);
+        }, false);
+    }
+
+    function handleFileSelect(e) {
+        if (e.target.files.length > 0) prepareFile(e.target.files[0]);
+    }
+
+    function prepareFile(file) {
+        if (!file.type.startsWith('image/')) {
+            alert('Solo se permiten archivos de imagen.');
+            return;
+        }
+        selectedFile = file;
+        
+        // Show preview info
+        const preview = document.getElementById('filePreview');
+        const previewImg = document.getElementById('previewImg');
+        const nameDisp = document.getElementById('fileNameDisp');
+        const dropContent = document.getElementById('dropZoneContent');
+
+        if (preview && previewImg && nameDisp) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImg.src = e.target.result;
+                preview.classList.remove('d-none');
+                if (dropContent) dropContent.classList.add('d-none');
+                nameDisp.textContent = file.name;
+            }
+            reader.readAsDataURL(file);
+        }
+    }
+
+    async function uploadSelectedFile() {
+        if (!selectedFile) {
+            alert('Por favor, seleccione una foto primero haciendo clic en la zona de carga.');
+            return;
+        }
+
+        const titulo = document.getElementById('fotoTitulo').value;
+        const formData = new FormData();
+        formData.append('idPaciente', pacienteId);
+        formData.append('titulo', titulo);
+        formData.append('file', selectedFile);
+
+        const btn = document.getElementById('btnSubir');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Subiendo...';
+        btn.disabled = true;
+
+        try {
+            const response = await fetch('/Galeria/UploadFoto', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+            if (result.success) {
+                // Clear state
+                selectedFile = null;
+                document.getElementById('fileInput').value = '';
+                document.getElementById('fotoTitulo').value = '';
+                document.getElementById('filePreview').classList.add('d-none');
+                const dropContent = document.getElementById('dropZoneContent');
+                if (dropContent) dropContent.classList.remove('d-none');
+                
+                cargarGaleria();
+                alert('¡Foto guardada con éxito!');
+            } else {
+                alert('Error: ' + result.message);
+            }
+        } catch (e) {
+            console.error(e);
+            alert('Error al conectar con el servidor.');
+        } finally {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    }
+
+    async function cargarGaleria() {
+        const grid = document.getElementById('galeriaGrid');
+        try {
+            const response = await fetch(`/Galeria/GetFotos/${pacienteId}`);
+            const result = await response.json();
+            if (result.success) renderGaleria(result.data);
+        } catch (e) {
+            console.error(e);
+            grid.innerHTML = '<div class="text-center w-100 py-4 text-danger">Error al cargar la galería.</div>';
+        } finally {
+            galeriaLoaded = true;
+        }
+    }
+
+    const FOTOS_PER_PAGE = 8;
+    let allFotos = [];
+    let currentPage = 1;
+
+    function renderGaleria(fotos) {
+        allFotos = fotos;
+        currentPage = 1;
+        renderPage();
+    }
+
+    function renderPage() {
+        const grid = document.getElementById('galeriaGrid');
+        const pag = document.getElementById('galeriaPagination');
+        if (!grid) return;
+
+        if (allFotos.length === 0) {
+            grid.innerHTML = '<div class="text-center w-100 py-5 text-muted"><i class="fas fa-images fs-2 d-block mb-3 opacity-25"></i>No hay fotos registradas aún.</div>';
+            if (pag) pag.innerHTML = '';
+            return;
+        }
+
+        const totalPages = Math.ceil(allFotos.length / FOTOS_PER_PAGE);
+        if (currentPage > totalPages) currentPage = totalPages;
+        const start = (currentPage - 1) * FOTOS_PER_PAGE;
+        const pageFotos = allFotos.slice(start, start + FOTOS_PER_PAGE);
+
+        grid.innerHTML = pageFotos.map(foto => `
+            <div class="photo-item">
+                <button class="photo-delete" onclick="eliminarFoto(${foto.idFoto})" title="Eliminar">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+                <div class="photo-thumb-container" onclick="verFotoFull(${foto.idFoto})">
+                    <img src="/Galeria/GetFotoContent/${foto.idFoto}" class="photo-thumb" alt="${foto.titulo || 'Foto clínica'}">
+                </div>
+                <div class="photo-info">
+                    <div class="photo-title">${foto.titulo || 'Sin título'}</div>
+                    <div class="photo-date">${foto.fecha}</div>
+                </div>
+            </div>
+        `).join('');
+
+        // Render pagination controls
+        if (pag) {
+            if (totalPages <= 1) { pag.innerHTML = ''; return; }
+            let html = `<button onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i></button>`;
+            for (let i = 1; i <= totalPages; i++) {
+                html += `<button class="${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+            }
+            html += `<button onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}><i class="fas fa-chevron-right"></i></button>`;
+            html += `<span class="page-info">${allFotos.length} fotos</span>`;
+            pag.innerHTML = html;
+        }
+    }
+
+    function goToPage(page) {
+        const totalPages = Math.ceil(allFotos.length / FOTOS_PER_PAGE);
+        if (page < 1 || page > totalPages) return;
+        currentPage = page;
+        renderPage();
+        // Scroll to top of gallery
+        document.getElementById('galeriaGrid')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    async function eliminarFoto(id) {
+        if (!confirm('¿Está seguro de eliminar esta foto?')) return;
+        try {
+            const response = await fetch(`/Galeria/DeleteFoto/${id}`, { method: 'POST' });
+            const result = await response.json();
+            if (result.success) cargarGaleria();
+            else alert(result.message);
+        } catch (e) { console.error(e); alert('Error al eliminar.'); }
+    }
+
+    function verFotoFull(id) {
+        const modal = document.getElementById('photoModal');
+        const modalImg = document.getElementById('modalImg');
+        const modalCaption = document.getElementById('modalCaption');
+        
+        if (!modal || !modalImg) return;
+
+        modalImg.src = `/Galeria/GetFotoContent/${id}`;
+        
+        // Get title from the specific item in the grid
+        const photoItem = document.querySelector(`.photo-item button[onclick="eliminarFoto(${id})"]`)?.parentElement;
+        const title = photoItem?.querySelector('.photo-title')?.textContent || '';
+        modalCaption.textContent = title === 'Sin título' ? '' : title;
+
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden'; // Prevent scrolling
+    }
+
+    function closePhotoModal() {
+        const modal = document.getElementById('photoModal');
+        if (modal) {
+            modal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+    }
+
+    // Initialize D&D on load
+    document.addEventListener('DOMContentLoaded', initDragAndDrop);
+</script>
+}

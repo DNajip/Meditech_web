@@ -78,7 +78,7 @@ namespace MediTech.Models
                 PasswordHash = passwordHash,
                 PasswordSalt = passwordSalt,
                 IdEmpleado = adminEmpleado.IdEmpleado,
-                IdRol = 1, // ADMINISTRADOR
+                IdRol = 2, // CHANGE TO DOCTOR ROLE TO ALLOW TRIAGE TEST
                 IdEstado = 1 // ACTIVO
             };
             context.Usuarios.Add(adminUsuario);
@@ -240,6 +240,68 @@ namespace MediTech.Models
                     );
                     INSERT INTO CAT.ESTADO_CITA (DESC_ESTADO_CITA) VALUES 
                     ('PROGRAMADA'), ('EN CURSO'), ('FINALIZADA'), ('CANCELADA'), ('NO ASISTIÓ');
+                END
+
+                -- 1.2 Ensure CAT.ESTADOS has consultation specific states
+                IF NOT EXISTS (SELECT 1 FROM CAT.ESTADOS WHERE DESC_ESTADO = 'EN PROCESO')
+                    INSERT INTO CAT.ESTADOS (DESC_ESTADO) VALUES ('EN PROCESO');
+                IF NOT EXISTS (SELECT 1 FROM CAT.ESTADOS WHERE DESC_ESTADO = 'FINALIZADA')
+                    INSERT INTO CAT.ESTADOS (DESC_ESTADO) VALUES ('FINALIZADA');
+                IF NOT EXISTS (SELECT 1 FROM CAT.ESTADOS WHERE DESC_ESTADO = 'CANCELADA')
+                    INSERT INTO CAT.ESTADOS (DESC_ESTADO) VALUES ('CANCELADA');
+
+                -- 1.3 Create CLI.HISTORIAL_CLINICO if it doesn't exist
+                IF NOT EXISTS (SELECT 1 FROM sys.tables t JOIN sys.schemas s ON t.schema_id = s.schema_id WHERE s.name = 'CLI' AND t.name = 'HISTORIAL_CLINICO')
+                BEGIN
+                    CREATE TABLE CLI.HISTORIAL_CLINICO (
+                        ID_HISTORIAL INT IDENTITY CONSTRAINT PK_HISTORIAL PRIMARY KEY,
+                        ID_PACIENTE INT NOT NULL,
+                        ALERGIAS BIT NOT NULL DEFAULT 0,
+                        ALERGIAS_DETALLE VARCHAR(500),
+                        DIABETES BIT NOT NULL DEFAULT 0,
+                        TOMA_MEDICAMENTO BIT NOT NULL DEFAULT 0,
+                        MEDICAMENTO_DETALLE VARCHAR(500),
+                        HIPERTENSION BIT NOT NULL DEFAULT 0,
+                        EMBARAZADA BIT NOT NULL DEFAULT 0,
+                        CARDIACOS BIT NOT NULL DEFAULT 0,
+                        ANTECEDENTE_ONCOLOGICO BIT NOT NULL DEFAULT 0,
+                        OTROS_PADECIMIENTOS BIT NOT NULL DEFAULT 0,
+                        OTROS_PADECIMIENTOS_DETALLE VARCHAR(500),
+                        CONSUME_ALCOHOL BIT NOT NULL DEFAULT 0,
+                        FUMA_CIGARRILLOS BIT NOT NULL DEFAULT 0,
+                        REALIZA_EJERCICIO BIT NOT NULL DEFAULT 0,
+                        CIRUGIAS_ESTETICAS BIT NOT NULL DEFAULT 0,
+                        CIRUGIAS_ESTETICAS_DETALLE VARCHAR(500),
+                        FECHA_REGISTRO DATETIME2 DEFAULT SYSDATETIME(),
+                        FECHA_ACTUALIZACION DATETIME2,
+                        FOREIGN KEY(ID_PACIENTE) REFERENCES CLI.PACIENTES(ID_PACIENTE)
+                    );
+                END
+ 
+                -- 1.4 Remove duplicated column TOMA_MEDICAMENTOS_HABITO if it exists
+                IF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[CLI].[HISTORIAL_CLINICO]') AND name = 'TOMA_MEDICAMENTOS_HABITO')
+                BEGIN
+                    DECLARE @ConstraintName nvarchar(200)
+                    SELECT @ConstraintName = Name FROM sys.default_constraints 
+                    WHERE parent_object_id = OBJECT_ID('[CLI].[HISTORIAL_CLINICO]') 
+                    AND parent_column_id = (SELECT column_id FROM sys.columns WHERE parent_object_id = OBJECT_ID('[CLI].[HISTORIAL_CLINICO]') AND name = 'TOMA_MEDICAMENTOS_HABITO')
+                    
+                    IF @ConstraintName IS NOT NULL EXEC('ALTER TABLE [CLI].[HISTORIAL_CLINICO] DROP CONSTRAINT [' + @ConstraintName + ']')
+                    ALTER TABLE [CLI].[HISTORIAL_CLINICO] DROP COLUMN [TOMA_MEDICAMENTOS_HABITO];
+                END
+ 
+                -- 1.5 Create CLI.FOTOS_CLINICAS if it doesn't exist
+                IF NOT EXISTS (SELECT 1 FROM sys.tables t JOIN sys.schemas s ON t.schema_id = s.schema_id WHERE s.name = 'CLI' AND t.name = 'FOTOS_CLINICAS')
+                BEGIN
+                    CREATE TABLE CLI.FOTOS_CLINICAS (
+                        ID_FOTO INT IDENTITY CONSTRAINT PK_FOTOS_CLINICAS PRIMARY KEY,
+                        ID_PACIENTE INT NOT NULL,
+                        TITULO NVARCHAR(200),
+                        CONTENIDO VARBINARY(MAX) NOT NULL,
+                        CONTENT_TYPE NVARCHAR(50) NOT NULL,
+                        FECHA_REGISTRO DATETIME2 DEFAULT SYSDATETIME(),
+                        FOREIGN KEY(ID_PACIENTE) REFERENCES CLI.PACIENTES(ID_PACIENTE)
+                    );
                 END
             ");
 
@@ -414,17 +476,29 @@ namespace MediTech.Models
 
                         IF @PNombre IS NULL THROW 50001, 'Posible paciente no encontrado.', 1;
 
-                        INSERT INTO ADM.PERSONAS (PRIMER_NOMBRE, SEGUNDO_NOMBRE, PRIMER_APELLIDO, SEGUNDO_APELLIDO, 
-                                                 ID_TIPO_IDENTIFICACION, NUM_IDENTIFICACION, ID_GENERO, FECHA_NACIMIENTO, 
-                                                 EMAIL, TELEFONO, DIRECCION, ID_ESTADO)
-                        VALUES (@PNombre, @SNombre, @PApellido, @SApellido, @IdTipoIdentificacion, @NumIdentificacion, @IdGenero, @FechaNacimiento, 
-                                @Email, @Tel, @Direccion, 1);
-                        
-                        SET @NewPersonaId = SCOPE_IDENTITY();
+                        -- CHECK IF PERSONA ALREADY EXISTS BY ID
+                        SELECT @NewPersonaId = ID_PERSONA FROM ADM.PERSONAS WHERE NUM_IDENTIFICACION = @NumIdentificacion;
 
-                        INSERT INTO CLI.PACIENTES (ID_PERSONA, CONTACTO_EMERGENCIA, TELEFONO_EMERGENCIA, ID_ESTADO)
-                        VALUES (@NewPersonaId, @ContactoEmergencia, @TelefonoEmergencia, 1);
-                        SET @NewPacienteId = SCOPE_IDENTITY();
+                        IF @NewPersonaId IS NULL
+                        BEGIN
+                            INSERT INTO ADM.PERSONAS (PRIMER_NOMBRE, SEGUNDO_NOMBRE, PRIMER_APELLIDO, SEGUNDO_APELLIDO, 
+                                                     ID_TIPO_IDENTIFICACION, NUM_IDENTIFICACION, ID_GENERO, FECHA_NACIMIENTO, 
+                                                     EMAIL, TELEFONO, DIRECCION, ID_ESTADO)
+                            VALUES (@PNombre, @SNombre, @PApellido, @SApellido, @IdTipoIdentificacion, @NumIdentificacion, @IdGenero, @FechaNacimiento, 
+                                    @Email, @Tel, @Direccion, 1);
+                            
+                            SET @NewPersonaId = SCOPE_IDENTITY();
+                        END
+
+                        -- CHECK IF PACIENTE ALREADY EXISTS FOR THIS PERSONA
+                        SELECT @NewPacienteId = ID_PACIENTE FROM CLI.PACIENTES WHERE ID_PERSONA = @NewPersonaId;
+
+                        IF @NewPacienteId IS NULL
+                        BEGIN
+                            INSERT INTO CLI.PACIENTES (ID_PERSONA, CONTACTO_EMERGENCIA, TELEFONO_EMERGENCIA, ID_ESTADO)
+                            VALUES (@NewPersonaId, @ContactoEmergencia, @TelefonoEmergencia, 1);
+                            SET @NewPacienteId = SCOPE_IDENTITY();
+                        END
 
                         UPDATE CLI.CITAS SET ID_PACIENTE = @NewPacienteId, ID_POSIBLE_PACIENTE = NULL, ID_ESTADO_CITA = 2 WHERE ID_CITA = @IdCita;
 

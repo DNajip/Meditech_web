@@ -8,14 +8,9 @@ using System.Security.Claims;
 namespace MediTech.Controllers
 {
     [Authorize]
-    public class ConsultasController : Controller
+    public class ConsultasController(MediTechContext context) : Controller
     {
-        private readonly MediTechContext _context;
-
-        public ConsultasController(MediTechContext context)
-        {
-            _context = context;
-        }
+        private readonly MediTechContext _context = context;
 
         // GET: Consultas
         public async Task<IActionResult> Index()
@@ -56,13 +51,146 @@ namespace MediTech.Controllers
             return View(consulta);
         }
 
+        // GET: Consultas/Recepcion/5 (Triage/Reception Form)
+        public async Task<IActionResult> Recepcion(int? id)
+        {
+            if (id == null)
+            {
+                TempData["Error"] = "ID de cita no proporcionado.";
+                return RedirectToAction("Index", "Citas");
+            }
+
+            var cita = await _context.Citas
+                .Include(c => c.Paciente).ThenInclude(p => p!.Persona)
+                .Include(c => c.Tratamiento)
+                .FirstOrDefaultAsync(m => m.IdCita == id);
+
+            if (cita == null)
+            {
+                TempData["Error"] = "Cita no encontrada.";
+                return RedirectToAction("Index", "Citas");
+            }
+
+            // Buscar si ya existe una consulta EN PROCESO para esta cita
+            var consultaExistente = await _context.Consultas
+                .Include(c => c.SignosVitales)
+                .Include(c => c.Estado)
+                .Include(c => c.Cita).ThenInclude(ci => ci!.Paciente).ThenInclude(p => p!.Persona)
+                .Include(c => c.Cita).ThenInclude(ci => ci!.Tratamiento)
+                .FirstOrDefaultAsync(c => c.IdCita == id && c.Estado!.DescEstado == "EN PROCESO");
+
+            if (consultaExistente != null)
+            {
+                if (consultaExistente.SignosVitales == null) consultaExistente.SignosVitales = new SignosVitales();
+                return View(consultaExistente);
+            }
+
+            // Obtener el ID del usuario desde los claims (NombreIdentificador)
+            var userIdStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(userIdStr, out int userId))
+            {
+                TempData["Error"] = "Sesión de usuario no válida.";
+                return RedirectToAction("Index", "Citas");
+            }
+
+            var usuario = await _context.Usuarios
+                .Include(u => u.Empleado)
+                .FirstOrDefaultAsync(u => u.IdUsuario == userId);
+
+            if (usuario?.IdEmpleado == null)
+            {
+                var username = User.Identity?.Name ?? "Desconocido";
+                TempData["Error"] = $"El usuario '{username}' no tiene un registro de empleado asociado para realizar consultas.";
+                return RedirectToAction("Index", "Citas");
+            }
+
+            var estadoEnProceso = await _context.Estados.FirstOrDefaultAsync(e => e.DescEstado == "EN PROCESO");
+            
+            var nuevaConsulta = new Consulta
+            {
+                IdCita = id.Value,
+                IdMedico = usuario.IdEmpleado.Value,
+                IdEstado = estadoEnProceso?.IdEstado ?? 1,
+                FechaConsulta = DateTime.Now,
+                SignosVitales = new SignosVitales(),
+                Cita = cita
+            };
+
+            return View(nuevaConsulta);
+        }
+
+        // POST: Consultas/Recepcion
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Recepcion(Consulta consulta, SignosVitales signos)
+        {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var existente = await _context.Consultas
+                    .Include(c => c.SignosVitales)
+                    .FirstOrDefaultAsync(c => c.IdCita == consulta.IdCita && c.IdEstado == consulta.IdEstado);
+
+                if (existente == null)
+                {
+                    _context.Consultas.Add(consulta);
+                    await _context.SaveChangesAsync();
+                }
+                else
+                {
+                    existente.MotivoConsulta = consulta.MotivoConsulta;
+                    existente.DiagnosticoPrincipal = consulta.DiagnosticoPrincipal;
+                    existente.Observaciones = consulta.Observaciones;
+                    _context.Update(existente);
+                    consulta = existente;
+                }
+
+                // Guardar/Actualizar Signos Vitales
+                var svExistente = await _context.SignosVitales.FirstOrDefaultAsync(s => s.IdConsulta == consulta.IdConsulta);
+                if (svExistente != null)
+                {
+                    svExistente.PresionArterial = signos.PresionArterial;
+                    svExistente.Temperatura = signos.Temperatura;
+                    svExistente.FrecuenciaCardiaca = signos.FrecuenciaCardiaca;
+                    svExistente.SaturacionOxigeno = signos.SaturacionOxigeno;
+                    svExistente.Peso = signos.Peso;
+                    svExistente.Altura = signos.Altura;
+                    _context.Update(svExistente);
+                }
+                else
+                {
+                    signos.IdConsulta = consulta.IdConsulta;
+                    _context.Add(signos);
+                }
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                // Obtener IdPaciente para la redirección
+                var cita = await _context.Citas.FindAsync(consulta.IdCita);
+                return RedirectToAction("Ficha", "Pacientes", new { id = cita?.IdPaciente, consultaId = consulta.IdConsulta, modo = "consulta" });
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                ModelState.AddModelError("", "Error al guardar la recepción: " + ex.Message);
+                
+                // Re-cargar datos para la vista
+                consulta.Cita = await _context.Citas
+                    .Include(c => c.Paciente!).ThenInclude(p => p.Persona!)
+                    .Include(c => c.Tratamiento)
+                    .FirstOrDefaultAsync(m => m.IdCita == consulta.IdCita);
+                return View(consulta);
+            }
+        }
+
         // GET: Consultas/Atender/5 (id is IdCita)
         public async Task<IActionResult> Atender(int? id)
         {
             if (id == null) return RedirectToAction("Index", "Citas");
 
             var cita = await _context.Citas
-                .Include(c => c.Paciente).ThenInclude(p => p.Persona)
+                .Include(c => c.Paciente).ThenInclude(p => p!.Persona)
                 .Include(c => c.Tratamiento)
                 .FirstOrDefaultAsync(m => m.IdCita == id);
 
@@ -91,12 +219,11 @@ namespace MediTech.Controllers
             {
                 IdCita = cita.IdCita,
                 IdMedico = usuario!.IdEmpleado!.Value,
-                MotivoConsulta = cita.Observaciones, // Pre-cargar desde la cita
+                MotivoConsulta = cita.Observaciones,
                 IdEstado = 1,
                 Cita = cita
             };
 
-            // Pre-crear objeto de signos vitales para el modelo en la vista
             nuevaConsulta.SignosVitales = new SignosVitales();
 
             return View("Create", nuevaConsulta);

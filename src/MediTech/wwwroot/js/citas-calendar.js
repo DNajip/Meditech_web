@@ -537,7 +537,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 btnGroupActions.innerHTML = `<button type="button" class="btn btn-success text-white w-100 fw-semibold py-2 shadow-sm" style="border-radius: 8px;" onclick="marcarAtendida(${data.id})"><i class="bi bi-check2-circle me-1"></i> Confirmar Llegada</button>
                                              <a href="/Pacientes/Ficha/${data.pacienteId}" class="btn text-white fw-semibold py-2" style="background-color: #4F46E5; border-radius: 8px;"><i class="bi bi-folder2-open"></i></a>`;
             } else if (data.estadoId === 2) { 
-                btnGroupActions.innerHTML = `<a href="/Consultas/Atender/${data.id}" class="btn text-white w-100 fw-semibold py-2 shadow-sm" style="background-color: #4F46E5; border-radius: 8px;"><i class="bi bi-stethoscope me-1"></i> Iniciar Consulta</a>`;
+                btnGroupActions.innerHTML = `<button type="button" class="btn text-white w-100 fw-semibold py-2 shadow-sm" style="background-color: #4F46E5; border-radius: 8px;" onclick="iniciarConsultaJS(${data.id})"><i class="bi bi-stethoscope me-1"></i> Iniciar Consulta</button>`;
             } else {
                 btnGroupActions.innerHTML = `<span class="badge bg-danger w-100 p-3 fs-6 rounded-3">Cita Cancelada</span>`;
             }
@@ -575,6 +575,121 @@ document.addEventListener('DOMContentLoaded', function () {
         m.show();
     }
 
+    window.iniciarConsultaJS = function(idCita) {
+        const modal = bootstrap.Modal.getInstance(modalDetalleEl);
+        if (modal) modal.hide();
+
+        // Fetch triage data from the server
+        fetch(`/Citas/GetRecepcionData/${idCita}`)
+            .then(r => r.json())
+            .then(data => {
+                if (!data.success) {
+                    alert(data.error || 'Error al cargar datos de recepción.');
+                    return;
+                }
+
+                // Populate hidden fields
+                document.getElementById('recIdCita').value = data.idCita;
+                document.getElementById('recIdMedico').value = data.idMedico;
+                document.getElementById('recIdEstado').value = data.idEstado;
+                document.getElementById('recIdConsulta').value = data.idConsulta;
+
+                // Populate header
+                document.getElementById('recepcionPacienteNombre').textContent = data.pacienteNombre;
+                document.getElementById('recepcionFechaHora').textContent = data.fechaHora;
+                document.getElementById('recepcionTratamiento').textContent = data.tratamiento;
+
+                // Populate signos vitales if existing
+                document.getElementById('recPresion').value = data.signos?.presionArterial || '';
+                document.getElementById('recTemp').value = data.signos?.temperatura || '';
+                document.getElementById('recFC').value = data.signos?.frecuenciaCardiaca || '';
+                document.getElementById('recSat').value = data.signos?.saturacionOxigeno || '';
+                document.getElementById('recPeso').value = data.signos?.peso || '';
+                document.getElementById('recAltura').value = data.signos?.altura || '';
+
+                // Populate clinical data (motivo = tratamiento agendado)
+                document.getElementById('recMotivo').value = data.motivo || data.tratamiento || '';
+                document.getElementById('recObservaciones').value = data.observaciones || data.observacionesCita || '';
+
+                // Reset alert
+                document.getElementById('recepcionAlert').classList.add('d-none');
+
+                // Calculate IMC if data exists
+                calcularIMCRecepcion();
+
+                // Open modal
+                const recModal = new bootstrap.Modal(document.getElementById('modalRecepcion'));
+                recModal.show();
+            })
+            .catch(err => {
+                console.error('Error:', err);
+                alert('Error de conexión al cargar el formulario de recepción.');
+            });
+    }
+
+    // IMC auto-calculation for recepcion modal (peso en lbs)
+    window.calcularIMCRecepcion = function() {
+        const pesoLbs = parseFloat(document.getElementById('recPeso').value);
+        const altura = parseFloat(document.getElementById('recAltura').value);
+        const imcVal = document.getElementById('recImcValue');
+        const imcStat = document.getElementById('recImcStatus');
+
+        if (pesoLbs > 0 && altura > 0) {
+            const pesoKg = pesoLbs / 2.205; // Convertir lbs a kg
+            const alturaM = altura > 3 ? altura / 100 : altura;
+            const imc = pesoKg / (alturaM * alturaM);
+            imcVal.textContent = imc.toFixed(1);
+
+            if (imc < 18.5) { imcStat.textContent = "Bajo peso"; imcStat.className = "fw-bold text-warning"; }
+            else if (imc < 25) { imcStat.textContent = "Peso normal"; imcStat.className = "fw-bold text-success"; }
+            else if (imc < 30) { imcStat.textContent = "Sobrepeso"; imcStat.className = "fw-bold text-warning"; }
+            else { imcStat.textContent = "Obesidad"; imcStat.className = "fw-bold text-danger"; }
+        } else {
+            imcVal.textContent = "--.-";
+            imcStat.textContent = "Introduzca peso y altura";
+            imcStat.className = "fw-bold text-secondary";
+        }
+    }
+
+    // Attach IMC listeners
+    document.getElementById('recPeso')?.addEventListener('input', calcularIMCRecepcion);
+    document.getElementById('recAltura')?.addEventListener('input', calcularIMCRecepcion);
+
+    // Save recepcion via AJAX
+    window.guardarRecepcion = function() {
+        const form = document.getElementById('formRecepcion');
+        const formData = new FormData(form);
+        const btn = document.getElementById('btnGuardarRecepcion');
+        const alertEl = document.getElementById('recepcionAlert');
+
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...';
+        alertEl.classList.add('d-none');
+
+        fetch('/Citas/GuardarRecepcion', {
+            method: 'POST',
+            body: formData
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = `/Pacientes/Ficha/${data.idPaciente}?consultaId=${data.idConsulta}&modo=consulta`;
+            } else {
+                alertEl.textContent = data.error || 'Error al guardar la recepción.';
+                alertEl.classList.remove('d-none');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Guardar y continuar';
+            }
+        })
+        .catch(err => {
+            console.error('Error:', err);
+            alertEl.textContent = 'Error de conexión al guardar.';
+            alertEl.classList.remove('d-none');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Guardar y continuar';
+        });
+    }
+
     window.marcarAtendida = function(idCita) {
         const form = document.createElement('form');
         form.method = 'POST';
@@ -606,7 +721,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 calendar.refetchEvents();
                 bootstrap.Modal.getInstance(document.getElementById('modalConvertir')).hide();
                 // Redirigir al flujo de consulta según requerimiento
-                window.location.href = `/Consultas/Atender/${idCita}`;
+                window.location.href = `/Consultas/Recepcion/${idCita}`;
             } else {
                 alert(data.message);
                 btn.disabled = false;

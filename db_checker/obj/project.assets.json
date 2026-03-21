@@ -699,6 +699,43 @@
           }
         }
       },
+      "Microsoft.AspNetCore.Mvc.Razor.Extensions/6.0.0": {
+        "type": "package",
+        "dependencies": {
+          "Microsoft.AspNetCore.Razor.Language": "6.0.0",
+          "Microsoft.CodeAnalysis.Razor": "6.0.0"
+        },
+        "compile": {
+          "lib/netstandard2.0/Microsoft.AspNetCore.Mvc.Razor.Extensions.dll": {}
+        },
+        "runtime": {
+          "lib/netstandard2.0/Microsoft.AspNetCore.Mvc.Razor.Extensions.dll": {}
+        }
+      },
+      "Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation/10.0.0-preview.1.25120.3": {
+        "type": "package",
+        "dependencies": {
+          "Microsoft.AspNetCore.Mvc.Razor.Extensions": "6.0.0",
+          "Microsoft.CodeAnalysis.Razor": "6.0.0",
+          "Microsoft.Extensions.DependencyModel": "10.0.0-preview.1.25080.5"
+        },
+        "compile": {
+          "lib/net10.0/Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net10.0/Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation.dll": {
+            "related": ".xml"
+          }
+        },
+        "frameworkReferences": [
+          "Microsoft.AspNetCore.App"
+        ],
+        "build": {
+          "buildTransitive/net10.0/Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation.targets": {}
+        }
+      },
       "Microsoft.AspNetCore.Razor.Language/6.0.24": {
         "type": "package",
         "compile": {
@@ -2518,6 +2555,28 @@
         "build": {
           "buildTransitive/net8.0/_._": {}
         }
+      },
+      "MediTech/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v10.0",
+        "dependencies": {
+          "Google.Apis.Auth": "1.73.0",
+          "Google.Apis.Calendar.v3": "1.73.0.4073",
+          "Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation": "10.0.0-preview.1.25120.3",
+          "Microsoft.EntityFrameworkCore.SqlServer": "10.0.4",
+          "Microsoft.VisualStudio.Web.CodeGeneration.Design": "10.0.2",
+          "Newtonsoft.Json": "13.0.4",
+          "QuestPDF": "2026.2.3"
+        },
+        "compile": {
+          "bin/placeholder/MediTech.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/MediTech.dll": {}
+        },
+        "frameworkReferences": [
+          "Microsoft.AspNetCore.App"
+        ]
       }
     }
   },
@@ -3394,6 +3453,38 @@
         "lib/netstandard1.0/zh-Hant/Humanizer.resources.dll",
         "lib/netstandard2.0/zh-Hant/Humanizer.resources.dll",
         "logo.png"
+      ]
+    },
+    "Microsoft.AspNetCore.Mvc.Razor.Extensions/6.0.0": {
+      "sha512": "M0h+ChPgydX2xY17agiphnAVa/Qh05RAP8eeuqGGhQKT10claRBlLNO6d2/oSV8zy0RLHzwLnNZm5xuC/gckGA==",
+      "type": "package",
+      "path": "microsoft.aspnetcore.mvc.razor.extensions/6.0.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "Icon.png",
+        "THIRD-PARTY-NOTICES.TXT",
+        "lib/netstandard2.0/Microsoft.AspNetCore.Mvc.Razor.Extensions.dll",
+        "microsoft.aspnetcore.mvc.razor.extensions.6.0.0.nupkg.sha512",
+        "microsoft.aspnetcore.mvc.razor.extensions.nuspec"
+      ]
+    },
+    "Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation/10.0.0-preview.1.25120.3": {
+      "sha512": "V2v7ozgjnsLh83q06IY8JKOgGHfAnuYDxfDhxZdC1I0Eg/CFynaI2ZK2v50kp8ktPs78/uZBkSa4875gAHGpCQ==",
+      "type": "package",
+      "path": "microsoft.aspnetcore.mvc.razor.runtimecompilation/10.0.0-preview.1.25120.3",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "Icon.png",
+        "PACKAGE.md",
+        "THIRD-PARTY-NOTICES.TXT",
+        "build/net10.0/Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation.targets",
+        "buildTransitive/net10.0/Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation.targets",
+        "lib/net10.0/Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation.dll",
+        "lib/net10.0/Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation.xml",
+        "microsoft.aspnetcore.mvc.razor.runtimecompilation.10.0.0-preview.1.25120.3.nupkg.sha512",
+        "microsoft.aspnetcore.mvc.razor.runtimecompilation.nuspec"
       ]
     },
     "Microsoft.AspNetCore.Razor.Language/6.0.24": {
@@ -6516,12 +6607,18 @@
         "system.security.cryptography.protecteddata.nuspec",
         "useSharedDesignerContext.txt"
       ]
+    },
+    "MediTech/1.0.0": {
+      "type": "project",
+      "path": "../src/MediTech/MediTech.csproj",
+      "msbuildProject": "../src/MediTech/MediTech.csproj"
     }
   },
   "projectFileDependencyGroups": {
     "net10.0": [
       "Google.Apis.Auth >= 1.73.0",
       "Google.Apis.Calendar.v3 >= 1.73.0.4073",
+      "MediTech >= 1.0.0",
       "Microsoft.EntityFrameworkCore.Design >= 10.0.4",
       "Microsoft.EntityFrameworkCore.SqlServer >= 10.0.4",
       "Microsoft.EntityFrameworkCore.Tools >= 10.0.4",
@@ -6537,11 +6634,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "E:\\Programación\\Antigravity\\Meditech\\db_checker\\db_checker.csproj",
+      "projectUniqueName": "e:\\Programación\\Antigravity\\Meditech\\db_checker\\db_checker.csproj",
       "projectName": "db_checker",
-      "projectPath": "E:\\Programación\\Antigravity\\Meditech\\db_checker\\db_checker.csproj",
+      "projectPath": "e:\\Programación\\Antigravity\\Meditech\\db_checker\\db_checker.csproj",
       "packagesPath": "C:\\Users\\Najip\\.nuget\\packages\\",
-      "outputPath": "E:\\Programación\\Antigravity\\Meditech\\db_checker\\obj\\",
+      "outputPath": "e:\\Programación\\Antigravity\\Meditech\\db_checker\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -6562,7 +6659,11 @@
       "frameworks": {
         "net10.0": {
           "targetAlias": "net10.0",
-          "projectReferences": {}
+          "projectReferences": {
+            "e:\\Programación\\Antigravity\\Meditech\\src\\MediTech\\MediTech.csproj": {
+              "projectPath": "e:\\Programación\\Antigravity\\Meditech\\src\\MediTech\\MediTech.csproj"
+            }
+          }
         }
       },
       "warningProperties": {

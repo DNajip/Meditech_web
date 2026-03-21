@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "r96G+cO5LTE=",
+  "dgSpecHash": "T5TZXAhN4sU=",
   "success": true,
-  "projectFilePath": "E:\\Programación\\Antigravity\\Meditech\\db_checker\\db_checker.csproj",
+  "projectFilePath": "e:\\Programación\\Antigravity\\Meditech\\db_checker\\db_checker.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Najip\\.nuget\\packages\\azure.core\\1.47.1\\azure.core.1.47.1.nupkg.sha512",
     "C:\\Users\\Najip\\.nuget\\packages\\azure.identity\\1.14.2\\azure.identity.1.14.2.nupkg.sha512",
@@ -60,6 +60,8 @@
     "C:\\Users\\Najip\\.nuget\\packages\\humanizer.core.zh-cn\\2.14.1\\humanizer.core.zh-cn.2.14.1.nupkg.sha512",
     "C:\\Users\\Najip\\.nuget\\packages\\humanizer.core.zh-hans\\2.14.1\\humanizer.core.zh-hans.2.14.1.nupkg.sha512",
     "C:\\Users\\Najip\\.nuget\\packages\\humanizer.core.zh-hant\\2.14.1\\humanizer.core.zh-hant.2.14.1.nupkg.sha512",
+    "C:\\Users\\Najip\\.nuget\\packages\\microsoft.aspnetcore.mvc.razor.extensions\\6.0.0\\microsoft.aspnetcore.mvc.razor.extensions.6.0.0.nupkg.sha512",
+    "C:\\Users\\Najip\\.nuget\\packages\\microsoft.aspnetcore.mvc.razor.runtimecompilation\\10.0.0-preview.1.25120.3\\microsoft.aspnetcore.mvc.razor.runtimecompilation.10.0.0-preview.1.25120.3.nupkg.sha512",
     "C:\\Users\\Najip\\.nuget\\packages\\microsoft.aspnetcore.razor.language\\6.0.24\\microsoft.aspnetcore.razor.language.6.0.24.nupkg.sha512",
     "C:\\Users\\Najip\\.nuget\\packages\\microsoft.bcl.asyncinterfaces\\8.0.0\\microsoft.bcl.asyncinterfaces.8.0.0.nupkg.sha512",
     "C:\\Users\\Najip\\.nuget\\packages\\microsoft.bcl.cryptography\\9.0.4\\microsoft.bcl.cryptography.9.0.4.nupkg.sha512",

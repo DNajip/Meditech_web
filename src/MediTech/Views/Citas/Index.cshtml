@@ -323,7 +323,6 @@
 {
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            // Flash success toast
             const toast = document.createElement('div');
             toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#10B981;color:#FFF;padding:12px 20px;border-radius:10px;font-size:0.88rem;font-weight:600;z-index:9999;box-shadow:0 4px 12px rgba(16,185,129,0.3);display:flex;align-items:center;gap:8px;';
             toast.innerHTML = '<i class="bi bi-check-circle-fill"></i> @TempData["SuccessMessage"]';
@@ -332,6 +331,122 @@
         });
     </script>
 }
+
+@if (TempData["Error"] != null || TempData["ErrorMessage"] != null)
+{
+    var errorMsg = TempData["Error"] ?? TempData["ErrorMessage"];
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const toast = document.createElement('div');
+            toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#EF4444;color:#FFF;padding:12px 20px;border-radius:10px;font-size:0.88rem;font-weight:600;z-index:9999;box-shadow:0 4px 12px rgba(239,68,68,0.3);display:flex;align-items:center;gap:8px;';
+            toast.innerHTML = '<i class="bi bi-exclamation-triangle-fill"></i> @errorMsg';
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 6000);
+        });
+    </script>
+}
+
+<!-- Modal Recepción del Paciente (Triage) -->
+<div class="modal fade" id="modalRecepcion" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content" style="border-radius: 16px; border: none; box-shadow: 0 20px 60px rgba(0,0,0,0.2);">
+            <div class="modal-header border-0 px-4 pt-4 pb-0">
+                <div>
+                    <h4 class="fw-bold mb-1" style="color: #1e293b;"><i class="bi bi-clipboard2-pulse me-2 text-primary"></i>Recepción del Paciente</h4>
+                    <div class="d-flex align-items-center gap-3 text-secondary small">
+                        <span><i class="bi bi-person-fill me-1"></i> <span id="recepcionPacienteNombre">—</span></span>
+                        <span><i class="bi bi-calendar-event me-1"></i> <span id="recepcionFechaHora">—</span></span>
+                        <span class="badge rounded-pill fw-normal" style="background-color: #EEF2FF; color: #4F46E5; font-size: 0.8rem; padding: 5px 12px;">
+                            <i class="bi bi-heart-pulse me-1"></i><span id="recepcionTratamiento">—</span>
+                        </span>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-3">
+                    <span class="badge rounded-pill px-3 py-2" style="background: #fef3c7; color: #92400e; font-size: 0.8rem;"
+                        ><span style="width:8px;height:8px;background:#f59e0b;border-radius:50%;display:inline-block;margin-right:6px;animation:pulse 2s infinite;"></span>EN PROCESO</span>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+            </div>
+            <div class="modal-body px-4 py-3">
+                <form id="formRecepcion">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" id="recIdCita" name="IdCita" />
+                    <input type="hidden" id="recIdMedico" name="IdMedico" />
+                    <input type="hidden" id="recIdEstado" name="IdEstado" />
+                    <input type="hidden" id="recIdConsulta" name="IdConsulta" />
+
+                    <!-- SECCIÓN 1: SIGNOS VITALES -->
+                    <div class="p-3 mb-3" style="background:#f8fafc; border-radius:14px; border:1px solid #e2e8f0;">
+                        <div class="d-flex align-items-center gap-2 mb-3">
+                            <div class="p-2 bg-danger bg-opacity-10 text-danger rounded-3"><i class="bi bi-activity"></i></div>
+                            <span class="fw-bold text-dark">SIGNOS VITALES</span>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-4 col-6">
+                                <label class="form-label small fw-bold text-secondary mb-1">Presión Arterial</label>
+                                <input name="signos.PresionArterial" id="recPresion" class="form-control bg-white" placeholder="Ej: 120/80" style="border-radius:10px;border:1px solid #e2e8f0;" />
+                            </div>
+                            <div class="col-md-4 col-6">
+                                <label class="form-label small fw-bold text-secondary mb-1">Temperatura (°C)</label>
+                                <input name="signos.Temperatura" id="recTemp" type="number" step="0.1" class="form-control bg-white" placeholder="°C" style="border-radius:10px;border:1px solid #e2e8f0;" />
+                            </div>
+                            <div class="col-md-4 col-6">
+                                <label class="form-label small fw-bold text-secondary mb-1">Frecuencia Cardíaca (LPM)</label>
+                                <input name="signos.FrecuenciaCardiaca" id="recFC" type="number" class="form-control bg-white" placeholder="LPM" style="border-radius:10px;border:1px solid #e2e8f0;" />
+                            </div>
+                            <div class="col-md-4 col-6">
+                                <label class="form-label small fw-bold text-secondary mb-1">Saturación O₂ (%)</label>
+                                <input name="signos.SaturacionOxigeno" id="recSat" type="number" class="form-control bg-white" placeholder="%" style="border-radius:10px;border:1px solid #e2e8f0;" />
+                            </div>
+                            <div class="col-md-4 col-6">
+                                <label class="form-label small fw-bold text-secondary mb-1">Peso (lbs)</label>
+                                <input name="signos.Peso" id="recPeso" type="number" step="0.01" class="form-control bg-white" placeholder="lbs" style="border-radius:10px;border:1px solid #e2e8f0;" />
+                            </div>
+                            <div class="col-md-4 col-6">
+                                <label class="form-label small fw-bold text-secondary mb-1">Altura (cm)</label>
+                                <input name="signos.Altura" id="recAltura" type="number" step="0.1" class="form-control bg-white" placeholder="cm" style="border-radius:10px;border:1px solid #e2e8f0;" />
+                            </div>
+                        </div>
+                        <!-- IMC Display -->
+                        <div class="mt-3 p-3 d-flex align-items-center gap-4" style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:12px;">
+                            <div class="text-center" style="min-width:120px;">
+                                <span class="text-secondary small fw-bold text-uppercase d-block">IMC</span>
+                                <span class="fw-bold" id="recImcValue" style="font-size:1.8rem; color:#1d4ed8;">--.-</span>
+                            </div>
+                            <div>
+                                <div id="recImcStatus" class="fw-bold text-secondary">Introduzca peso y altura</div>
+                                <p class="small text-muted mb-0">IMC = peso(kg) / altura(m)² — Peso ingresado en lbs</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SECCIÓN 2: DATOS CLÍNICOS -->
+                    <div class="p-3" style="background:#f8fafc; border-radius:14px; border:1px solid #e2e8f0;">
+                        <div class="d-flex align-items-center gap-2 mb-3">
+                            <div class="p-2 bg-primary bg-opacity-10 text-primary rounded-3"><i class="bi bi-clipboard2-pulse"></i></div>
+                            <span class="fw-bold text-dark">DATOS CLÍNICOS INICIALES</span>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-secondary mb-1">Motivo de consulta</label>
+                            <textarea name="MotivoConsulta" id="recMotivo" class="form-control bg-white" rows="2" placeholder="Tratamiento o servicio agendado" style="border-radius:10px;border:1px solid #e2e8f0;" readonly></textarea>
+                        </div>
+                        <div>
+                            <label class="form-label small fw-bold text-secondary mb-1">Observaciones iniciales</label>
+                            <textarea name="Observaciones" id="recObservaciones" class="form-control bg-white" rows="2" placeholder="Notas adicionales..." style="border-radius:10px;border:1px solid #e2e8f0;"></textarea>
+                        </div>
+                    </div>
+                </form>
+                <div id="recepcionAlert" class="alert alert-danger mt-3 d-none" style="border-radius:10px;"></div>
+            </div>
+            <div class="modal-footer border-0 px-4 pb-4 pt-2">
+                <button type="button" class="btn btn-light fw-semibold px-4" data-bs-dismiss="modal" style="border-radius:10px;">Cancelar</button>
+                <button type="button" class="btn text-white fw-semibold px-5" onclick="guardarRecepcion()" id="btnGuardarRecepcion" style="border-radius:10px; background:#4f46e5; box-shadow: 0 4px 6px rgba(79,70,229,0.3);">
+                    <i class="bi bi-check2-circle me-1"></i> Guardar y continuar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.js"></script>

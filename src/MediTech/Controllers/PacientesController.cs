@@ -6,14 +6,9 @@ using MediTech.Models;
 namespace MediTech.Controllers;
 
 [Authorize]
-public class PacientesController : Controller
+public class PacientesController(MediTechContext context) : Controller
 {
-    private readonly MediTechContext _context;
-
-    public PacientesController(MediTechContext context)
-    {
-        _context = context;
-    }
+    private readonly MediTechContext _context = context;
 
     // GET: /Pacientes
     public async Task<IActionResult> Index(string? search, int page = 1)
@@ -65,7 +60,7 @@ public class PacientesController : Controller
     }
 
     // GET: /Pacientes/Ficha/5
-    public async Task<IActionResult> Ficha(int id)
+    public async Task<IActionResult> Ficha(int id, int? consultaId = null, string? modo = null)
     {
         var paciente = await _context.Pacientes
             .Include(p => p.Persona)
@@ -76,6 +71,22 @@ public class PacientesController : Controller
 
         if (paciente == null) return NotFound();
         
+        ViewBag.ConsultaId = consultaId;
+        ViewBag.Modo = modo;
+
+        // Si hay una consulta activa, cargar sus datos
+        if (consultaId.HasValue)
+        {
+            var consultaActiva = await _context.Consultas
+                .Include(c => c.SignosVitales)
+                .Include(c => c.Diagnosticos)
+                .Include(c => c.Cita!)
+                    .ThenInclude(ci => ci.Tratamiento)
+                .FirstOrDefaultAsync(c => c.IdConsulta == consultaId.Value);
+            
+            ViewBag.ConsultaActiva = consultaActiva;
+        }
+
         return View(paciente);
     }
 
@@ -283,5 +294,56 @@ public class PacientesController : Controller
         }
         
         return NotFound();
+    }
+
+    // GET: /Pacientes/GetHistorial/5
+    [HttpGet]
+    public async Task<IActionResult> GetHistorial(int id)
+    {
+        var historial = await _context.HistorialesClinicos
+            .FirstOrDefaultAsync(h => h.IdPaciente == id);
+        
+        return Json(new { success = true, data = historial });
+    }
+
+    // POST: /Pacientes/GuardarHistorial
+    [HttpPost]
+    public async Task<IActionResult> GuardarHistorial([FromBody] HistorialClinico model)
+    {
+        if (model.IdPaciente == 0)
+            return Json(new { success = false, message = "ID de paciente no válido." });
+
+        var existing = await _context.HistorialesClinicos
+            .FirstOrDefaultAsync(h => h.IdPaciente == model.IdPaciente);
+
+        if (existing == null)
+        {
+            model.FechaRegistro = DateTime.Now;
+            _context.HistorialesClinicos.Add(model);
+        }
+        else
+        {
+            // Update fields
+            existing.Alergias = model.Alergias;
+            existing.AlergiasDetalle = model.AlergiasDetalle;
+            existing.Diabetes = model.Diabetes;
+            existing.TomaMedicamento = model.TomaMedicamento;
+            existing.MedicamentoDetalle = model.MedicamentoDetalle;
+            existing.Hipertension = model.Hipertension;
+            existing.Embarazada = model.Embarazada;
+            existing.Cardiacos = model.Cardiacos;
+            existing.AntecedenteOncologico = model.AntecedenteOncologico;
+            existing.OtrosPadecimientos = model.OtrosPadecimientos;
+            existing.OtrosPadecimientosDetalle = model.OtrosPadecimientosDetalle;
+            existing.ConsumeAlcohol = model.ConsumeAlcohol;
+            existing.FumaCigarrillos = model.FumaCigarrillos;
+            existing.RealizaEjercicio = model.RealizaEjercicio;
+            existing.CirugiasEsteticas = model.CirugiasEsteticas;
+            existing.CirugiasEsteticasDetalle = model.CirugiasEsteticasDetalle;
+            existing.FechaActualizacion = DateTime.Now;
+        }
+
+        await _context.SaveChangesAsync();
+        return Json(new { success = true });
     }
 }
