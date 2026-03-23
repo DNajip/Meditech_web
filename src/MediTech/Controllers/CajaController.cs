@@ -1,16 +1,20 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MediTech.Models;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace MediTech.Controllers;
 
 public class CajaController : Controller
 {
     private readonly MediTechContext _context;
+    private readonly IMemoryCache _cache;
+    private const string TasaCacheKey = "ActiveExchangeRate";
 
-    public CajaController(MediTechContext context)
+    public CajaController(MediTechContext context, IMemoryCache cache)
     {
         _context = context;
+        _cache = cache;
     }
 
     // GET: Caja
@@ -50,6 +54,9 @@ public class CajaController : Controller
         }
 
         var totalItems = allCuentas.Count;
+        var config = await _context.ConfiguracionesMoneda.Include(c => c.MonedaBase).FirstOrDefaultAsync();
+        ViewBag.MonedaBase = config?.MonedaBase;
+
         var cuentas = allCuentas
             .OrderByDescending(c => c.FechaCreacion)
             .Skip((page - 1) * pageSize)
@@ -74,17 +81,17 @@ public class CajaController : Controller
             .ToListAsync();
 
         ViewBag.Tratamientos = await _context.Tratamientos
-            .Include(t => t.Moneda)
             .Where(t => t.IdEstado == 1)
             .OrderBy(t => t.NombreTratamiento)
             .ToListAsync();
 
         ViewBag.Productos = await _context.Productos
-            .Include(p => p.Moneda)
             .Where(p => p.Activo && p.Stock > 0)
             .OrderBy(p => p.Nombre)
             .ToListAsync();
 
+        var config = await _context.ConfiguracionesMoneda.Include(c => c.MonedaBase).FirstOrDefaultAsync();
+        ViewBag.MonedaBase = config?.MonedaBase;
         ViewBag.Monedas = await _context.Monedas.ToListAsync();
 
         return View();
@@ -128,10 +135,13 @@ public class CajaController : Controller
             });
         }
 
+        var config = await _context.ConfiguracionesMoneda.FirstOrDefaultAsync();
+        if (config == null) throw new Exception("Configuración de moneda no encontrada.");
+
         var cuenta = new Cuenta
         {
             IdPaciente = idPaciente,
-            IdMonedaBase = idMonedaBase,
+            IdMonedaBase = config.IdMonedaBase,
             TotalBruto = totalBruto,
             Descuento = descuento,
             TotalFinal = totalBruto - descuento,
@@ -166,16 +176,38 @@ public class CajaController : Controller
 
         if (cuenta == null) return NotFound();
 
+        // Moneda Base: Si la cuenta no la tiene (legacy), usar la global
+        if (cuenta.MonedaBase != null)
+        {
+            ViewBag.MonedaBase = cuenta.MonedaBase;
+        }
+        else
+        {
+            var config = await _context.ConfiguracionesMoneda.Include(c => c.MonedaBase).FirstOrDefaultAsync();
+            ViewBag.MonedaBase = config?.MonedaBase ?? new Moneda { Codigo = "USD", Simbolo = "$", Nombre = "Base (Default)" };
+        }
+        
         ViewBag.Monedas = await _context.Monedas.ToListAsync();
 
-        // Tasa de cambio
-        var config = await _context.ConfiguracionesMoneda.FirstOrDefaultAsync();
-        ViewBag.TasaCambio = config?.TasaCambio ?? 36.62m;
+        // Tasa de cambio con caché
+        var activeTasa = await _context.TasasCambio.FirstOrDefaultAsync(t => t.Activo);
+        if (activeTasa == null)
+        {
+            TempData["Error"] = "ERROR CRÍTICO: No hay una tasa de cambio activa definida.";
+            ViewBag.TasaCambio = 0;
+        }
+        else
+        {
+            ViewBag.TasaCambio = activeTasa.Valor;
+            ViewBag.TasaOrigenId = activeTasa.IdMonedaOrigen;
+            ViewBag.TasaDestinoId = activeTasa.IdMonedaDestino;
+        }
 
         // Saldo pendiente
-        var totalPagado = cuenta.Pagos.Sum(p => p.Monto ?? 0);
+        var totalPagado = cuenta.Pagos.Sum(p => p.MontoBase ?? 0);
         ViewBag.TotalPagado = totalPagado;
         ViewBag.SaldoPendiente = (cuenta.TotalFinal ?? 0) - totalPagado;
+        ViewBag.IdMonedaBase = ViewBag.MonedaBase?.IdMoneda ?? 0;
 
         return View(cuenta);
     }
@@ -191,17 +223,57 @@ public class CajaController : Controller
 
         if (cuenta == null) return NotFound();
 
-        // Obtener tasa de cambio
+        // Obtener tasa de cambio con caché (Obligatorio para nuevos pagos)
+        if (!_cache.TryGetValue(TasaCacheKey, out decimal tasaCambio))
+        {
+            var activeTasa = await _context.TasasCambio.FirstOrDefaultAsync(t => t.Activo);
+            if (activeTasa == null)
+            {
+                throw new Exception("No existe una tasa de cambio activa definida. No se puede proceder con el pago.");
+            }
+            tasaCambio = activeTasa.Valor;
+            _cache.Set(TasaCacheKey, tasaCambio, TimeSpan.FromHours(1));
+        }
+
         var config = await _context.ConfiguracionesMoneda.FirstOrDefaultAsync();
-        var tasaCambio = config?.TasaCambio ?? 36.62m;
+        if (config == null) throw new Exception("Configuración de moneda no encontrada.");
+
+        var currentTasa = await _context.TasasCambio.FirstOrDefaultAsync(t => t.Activo);
+        if (currentTasa == null) throw new Exception("No hay tasa de cambio activa.");
+
+        decimal montoBase = monto;
+        if (idMoneda != config.IdMonedaBase)
+        {
+            // Si la moneda pagada es el Origen de la tasa y la Base es el Destino -> Multiplicar
+            if (currentTasa.IdMonedaOrigen == idMoneda && currentTasa.IdMonedaDestino == config.IdMonedaBase)
+            {
+                montoBase = monto * currentTasa.Valor;
+            }
+            // Si la moneda Base es el Origen y la pagada es el Destino -> Dividir
+            else if (currentTasa.IdMonedaOrigen == config.IdMonedaBase && currentTasa.IdMonedaDestino == idMoneda)
+            {
+                montoBase = monto / currentTasa.Valor;
+            }
+        }
+
+        // Validación "No fiamos" - El pago debe cubrir el saldo total pendiente
+        var totalPagadoPrevio = cuenta.Pagos.Sum(p => p.MontoBase ?? 0);
+        var saldoPendienteBase = (cuenta.TotalFinal ?? 0) - totalPagadoPrevio;
+
+        if (montoBase < saldoPendienteBase - 0.01m)
+        {
+            TempData["Error"] = $"ERROR: El monto ingresado ({montoBase:N2} {config.MonedaBase?.Codigo}) es menor al saldo pendiente ({saldoPendienteBase:N2} {config.MonedaBase?.Codigo}). En este centro no se permite el fiado.";
+            return RedirectToAction("Details", new { id = idCuenta });
+        }
 
         var pago = new Pago
         {
             IdCuenta = idCuenta,
             Monto = monto,
+            MontoBase = montoBase,
             IdMoneda = idMoneda,
             MetodoPago = metodoPago,
-            TasaCambioAplicada = tasaCambio,
+            TasaCambioAplicada = currentTasa.Valor,
             FechaPago = DateTime.Now
         };
 

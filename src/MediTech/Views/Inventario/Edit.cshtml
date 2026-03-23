@@ -76,7 +76,7 @@
                             </div>
 
                             <!-- Sección 2: Financiero -->
-                            <div class="col-md-4">
+                            <div class="col-md-12">
                                 <label asp-for="Precio"
                                     class="form-label fw-bold small text-uppercase text-muted silver-label mb-1">Precio
                                     de Venta</label>
@@ -86,13 +86,6 @@
                                         step="0.01" />
                                 </div>
                                 <span asp-validation-for="Precio" class="text-danger small"></span>
-                            </div>
-
-                            <div class="col-md-4">
-                                <label asp-for="IdMoneda"
-                                    class="form-label fw-bold small text-uppercase text-muted silver-label mb-1">Moneda</label>
-                                <select asp-for="IdMoneda" class="form-select bg-light border-0"
-                                    asp-items="ViewBag.IdMoneda"></select>
                             </div>
 
                             <div class="col-md-4 d-none d-md-block"></div> <!-- Espaciador -->

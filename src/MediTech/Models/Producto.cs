@@ -24,8 +24,6 @@ namespace MediTech.Models
         [Column("PRECIO")]
         public decimal? Precio { get; set; }
 
-        [Column("ID_MONEDA")]
-        public int? IdMoneda { get; set; }
 
         [Column("STOCK")]
         public int Stock { get; set; } = 0;
@@ -40,8 +38,6 @@ namespace MediTech.Models
         public DateTime FechaCreacion { get; set; } = DateTime.Now;
 
         // Navigation properties
-        [ForeignKey("IdMoneda")]
-        public virtual Moneda? Moneda { get; set; }
 
         public virtual ICollection<MovimientoInventario> Movimientos { get; set; } = new List<MovimientoInventario>();
     }

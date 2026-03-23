@@ -18,7 +18,7 @@
                     <hr>
                     <div class="d-flex justify-content-between mb-2">
                         <span class="text-muted">Precio:</span>
-                        <span class="fw-bold fs-5">@Model.Moneda?.Simbolo @Model.Precio?.ToString("N2")</span>
+                        <span class="fw-bold fs-5">@((ViewBag.MonedaBase as MediTech.Models.Moneda)?.Simbolo ?? "$") @Model.Precio?.ToString("N2")</span>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
                         <span class="text-muted">Stock Actual:</span>

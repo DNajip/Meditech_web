@@ -48,21 +48,16 @@
                             </select>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">Moneda Base</label>
-                            <select name="idMonedaBase" class="form-select" id="selectMoneda">
-                                @if (monedas != null)
-                                {
-                                    @foreach (var m in monedas)
-                                    {
-                                        <option value="@m.IdMoneda">@m.Nombre (@m.Simbolo)</option>
-                                    }
-                                }
-                            </select>
+                            <label class="form-label fw-semibold">Moneda de la Cuenta</label>
+                            <div class="form-control bg-light border-0 fw-bold text-primary">
+                                @ViewBag.MonedaBase?.Nombre (@ViewBag.MonedaBase?.Codigo)
+                            </div>
+                            <input type="hidden" name="idMonedaBase" value="@ViewBag.MonedaBase?.IdMoneda" />
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Descuento</label>
                             <div class="input-group">
-                                <span class="input-group-text">C$</span>
+                                <span class="input-group-text">@ViewBag.MonedaBase?.Simbolo</span>
                                 <input type="number" name="descuento" class="form-control" value="0" step="0.01" min="0" id="inputDescuento">
                             </div>
                         </div>
@@ -71,16 +66,16 @@
                         <div class="bg-light rounded-3 p-3">
                             <div class="d-flex justify-content-between mb-2">
                                 <span class="text-muted">Subtotal:</span>
-                                <span class="fw-bold" id="lblSubtotal">C$ 0.00</span>
+                                <span class="fw-bold" id="lblSubtotal">@ViewBag.MonedaBase?.Simbolo 0.00</span>
                             </div>
                             <div class="d-flex justify-content-between mb-2">
                                 <span class="text-muted">Descuento:</span>
-                                <span class="fw-bold text-danger" id="lblDescuento">- C$ 0.00</span>
+                                <span class="fw-bold text-danger" id="lblDescuento">- @ViewBag.MonedaBase?.Simbolo 0.00</span>
                             </div>
                             <hr class="my-2">
                             <div class="d-flex justify-content-between">
                                 <span class="fw-bold fs-5">Total:</span>
-                                <span class="fw-bold fs-5 text-primary" id="lblTotal">C$ 0.00</span>
+                                <span class="fw-bold fs-5 text-primary" id="lblTotal">@ViewBag.MonedaBase?.Simbolo 0.00</span>
                             </div>
                         </div>
 
@@ -153,7 +148,7 @@
                             @foreach (var t in tratamientos)
                             {
                                 <option value="@t.IdTratamiento" data-nombre="@t.NombreTratamiento" data-precio="@t.Precio">
-                                    @t.NombreTratamiento - @t.Moneda?.Simbolo @t.Precio?.ToString("N2")
+                                    @t.NombreTratamiento - @ViewBag.MonedaBase?.Simbolo @t.Precio?.ToString("N2")
                                 </option>
                             }
                         }
@@ -190,7 +185,7 @@
                             @foreach (var p in productos)
                             {
                                 <option value="@p.IdProducto" data-nombre="@p.Nombre" data-precio="@p.Precio" data-stock="@p.Stock">
-                                    @p.Nombre (Stock: @p.Stock) - @p.Moneda?.Simbolo @p.Precio?.ToString("N2")
+                                    @p.Nombre (Stock: @p.Stock) - @ViewBag.MonedaBase?.Simbolo @p.Precio?.ToString("N2")
                                 </option>
                             }
                         }
@@ -300,10 +295,11 @@
         });
         const descuento = parseFloat(document.getElementById('inputDescuento').value) || 0;
         const total = subtotal - descuento;
+        const simbolo = '@ViewBag.MonedaBase?.Simbolo';
 
-        document.getElementById('lblSubtotal').textContent = 'C$ ' + subtotal.toFixed(2);
-        document.getElementById('lblDescuento').textContent = '- C$ ' + descuento.toFixed(2);
-        document.getElementById('lblTotal').textContent = 'C$ ' + total.toFixed(2);
+        document.getElementById('lblSubtotal').textContent = simbolo + ' ' + subtotal.toFixed(2);
+        document.getElementById('lblDescuento').textContent = '- ' + simbolo + ' ' + descuento.toFixed(2);
+        document.getElementById('lblTotal').textContent = simbolo + ' ' + total.toFixed(2);
 
         const hasItems = document.querySelectorAll('.subtotal-cell').length > 0;
         document.getElementById('btnGuardar').disabled = !hasItems;

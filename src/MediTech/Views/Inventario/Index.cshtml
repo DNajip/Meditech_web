@@ -67,9 +67,9 @@
                         <i class="fas fa-coins text-info"></i>
                     </div>
                     <div>
-                        <h6 class="text-muted mb-0 small uppercase fw-bold ls-1">Valorización (Est.)</h6>
-                        <h3 class="mb-0 fw-bold text-info" style="font-size: 1.1rem;">C$ @ViewBag.ValorizacionTotalNio.ToString("N2")</h3>
-                        <div class="text-muted small">$ @ViewBag.ValorizacionTotalUsd.ToString("N2")</div>
+                        <h6 class="text-muted mb-0 small uppercase fw-bold ls-1">Valorización de Inventario</h6>
+                        <h3 class="mb-0 fw-bold text-info">@(ViewBag.MonedaBase?.Simbolo ?? "") @(ViewBag.ValorizacionTotalBase != null ? ViewBag.ValorizacionTotalBase.ToString("N2") : "0.00")</h3>
+                        <div class="text-muted small">@ViewBag.MonedaBase?.Nombre</div>
                     </div>
                 </div>
             </div>
@@ -107,7 +107,7 @@
                         <th class="ps-4">Producto</th>
                         <th>Precio Unit.</th>
                         <th>Stock Actual</th>
-                        <th>Valor Total (Dual)</th>
+                        <th>Valor Total</th>
                         <th>Estado</th>
                         <th class="text-end pe-4">Acciones</th>
                     </tr>
@@ -119,18 +119,7 @@
                         var badgeClass = item.Stock <= 0 ? "bg-soft-danger text-danger" : (item.Stock <= item.StockMinimo ? "bg-soft-warning text-warning" : "bg-soft-success text-success");
                         var statusText = item.Stock <= 0 ? "Agotado" : (item.Stock <= item.StockMinimo ? "Crítico" : "Disponible");
                         
-                        double montoOriginal = (double)(item.Precio ?? 0) * item.Stock;
-                        string montoConvertido = "";
-                        double tc = (double)ViewBag.TasaCambio;
-
-                        if (item.Moneda?.Codigo == "USD")
-                        {
-                            montoConvertido = "C$ " + (montoOriginal * tc).ToString("N2");
-                        }
-                        else
-                        {
-                            montoConvertido = "$ " + (montoOriginal / tc).ToString("N2");
-                        }
+                        double montoTotal = (double)(item.Precio ?? 0) * item.Stock;
 
                         <tr>
                             <td class="ps-4">
@@ -145,7 +134,7 @@
                                 </div>
                             </td>
                             <td>
-                                <span class="fw-bold">@item.Moneda?.Simbolo @item.Precio?.ToString("N2")</span>
+                                <span class="fw-bold">@(ViewBag.MonedaBase?.Simbolo ?? "") @item.Precio?.ToString("N2")</span>
                             </td>
                             <td>
                                 <div class="d-flex align-items-center">
@@ -163,8 +152,7 @@
                                 </div>
                             </td>
                             <td>
-                                <div class="fw-bold text-dark">@item.Moneda?.Simbolo @montoOriginal.ToString("N2")</div>
-                                <div class="text-muted extra-small">@montoConvertido</div>
+                                <div class="fw-bold text-dark">@(ViewBag.MonedaBase?.Simbolo ?? "") @montoTotal.ToString("N2")</div>
                             </td>
                             <td>
                                 <span class="badge @badgeClass rounded-pill">@statusText</span>

@@ -93,8 +93,8 @@
             <div class="detail-card text-center">
                 <span class="detail-label">Costo por Sesión / Servicio</span>
                 <div class="d-flex align-items-baseline justify-content-center gap-2">
-                    <span class="price-value">@(Model.Moneda?.Simbolo ?? "$") @(Model.Precio?.ToString("N2") ?? "0.00")</span>
-                    <span class="moneda-pill">@Model.Moneda?.Codigo</span>
+                    <span class="price-value">@((ViewBag.MonedaBase as MediTech.Models.Moneda)?.Simbolo ?? "$") @(Model.Precio?.ToString("N2") ?? "0.00")</span>
+                    <span class="moneda-pill">@((ViewBag.MonedaBase as MediTech.Models.Moneda)?.Codigo ?? "USD")</span>
                 </div>
             </div>
         </div>

@@ -2,16 +2,20 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using MediTech.Models;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace MediTech.Controllers
 {
     public class InventarioController : Controller
     {
         private readonly MediTechContext _context;
+        private readonly IMemoryCache _cache;
+        private const string TasaCacheKey = "ActiveExchangeRate";
 
-        public InventarioController(MediTechContext context)
+        public InventarioController(MediTechContext context, IMemoryCache cache)
         {
             _context = context;
+            _cache = cache;
         }
 
         // GET: Inventario
@@ -19,13 +23,20 @@ namespace MediTech.Controllers
         {
             int pageSize = 10;
             
-            // Obtener tasa de cambio desde base de datos
-            var config = await _context.ConfiguracionesMoneda.FirstOrDefaultAsync();
-            double tasaCambio = config != null ? (double)config.TasaCambio : 36.62;
+            // Obtener tasa de cambio con caché
+            if (!_cache.TryGetValue(TasaCacheKey, out double tasaCambio))
+            {
+                var activeTasa = await _context.TasasCambio.FirstOrDefaultAsync(t => t.Activo);
+                if (activeTasa == null)
+                {
+                    TempData["Error"] = "ERROR CRÍTICO: No hay una tasa de cambio activa definida. Por favor, configúrela para continuar.";
+                    return RedirectToAction("Index", "Configuracion");
+                }
+                tasaCambio = (double)activeTasa.Valor;
+                _cache.Set(TasaCacheKey, tasaCambio, TimeSpan.FromHours(1));
+            }
             
-            var query = _context.Productos
-                .Include(p => p.Moneda)
-                .AsQueryable();
+            var query = _context.Productos.AsQueryable();
 
             if (!string.IsNullOrEmpty(searchString))
             {
@@ -36,32 +47,32 @@ namespace MediTech.Controllers
             var totalItems = await query.CountAsync();
             var allProducts = await query.ToListAsync(); // Cargamos en memoria para cálculos multimoneda precisos
             
+
             ViewBag.TotalItemsGlobal = totalItems;
             ViewBag.StockBajoCount = allProducts.Count(p => p.Stock <= p.StockMinimo && p.Activo);
             ViewBag.SinStockCount = allProducts.Count(p => p.Stock == 0 && p.Activo);
 
-            // Cálculos de Valorización Bimonetaria
-            double totalNio = 0;
-            double totalUsd = 0;
-
+            // Cálculos de Valorización (Todo está en Moneda Base)
+            decimal totalBase = 0;
             foreach (var p in allProducts)
             {
-                double monto = (double)(p.Precio ?? 0) * p.Stock;
-                if (p.Moneda?.Codigo == "USD")
-                {
-                    totalUsd += monto;
-                    totalNio += monto * tasaCambio;
-                }
-                else // Asumimos NIO por defecto
-                {
-                    totalNio += monto;
-                    totalUsd += monto / tasaCambio;
-                }
+                if (p.Activo) totalBase += (p.Precio ?? 0) * p.Stock;
             }
 
-            ViewBag.ValorizacionTotalNio = totalNio;
-            ViewBag.ValorizacionTotalUsd = totalUsd;
+            // Valorización Total
+            ViewBag.ValorizacionTotalBase = totalBase;
             ViewBag.TasaCambio = tasaCambio;
+            
+            var config = await _context.ConfiguracionesMoneda.Include(c => c.MonedaBase).FirstOrDefaultAsync();
+            if (config != null && config.MonedaBase != null)
+            {
+                ViewBag.MonedaBase = config.MonedaBase;
+            }
+            else
+            {
+                // Un fallback básico para evitar errores de null reference en el Binder
+                ViewBag.MonedaBase = new Moneda { Simbolo = "$", Nombre = "Base (No Configurada)", Codigo = "USD" };
+            }
 
             // Datos paginados para la tabla
             var productos = allProducts
@@ -84,10 +95,11 @@ namespace MediTech.Controllers
 
             int pageSize = 10;
             var producto = await _context.Productos
-                .Include(p => p.Moneda)
                 .FirstOrDefaultAsync(m => m.IdProducto == id);
 
             if (producto == null) return NotFound();
+
+
 
             // Obtener movimientos de forma separada para paginación eficiente
             var totalMovimientos = await _context.MovimientosInventario
@@ -103,6 +115,9 @@ namespace MediTech.Controllers
 
             producto.Movimientos = movimientos;
 
+            var config = await _context.ConfiguracionesMoneda.Include(c => c.MonedaBase).FirstOrDefaultAsync();
+            ViewBag.MonedaBase = config?.MonedaBase;
+
             ViewBag.CurrentPage = page;
             ViewBag.TotalPages = (int)Math.Ceiling((double)totalMovimientos / pageSize);
             ViewBag.TotalCount = totalMovimientos;
@@ -113,14 +128,13 @@ namespace MediTech.Controllers
         // GET: Inventario/Create
         public IActionResult Create()
         {
-            ViewData["IdMoneda"] = new SelectList(_context.Monedas, "IdMoneda", "Codigo");
             return View();
         }
 
         // POST: Inventario/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Nombre,Descripcion,Precio,IdMoneda,Stock,StockMinimo,Activo")] Producto producto)
+        public async Task<IActionResult> Create([Bind("Nombre,Descripcion,Precio,Stock,StockMinimo,Activo")] Producto producto)
         {
             if (ModelState.IsValid)
             {
@@ -128,7 +142,6 @@ namespace MediTech.Controllers
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["IdMoneda"] = new SelectList(_context.Monedas, "IdMoneda", "Codigo", producto.IdMoneda);
             return View(producto);
         }
 
@@ -140,14 +153,13 @@ namespace MediTech.Controllers
             var producto = await _context.Productos.FindAsync(id);
             if (producto == null) return NotFound();
 
-            ViewData["IdMoneda"] = new SelectList(_context.Monedas, "IdMoneda", "Codigo", producto.IdMoneda);
             return View(producto);
         }
 
         // POST: Inventario/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("IdProducto,Nombre,Descripcion,Precio,IdMoneda,Stock,StockMinimo,Activo,FechaCreacion")] Producto producto)
+        public async Task<IActionResult> Edit(int id, [Bind("IdProducto,Nombre,Descripcion,Precio,Stock,StockMinimo,Activo,FechaCreacion")] Producto producto)
         {
             if (id != producto.IdProducto) return NotFound();
 
@@ -165,7 +177,6 @@ namespace MediTech.Controllers
                 }
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["IdMoneda"] = new SelectList(_context.Monedas, "IdMoneda", "Codigo", producto.IdMoneda);
             return View(producto);
         }
 

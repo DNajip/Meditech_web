@@ -3,14 +3,23 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using MediTech.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Caching.Memory;
 using System.Security.Claims;
 
 namespace MediTech.Controllers
 {
     [Authorize]
-    public class ConsultasController(MediTechContext context) : Controller
+    public class ConsultasController : Controller
     {
-        private readonly MediTechContext _context = context;
+        private readonly MediTechContext _context;
+        private readonly IMemoryCache _cache;
+        private const string TasaCacheKey = "ActiveExchangeRate";
+
+        public ConsultasController(MediTechContext context, IMemoryCache cache)
+        {
+            _context = context;
+            _cache = cache;
+        }
 
         // GET: Consultas
         public async Task<IActionResult> Index()
@@ -365,7 +374,7 @@ namespace MediTech.Controllers
                 _context.Update(consulta);
 
                 // 2. Crear Cuenta en CAJA
-                var monedaUsd = await _context.Monedas.FirstOrDefaultAsync(m => m.Codigo == "USD");
+                var configMoneda = await _context.ConfiguracionesMoneda.FirstOrDefaultAsync();
                 decimal total = data.Items.Sum(i => i.Subtotal);
 
                 var nuevaCuenta = new Cuenta
@@ -375,7 +384,7 @@ namespace MediTech.Controllers
                     TotalBruto = total,
                     Descuento = 0,
                     TotalFinal = total,
-                    IdMonedaBase = monedaUsd?.IdMoneda,
+                    IdMonedaBase = configMoneda?.IdMonedaBase,
                     FechaCreacion = DateTime.Now
                 };
                 _context.Cuentas.Add(nuevaCuenta);

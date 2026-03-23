@@ -21,7 +21,7 @@
         <div class="d-flex gap-2">
             @if (!isPagada)
             {
-                <button type="button" class="btn btn-success shadow-sm" data-bs-toggle="modal" data-bs-target="#modalPago">
+                <button type="button" class="btn btn-success shadow-sm" data-bs-toggle="modal" data-bs-target="#registrarPagoModal">
                     <i class="fas fa-dollar-sign me-2"></i>Registrar Pago
                 </button>
             }
@@ -60,7 +60,7 @@
                         </li>
                         <li class="d-flex justify-content-between py-2 border-bottom">
                             <span class="text-muted">Moneda</span>
-                            <span class="fw-bold">@Model.MonedaBase?.Nombre (@Model.MonedaBase?.Simbolo)</span>
+                            <span class="fw-bold">@Model.MonedaBase?.Nombre (@Model.MonedaBase?.Codigo)</span>
                         </li>
                         <li class="d-flex justify-content-between py-2 border-bottom">
                             <span class="text-muted">Fecha</span>
@@ -194,8 +194,16 @@
     </div>
 </div>
 
+<div id="currency-metadata" 
+     data-base-id="@ViewBag.IdMonedaBase" 
+     data-tasa="@ViewBag.TasaCambio"
+     data-saldo="@ViewBag.SaldoPendiente"
+     data-tasa-origen="@ViewBag.TasaOrigenId"
+     data-tasa-destino="@ViewBag.TasaDestinoId"
+     style="display:none;"></div>
+
 <!-- Modal Registrar Pago -->
-<div class="modal fade" id="modalPago" tabindex="-1">
+<div class="modal fade" id="registrarPagoModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content border-0 shadow-lg">
             <div class="modal-header bg-success bg-opacity-10 border-0">
@@ -217,15 +225,23 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Moneda <span class="text-danger">*</span></label>
-                        <select name="idMoneda" class="form-select" required>
+                        <select name="idMoneda" class="form-select" id="selectMonedaPago" required>
                             @if (monedas != null)
                             {
                                 @foreach (var m in monedas)
                                 {
-                                    <option value="@m.IdMoneda" selected="@(m.IdMoneda == Model.IdMonedaBase)">@m.Nombre (@m.Simbolo)</option>
+                                    <option value="@m.IdMoneda" 
+                                            data-simbolo="@m.Simbolo"
+                                            data-base="@(m.IdMoneda == Model.IdMonedaBase ? "true" : "false")"
+                                            selected="@(m.IdMoneda == Model.IdMonedaBase)">
+                                        @m.Nombre (@m.Simbolo)
+                                    </option>
                                 }
                             }
                         </select>
+                    </div>
+                    <div id="previewConversion" class="alert alert-info py-2" style="display:none;">
+                        <small><i class="fas fa-calculator me-1"></i> Equivalente en Base: <span id="montoBaseCalculado">0.00</span> @Model.MonedaBase?.Codigo</small>
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Método de Pago <span class="text-danger">*</span></label>
@@ -263,6 +279,7 @@
     };
 }
 
+
 <style>
     .text-gradient-primary { background: linear-gradient(135deg, #2D3E50 0%, #4A90E2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
     .card-premium { border-radius: 15px; }
@@ -273,3 +290,81 @@
     .bg-soft-success { background: rgba(25, 135, 84, 0.1); }
     .bg-light-faded { background-color: rgba(248, 249, 250, 0.7); }
 </style>
+
+@section Scripts {
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const inputMonto = document.querySelector('input[name="monto"]');
+        const selectMoneda = document.getElementById('selectMonedaPago');
+        const divPreview = document.getElementById('previewConversion');
+        const spanMontoBase = document.getElementById('montoBaseCalculado');
+        const btnConfirmar = document.querySelector('#registrarPagoModal button[type="submit"]');
+        const meta = document.getElementById('currency-metadata');
+
+        if (!meta || !inputMonto || !selectMoneda) return;
+
+        const idMonedaBase = parseInt(meta.dataset.baseId) || 0;
+        const saldoPendiente = parseFloat(meta.dataset.saldo.replace(',', '.')) || 0;
+        const tasa = parseFloat(meta.dataset.tasa.replace(',', '.')) || 1;
+        const idTasaOrigen = parseInt(meta.dataset.tasaOrigen) || 0;
+        const idTasaDestino = parseInt(meta.dataset.tasaDestino) || 0;
+
+        function updatePreview() {
+            const opt = selectMoneda.options[selectMoneda.selectedIndex];
+            const idMonedaPago = parseInt(opt.value);
+            const monto = parseFloat(inputMonto.value) || 0;
+
+            const isBase = (idMonedaPago === idMonedaBase);
+            let equiv = monto;
+
+            if (isBase || monto === 0) {
+                divPreview.style.display = 'none';
+                equiv = monto;
+            } else {
+                divPreview.style.display = 'block';
+                
+                // Lógica de conversión
+                if (idTasaOrigen === idMonedaPago && idTasaDestino === idMonedaBase) {
+                    equiv = monto * tasa;
+                } else if (idTasaOrigen === idMonedaBase && idTasaDestino === idMonedaPago) {
+                    equiv = monto / tasa;
+                } else {
+                    equiv = monto * tasa; 
+                }
+                
+                spanMontoBase.textContent = equiv.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            }
+
+            // Validación "No fiamos"
+            const montoInsuficiente = (monto > 0 && (equiv < saldoPendiente - 0.01));
+            
+            if (montoInsuficiente) {
+                inputMonto.classList.add('is-invalid');
+                btnConfirmar.setAttribute('disabled', 'disabled');
+                btnConfirmar.classList.add('disabled');
+                
+                let warning = document.getElementById('montoMinimoWarning');
+                if (!warning) {
+                    warning = document.createElement('div');
+                    warning.id = 'montoMinimoWarning';
+                    warning.className = 'text-danger small mt-1 fw-bold';
+                    inputMonto.parentNode.appendChild(warning);
+                }
+                warning.innerHTML = `<i class="fas fa-exclamation-triangle me-1"></i> El monto debe cubrir el saldo total (${saldoPendiente.toLocaleString('en-US', {minimumFractionDigits:2})} base).`;
+            } else {
+                inputMonto.classList.remove('is-invalid');
+                btnConfirmar.removeAttribute('disabled');
+                btnConfirmar.classList.remove('disabled');
+                const warning = document.getElementById('montoMinimoWarning');
+                if (warning) warning.remove();
+            }
+        }
+
+        selectMoneda.addEventListener('change', updatePreview);
+        inputMonto.addEventListener('input', updatePreview);
+        
+        // Ejecutar al abrir modal
+        document.getElementById('registrarPagoModal').addEventListener('shown.bs.modal', updatePreview);
+    });
+</script>
+}

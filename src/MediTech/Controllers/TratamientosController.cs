@@ -23,9 +23,11 @@ public class TratamientosController : Controller
     {
         var tratamientos = await _context.Tratamientos
             .Include(t => t.Estado)
-            .Include(t => t.Moneda)
             .OrderBy(t => t.NombreTratamiento)
             .ToListAsync();
+        var config = await _context.ConfiguracionesMoneda.Include(c => c.MonedaBase).FirstOrDefaultAsync();
+        ViewBag.MonedaBase = config?.MonedaBase;
+
         return View(tratamientos);
     }
 
@@ -36,10 +38,12 @@ public class TratamientosController : Controller
 
         var tratamiento = await _context.Tratamientos
             .Include(t => t.Estado)
-            .Include(t => t.Moneda)
             .FirstOrDefaultAsync(m => m.IdTratamiento == id);
 
         if (tratamiento == null) return NotFound();
+
+        var config = await _context.ConfiguracionesMoneda.Include(c => c.MonedaBase).FirstOrDefaultAsync();
+        ViewBag.MonedaBase = config?.MonedaBase;
 
         return View(tratamiento);
     }
@@ -47,7 +51,6 @@ public class TratamientosController : Controller
     // GET: Tratamientos/Create
     public async Task<IActionResult> Create()
     {
-        ViewBag.IdMoneda = new SelectList(await _context.Monedas.ToListAsync(), "IdMoneda", "Codigo");
         ViewBag.IdEstado = new SelectList(await _context.Estados.ToListAsync(), "IdEstado", "DescEstado");
         return View();
     }
@@ -64,7 +67,6 @@ public class TratamientosController : Controller
             TempData["SuccessMessage"] = "Tratamiento creado correctamente.";
             return RedirectToAction(nameof(Index));
         }
-        ViewBag.IdMoneda = new SelectList(await _context.Monedas.ToListAsync(), "IdMoneda", "Codigo", tratamiento.IdMoneda);
         ViewBag.IdEstado = new SelectList(await _context.Estados.ToListAsync(), "IdEstado", "DescEstado", tratamiento.IdEstado);
         return View(tratamiento);
     }
@@ -77,7 +79,6 @@ public class TratamientosController : Controller
         var tratamiento = await _context.Tratamientos.FindAsync(id);
         if (tratamiento == null) return NotFound();
 
-        ViewBag.IdMoneda = new SelectList(await _context.Monedas.ToListAsync(), "IdMoneda", "Codigo", tratamiento.IdMoneda);
         ViewBag.IdEstado = new SelectList(await _context.Estados.ToListAsync(), "IdEstado", "DescEstado", tratamiento.IdEstado);
         return View(tratamiento);
     }
@@ -105,7 +106,6 @@ public class TratamientosController : Controller
             }
             return RedirectToAction(nameof(Index));
         }
-        ViewBag.IdMoneda = new SelectList(await _context.Monedas.ToListAsync(), "IdMoneda", "Codigo", tratamiento.IdMoneda);
         ViewBag.IdEstado = new SelectList(await _context.Estados.ToListAsync(), "IdEstado", "DescEstado", tratamiento.IdEstado);
         return View(tratamiento);
     }

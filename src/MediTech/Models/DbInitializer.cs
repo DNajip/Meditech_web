@@ -13,8 +13,8 @@ namespace MediTech.Models
             // Apply schema migrations for new columns/tables
             ApplyMigrations(context);
 
-            // Clean clinical data to avoid FK conflicts when deleting users (Development only)
-            context.Database.ExecuteSqlRaw("DELETE FROM CLI.SIGNOS_VITALES; DELETE FROM CLI.DIAGNOSTICOS; DELETE FROM CLI.CONSULTAS;");
+            // Clean clinical and financial data to avoid FK conflicts when deleting users (Development only)
+            context.Database.ExecuteSqlRaw("DELETE FROM CAJA.PAGOS; DELETE FROM CAJA.CUENTA_DETALLE; DELETE FROM CAJA.CUENTAS; DELETE FROM CLI.SIGNOS_VITALES; DELETE FROM CLI.DIAGNOSTICOS; DELETE FROM CLI.CONSULTA_DETALLE; DELETE FROM CLI.CONSULTAS;");
             
             
             var existingAdmin = context.Usuarios
@@ -78,7 +78,7 @@ namespace MediTech.Models
                 PasswordHash = passwordHash,
                 PasswordSalt = passwordSalt,
                 IdEmpleado = adminEmpleado.IdEmpleado,
-                IdRol = 2, // CHANGE TO DOCTOR ROLE TO ALLOW TRIAGE TEST
+                IdRol = 1, // ADMINISTRADOR
                 IdEstado = 1 // ACTIVO
             };
             context.Usuarios.Add(adminUsuario);
@@ -229,6 +229,26 @@ namespace MediTech.Models
                 END
             ");
 
+            // 1.06 Create ADM.TASA_CAMBIO if it doesn't exist
+            context.Database.ExecuteSqlRaw(@"
+                IF NOT EXISTS (SELECT 1 FROM sys.tables t JOIN sys.schemas s ON t.schema_id = s.schema_id WHERE s.name = 'ADM' AND t.name = 'TASA_CAMBIO')
+                BEGIN
+                    CREATE TABLE ADM.TASA_CAMBIO (
+                        ID_TASA INT IDENTITY CONSTRAINT PK_TASA_CAMBIO PRIMARY KEY,
+                        ID_MONEDA_ORIGEN INT NOT NULL,
+                        ID_MONEDA_DESTINO INT NOT NULL,
+                        VALOR DECIMAL(18,6) NOT NULL,
+                        FECHA DATETIME2 DEFAULT SYSDATETIME(),
+                        ACTIVO BIT DEFAULT 1,
+                        USUARIO_MODIFICACION VARCHAR(80),
+                        FOREIGN KEY(ID_MONEDA_ORIGEN) REFERENCES CAT.MONEDAS(ID_MONEDA),
+                        FOREIGN KEY(ID_MONEDA_DESTINO) REFERENCES CAT.MONEDAS(ID_MONEDA)
+                    );
+                    
+                    EXEC('CREATE UNIQUE INDEX UX_TASA_ACTIVA ON ADM.TASA_CAMBIO(ID_MONEDA_ORIGEN, ID_MONEDA_DESTINO) WHERE ACTIVO = 1');
+                END
+            ");
+
             // 1.1 Create CAT.ESTADO_CITA if it doesn't exist
             context.Database.ExecuteSqlRaw(@"
                 IF NOT EXISTS (SELECT 1 FROM sys.tables t JOIN sys.schemas s ON t.schema_id = s.schema_id WHERE s.name = 'CAT' AND t.name = 'ESTADO_CITA')
@@ -368,20 +388,48 @@ namespace MediTech.Models
             ");
 
             // 3. Add extra columns to CAT.TRATAMIENTOS if they don't exist
-            string[] tratamientoColumns = { "ID_MONEDA", "DOSIS", "VIA_ADMINISTRACION", "FRECUENCIA", "DURACION_TRATAMIENTO", "FECHA_ACTUALIZACION" };
+            string[] tratamientoColumns = { "DOSIS", "VIA_ADMINISTRACION", "FRECUENCIA", "DURACION_TRATAMIENTO", "FECHA_ACTUALIZACION" };
             foreach (var col in tratamientoColumns)
             {
-                string type = col == "ID_MONEDA" ? "INT NULL" : (col == "FECHA_ACTUALIZACION" ? "DATETIME2 NULL" : "VARCHAR(100) NULL");
-                string fk = col == "ID_MONEDA" ? " IF NOT EXISTS (SELECT * FROM sys.foreign_keys WHERE name = 'FK_TRATAMIENTOS_MONEDAS') ALTER TABLE CAT.TRATAMIENTOS ADD FOREIGN KEY (ID_MONEDA) REFERENCES CAT.MONEDAS(ID_MONEDA);" : "";
+                string type = col == "FECHA_ACTUALIZACION" ? "DATETIME2 NULL" : "VARCHAR(100) NULL";
                 
                 context.Database.ExecuteSqlRaw($@"
                     IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[CAT].[TRATAMIENTOS]') AND name = '{col}')
                     BEGIN
                         ALTER TABLE [CAT].[TRATAMIENTOS] ADD [{col}] {type};
-                        {fk}
                     END
                 ");
             }
+
+            // Professional Currency Model Migrations: 
+            // 4.1 Remove ID_MONEDA from items
+            context.Database.ExecuteSqlRaw(@"
+                IF EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'[INV].[PRODUCTOS]') AND name = 'ID_MONEDA')
+                BEGIN
+                    -- Drop constraint first if exists
+                    DECLARE @ConstraintName nvarchar(200)
+                    SELECT @ConstraintName = name FROM sys.foreign_keys WHERE parent_object_id = OBJECT_ID('[INV].[PRODUCTOS]') AND name LIKE '%MONEDA%'
+                    IF @ConstraintName IS NOT NULL EXEC('ALTER TABLE [INV].[PRODUCTOS] DROP CONSTRAINT ' + @ConstraintName)
+                    ALTER TABLE [INV].[PRODUCTOS] DROP COLUMN [ID_MONEDA];
+                END
+
+                IF EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'[CAT].[TRATAMIENTOS]') AND name = 'ID_MONEDA')
+                BEGIN
+                    -- Drop constraint first if exists
+                    DECLARE @TConstraintName nvarchar(200)
+                    SELECT @TConstraintName = name FROM sys.foreign_keys WHERE parent_object_id = OBJECT_ID('[CAT].[TRATAMIENTOS]') AND name LIKE '%MONEDA%'
+                    IF @TConstraintName IS NOT NULL EXEC('ALTER TABLE [CAT].[TRATAMIENTOS] DROP CONSTRAINT ' + @TConstraintName)
+                    ALTER TABLE [CAT].[TRATAMIENTOS] DROP COLUMN [ID_MONEDA];
+                END
+            ");
+
+            // 4.2 Add MONTO_BASE to PAGOS
+            context.Database.ExecuteSqlRaw(@"
+                IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'[CAJA].[PAGOS]') AND name = 'MONTO_BASE')
+                BEGIN
+                    ALTER TABLE [CAJA].[PAGOS] ADD [MONTO_BASE] DECIMAL(12,2) NULL;
+                END
+            ");
 
             // Seed Monedas if empty
             if (!context.Monedas.Any())
@@ -393,7 +441,27 @@ namespace MediTech.Models
                 context.SaveChanges();
             }
 
-            // Seed Tasa de Cambio if empty
+            // Seed Tasa de Cambio (ADM.TASA_CAMBIO) if empty
+            if (!context.TasasCambio.Any())
+            {
+                var usd = context.Monedas.FirstOrDefault(m => m.Codigo == "USD");
+                var nio = context.Monedas.FirstOrDefault(m => m.Codigo == "NIO");
+                if (usd != null && nio != null)
+                {
+                    context.TasasCambio.Add(new TasaCambio
+                    {
+                        IdMonedaOrigen = usd.IdMoneda,
+                        IdMonedaDestino = nio.IdMoneda,
+                        Valor = 36.621500m,
+                        Fecha = DateTime.Now,
+                        Activo = true,
+                        UsuarioModificacion = "SISTEMA"
+                    });
+                    context.SaveChanges();
+                }
+            }
+
+            // Seed Configuración (ADM.CONFIGURACION_MONEDA) if empty
             if (!context.ConfiguracionesMoneda.Any())
             {
                 var usd = context.Monedas.FirstOrDefault(m => m.Codigo == "USD");
@@ -402,7 +470,7 @@ namespace MediTech.Models
                     context.ConfiguracionesMoneda.Add(new ConfiguracionMoneda
                     {
                         IdMonedaBase = usd.IdMoneda,
-                        TasaCambio = 36.6215m, // Tasa de ejemplo oficial
+                        TasaCambio = 36.6215m, // Mantener por compatibilidad legacy hasta que se limpie
                         FechaActualizacion = DateTime.Now,
                         UsuarioModificacion = "SISTEMA"
                     });
@@ -461,9 +529,10 @@ namespace MediTech.Models
                         ID_PAGO INT IDENTITY CONSTRAINT PK_PAGOS PRIMARY KEY,
                         ID_CUENTA INT NOT NULL,
                         MONTO DECIMAL(12,2),
+                        MONTO_BASE DECIMAL(12,2),
                         ID_MONEDA INT,
                         METODO_PAGO VARCHAR(30),
-                        TASA_CAMBIO_APLICADA DECIMAL(12,4),
+                        TASA_CAMBIO_APLICADA DECIMAL(18,6),
                         FECHA_PAGO DATETIME2 DEFAULT SYSDATETIME(),
                         FOREIGN KEY(ID_CUENTA) REFERENCES CAJA.CUENTAS(ID_CUENTA),
                         FOREIGN KEY(ID_MONEDA) REFERENCES CAT.MONEDAS(ID_MONEDA)
@@ -562,10 +631,10 @@ namespace MediTech.Models
             Console.WriteLine("Seeding base treatments...");
             var treatments = new List<Tratamiento>
             {
-                new Tratamiento { NombreTratamiento = "CONSULTA GENERAL", Precio = 40, IdEstado = 1, IdMoneda = usd?.IdMoneda },
-                new Tratamiento { NombreTratamiento = "LIMPIEZA DENTAL", Precio = 50, IdEstado = 1, IdMoneda = usd?.IdMoneda },
-                new Tratamiento { NombreTratamiento = "EXTRACCION SIMPLE", Precio = 45, IdEstado = 1, IdMoneda = usd?.IdMoneda },
-                new Tratamiento { NombreTratamiento = "ORTODONCIA - CONTROL", Precio = 35, IdEstado = 1, IdMoneda = usd?.IdMoneda }
+                new Tratamiento { NombreTratamiento = "CONSULTA GENERAL", Precio = 40, IdEstado = 1 },
+                new Tratamiento { NombreTratamiento = "LIMPIEZA DENTAL", Precio = 50, IdEstado = 1 },
+                new Tratamiento { NombreTratamiento = "EXTRACCION SIMPLE", Precio = 45, IdEstado = 1 },
+                new Tratamiento { NombreTratamiento = "ORTODONCIA - CONTROL", Precio = 35, IdEstado = 1 }
             };
 
             context.Tratamientos.AddRange(treatments);

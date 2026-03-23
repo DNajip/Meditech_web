@@ -144,8 +144,7 @@
                             <small class="text-secondary">#@item.IdTratamiento</small>
                         </td>
                         <td class="price-cell">
-                            @(item.Moneda?.Simbolo ?? "$") @(item.Precio?.ToString("N2") ?? "0.00")
-                            <span class="moneda-badge">@item.Moneda?.Codigo</span>
+                             @(ViewBag.MonedaBase?.Simbolo ?? "") @item.Precio?.ToString("N2")
                         </td>
                         <td>
                             <div style="font-size: 0.75rem;">

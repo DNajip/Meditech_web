@@ -17,8 +17,6 @@ public class Tratamiento
     [Column("PRECIO")]
     public decimal? Precio { get; set; }
 
-    [Column("ID_MONEDA")]
-    public int? IdMoneda { get; set; }
 
     [Column("DOSIS")]
     [StringLength(100)]
@@ -46,6 +44,4 @@ public class Tratamiento
     [ForeignKey("IdEstado")]
     public virtual Estado? Estado { get; set; }
 
-    [ForeignKey("IdMoneda")]
-    public virtual Moneda? Moneda { get; set; }
 }

@@ -17,6 +17,9 @@ public class Pago
     [Column("MONTO", TypeName = "decimal(12,2)")]
     public decimal? Monto { get; set; }
 
+    [Column("MONTO_BASE", TypeName = "decimal(12,2)")]
+    public decimal? MontoBase { get; set; }
+
     [Column("ID_MONEDA")]
     public int? IdMoneda { get; set; }
 
@@ -24,7 +27,7 @@ public class Pago
     [StringLength(30)]
     public string? MetodoPago { get; set; } // EFECTIVO, TARJETA, TRANSFERENCIA
 
-    [Column("TASA_CAMBIO_APLICADA", TypeName = "decimal(12,4)")]
+    [Column("TASA_CAMBIO_APLICADA", TypeName = "decimal(18, 6)")]
     public decimal? TasaCambioAplicada { get; set; }
 
     [Column("FECHA_PAGO")]

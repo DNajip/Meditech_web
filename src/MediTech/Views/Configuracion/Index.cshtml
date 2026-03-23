@@ -1,0 +1,155 @@
+@model MediTech.Models.ConfiguracionMoneda
+@{
+    ViewData["Title"] = "Configuración de Moneda";
+    var tasaActiva = ViewBag.TasaActiva as MediTech.Models.TasaCambio;
+    var historial = ViewBag.Historial as List<MediTech.Models.TasaCambio>;
+    var monedas = ViewBag.Monedas as List<MediTech.Models.Moneda>;
+}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="fw-bold"><i class="fas fa-cog me-2 text-primary"></i>Configuración de Sistema</h2>
+        <p class="text-muted">Gestión de moneda base, tasas de cambio y parámetros financieros.</p>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Moneda Base -->
+    <div class="col-md-6 mb-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-primary bg-opacity-10 p-2 rounded-3 me-3 text-primary">
+                        <i class="fas fa-coins fa-lg"></i>
+                    </div>
+                    <h5 class="card-title mb-0 fw-bold">Moneda Base</h5>
+                </div>
+                
+                <form asp-action="CambiarMonedaBase" method="post">
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small fw-bold">MONEDA PRINCIPAL DEL SISTEMA</label>
+                        <select name="idMonedaBase" class="form-select border-light bg-light" onchange="showWarning()">
+                            @foreach (var m in monedas!)
+                            {
+                                <option value="@m.IdMoneda" selected="@(Model?.IdMonedaBase == m.IdMoneda)">
+                                    @m.Nombre (@m.Codigo - @m.Simbolo)
+                                </option>
+                            }
+                        </select>
+                    </div>
+                    
+                    <div id="baseWarning" class="alert alert-warning small py-2 d-none">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Importante:</strong> El cambio de moneda base solo afectará a nuevos registros y no recalculará saldos históricos.
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Actualizar Moneda</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tasa de Cambio Activa -->
+    <div class="col-md-6 mb-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-1">
+                    <div class="bg-success bg-opacity-10 p-2 rounded-3 me-3 text-success">
+                        <i class="fas fa-exchange-alt fa-lg"></i>
+                    </div>
+                    <h5 class="card-title mb-0 fw-bold">Tasa de Cambio</h5>
+                </div>
+                
+                <div class="p-3 bg-light rounded-3 my-3">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <span class="text-secondary small">TASA ACTUAL (USD → NIO)</span>
+                            <h2 class="mb-0 fw-bold text-success">@(tasaActiva?.Valor.ToString("N6") ?? "NO DEFINIDA")</h2>
+                        </div>
+                        <div class="col-auto text-end">
+                            <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3">Activa</span>
+                        </div>
+                    </div>
+                    <hr class="my-2 border-secondary opacity-10">
+                    <div class="d-flex justify-content-between small text-muted">
+                        <span><i class="fas fa-calendar-alt me-1"></i> @tasaActiva?.Fecha.ToString("g")</span>
+                        <span><i class="fas fa-user-edit me-1"></i> @tasaActiva?.UsuarioModificacion</span>
+                    </div>
+                </div>
+
+                <form asp-action="GuardarTasa" method="post">
+                    <div class="input-group mb-2">
+                        <span class="input-group-text bg-white border-end-0">USD $1.00 = </span>
+                        <input type="number" step="0.000001" min="0.000001" name="valor" class="form-control border-start-0" 
+                               placeholder="Valor en NIO" required value="@tasaActiva?.Valor.ToString("F6").Replace(",",".")">
+                        <button class="btn btn-success" type="submit">Actualizar Tasa</button>
+                    </div>
+                    <p class="text-muted x-small text-center"><i class="fas fa-info-circle me-1"></i> La nueva tasa será la única activa para nuevas valorizaciones y pagos.</p>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Historial -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0 pt-4 pb-0">
+                <h5 class="fw-bold mb-0">Historial de Tasas de Cambio</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="bg-light">
+                            <tr class="text-secondary small">
+                                <th class="border-0">FECHA</th>
+                                <th class="border-0">VALOR (USD → NIO)</th>
+                                <th class="border-0 text-center">ESTADO</th>
+                                <th class="border-0">USUARIO</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var t in historial!)
+                            {
+                                <tr>
+                                    <td class="small">@t.Fecha.ToString("g")</td>
+                                    <td><span class="fw-bold text-primary">@t.Valor.ToString("N6")</span></td>
+                                    <td class="text-center">
+                                        @if (t.Activo)
+                                        {
+                                            <span class="badge bg-success rounded-pill x-small">ACTIVO</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary opacity-50 rounded-pill x-small">ANTERIOR</span>
+                                        }
+                                    </td>
+                                    <td class="small text-muted">@t.UsuarioModificacion</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .x-small { font-size: 0.75rem; }
+    .bg-light { background-color: #F8FAFC !important; }
+</style>
+
+@section Scripts {
+    <script>
+        function showWarning() {
+            $('#baseWarning').removeClass('d-none');
+        }
+
+        // Auto-hide alerts
+        setTimeout(function() {
+            $('.alert').fadeOut('slow');
+        }, 5000);
+    </script>
+}

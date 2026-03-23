@@ -19980,6 +19980,11 @@
       "FileKind": "mvc"
     },
     {
+      "FilePath": "e:\\Programación\\Antigravity\\Meditech\\src\\MediTech\\Views\\Configuracion\\Index.cshtml",
+      "TargetPath": "Views\\Configuracion\\Index.cshtml",
+      "FileKind": "mvc"
+    },
+    {
       "FilePath": "e:\\Programación\\Antigravity\\Meditech\\src\\MediTech\\Views\\Consultas\\Recepcion.cshtml",
       "TargetPath": "Views\\Consultas\\Recepcion.cshtml",
       "FileKind": "mvc"
@@ -20007,6 +20012,11 @@
     {
       "FilePath": "e:\\Programación\\Antigravity\\Meditech\\src\\MediTech\\Views\\Citas\\Details.cshtml",
       "TargetPath": "Views\\Citas\\Details.cshtml",
+      "FileKind": "mvc"
+    },
+    {
+      "FilePath": "e:\\Programación\\Antigravity\\Meditech\\src\\MediTech\\Views\\Shared\\AccessDenied.cshtml",
+      "TargetPath": "Views\\Shared\\AccessDenied.cshtml",
       "FileKind": "mvc"
     }
   ],

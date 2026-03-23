@@ -13,7 +13,7 @@ public class ConfiguracionMoneda
     [Column("ID_MONEDA_BASE")]
     public int IdMonedaBase { get; set; }
 
-    [Column("TASA_CAMBIO", TypeName = "decimal(12, 4)")]
+    [Column("TASA_CAMBIO", TypeName = "decimal(18, 6)")]
     public decimal TasaCambio { get; set; }
 
     [Column("FECHA_ACTUALIZACION")]

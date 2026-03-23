@@ -27,6 +27,7 @@ namespace MediTech.Models
         public DbSet<Producto> Productos { get; set; } = null!;
         public DbSet<MovimientoInventario> MovimientosInventario { get; set; } = null!;
         public DbSet<ConfiguracionMoneda> ConfiguracionesMoneda { get; set; } = null!;
+        public DbSet<TasaCambio> TasasCambio { get; set; } = null!;
         public DbSet<Cuenta> Cuentas { get; set; } = null!;
         public DbSet<CuentaDetalle> CuentaDetalles { get; set; } = null!;
         public DbSet<Pago> Pagos { get; set; } = null!;
@@ -86,6 +87,13 @@ namespace MediTech.Models
                 m.Property(x => x.FechaMovimiento).HasDefaultValueSql("SYSDATETIME()");
                 m.ToTable(tb => tb.HasTrigger("TR_ACTUALIZAR_STOCK_MOVIMIENTO"));
             });
+
+            // Tasa Cambio: Unique Filtered Index (Only one active per pair)
+            modelBuilder.Entity<TasaCambio>()
+                .HasIndex(t => new { t.IdMonedaOrigen, t.IdMonedaDestino })
+                .HasDatabaseName("UX_TASA_ACTIVA")
+                .HasFilter("[ACTIVO] = 1")
+                .IsUnique();
         }
     }
 }
