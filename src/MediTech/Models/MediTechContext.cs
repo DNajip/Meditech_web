@@ -35,6 +35,8 @@ namespace MediTech.Models
         public DbSet<FotoClinica> FotosClinicas { get; set; } = null!;
         public DbSet<DocumentoClinico> DocumentosClinicos { get; set; } = null!;
         public DbSet<ConsultaDetalle> ConsultaDetalles { get; set; } = null!;
+        public DbSet<Examen> Examenes { get; set; } = null!;
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -75,6 +77,11 @@ namespace MediTech.Models
             modelBuilder.Entity<Cita>()
                 .Property(c => c.FechaCreacion)
                 .HasDefaultValueSql("SYSDATETIME()");
+
+            modelBuilder.Entity<Examen>()
+                .Property(e => e.FechaOrden)
+                .HasDefaultValueSql("SYSDATETIME()");
+
 
             modelBuilder.Entity<Producto>(p =>
             {

@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "E:\\Programación\\Antigravity\\Meditech\\src\\MediTech\\MediTech.csproj": {}
+    "e:\\Programación\\Antigravity\\Meditech\\src\\MediTech\\MediTech.csproj": {}
   },
   "projects": {
-    "E:\\Programación\\Antigravity\\Meditech\\src\\MediTech\\MediTech.csproj": {
+    "e:\\Programación\\Antigravity\\Meditech\\src\\MediTech\\MediTech.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "E:\\Programación\\Antigravity\\Meditech\\src\\MediTech\\MediTech.csproj",
+        "projectUniqueName": "e:\\Programación\\Antigravity\\Meditech\\src\\MediTech\\MediTech.csproj",
         "projectName": "MediTech",
-        "projectPath": "E:\\Programación\\Antigravity\\Meditech\\src\\MediTech\\MediTech.csproj",
+        "projectPath": "e:\\Programación\\Antigravity\\Meditech\\src\\MediTech\\MediTech.csproj",
         "packagesPath": "C:\\Users\\Najip\\.nuget\\packages\\",
-        "outputPath": "E:\\Programación\\Antigravity\\Meditech\\src\\MediTech\\obj\\",
+        "outputPath": "e:\\Programación\\Antigravity\\Meditech\\src\\MediTech\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

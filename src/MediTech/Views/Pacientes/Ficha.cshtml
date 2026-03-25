@@ -155,6 +155,56 @@
     }
     .toggle-btn.active-si { background: #DC2626; color: white; }
     .toggle-btn.active-no { background: #94A3B8; color: white; }
+
+    /* Paginación estilo Premium (UX/UI) */
+    .examen-pagination {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0;
+        padding: 0;
+    }
+    .examen-pagination .page-item {
+        list-style: none;
+    }
+    .examen-pagination .page-link {
+        width: 38px;
+        height: 38px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px !important;
+        border: 1px solid #EDF2F7;
+        color: #718096;
+        font-weight: 600;
+        transition: all 0.2s ease;
+        background: white;
+        padding: 0;
+        text-decoration: none;
+        font-size: 0.9rem;
+    }
+    .examen-pagination .page-link:hover {
+        background: #F7FAFC;
+        border-color: #E2E8F0;
+        color: #4A5568;
+    }
+    .examen-pagination .page-item.active .page-link {
+        background: #5e5eff;
+        border-color: #5e5eff;
+        color: white;
+        box-shadow: 0 4px 12px rgba(94, 94, 255, 0.25);
+    }
+    .examen-pagination .page-item.disabled .page-link {
+        opacity: 0.4;
+        cursor: not-allowed;
+        background: white;
+    }
+    .examen-pagination .total-count {
+        font-size: 0.9rem;
+        color: #A0AEC0;
+        margin-left: 12px;
+        font-weight: 500;
+    }
     
     .historial-section-title {
         font-size: 0.9rem;
@@ -561,10 +611,13 @@
             <a href="javascript:void(0)" onclick="switchTab('resumen')" id="tab-resumen" class="nav-tab @(ViewBag.Modo != "consulta" ? "active" : "")">Resumen</a>
             <a href="javascript:void(0)" onclick="switchTab('citas')" id="tab-citas" class="nav-tab">Citas</a>
             <a href="javascript:void(0)" onclick="switchTab('consulta')" id="tab-consulta" class="nav-tab @(ViewBag.Modo == "consulta" ? "active" : "")">@(ViewBag.Modo == "consulta" ? "Consulta Activa" : "Consultas")</a>
+            <a href="javascript:void(0)" onclick="switchTab('examenes')" id="tab-examenes" class="nav-tab">Exámenes</a>
             <a href="javascript:void(0)" onclick="switchTab('historial')" id="tab-historial" class="nav-tab">Historial</a>
+
             <a href="javascript:void(0)" onclick="switchTab('galeria')" id="tab-galeria" class="nav-tab">Galería</a>
             <a href="javascript:void(0)" onclick="switchTab('documentos')" id="tab-documentos" class="nav-tab">Documentos</a>
             <a href="javascript:void(0)" onclick="switchTab('finanzas')" id="tab-finanzas" class="nav-tab">Finanzas</a>
+
         </div>
 
         <!-- PANELS -->
@@ -676,6 +729,24 @@
             </div>
         }
         </div>
+
+        <div id="panel-examenes" class="tab-panel-content d-none">
+            <div class="content-card">
+                <div class="card-header">
+                    <h6 class="card-title"><i class="fas fa-file-medical-alt" style="color:#6366F1;"></i> Registro de Exámenes</h6>
+                    <button class="btn btn-primary btn-sm" style="border-radius:8px;" onclick="abrirModalOrdenExamen()">
+                        <i class="fas fa-plus me-1"></i> Ordenar Examen
+                    </button>
+                </div>
+                
+                <div id="examenesContainer">
+                    <div class="text-center py-5 text-muted">
+                        <div class="spinner-border spinner-border-sm me-2"></div> Cargando exámenes...
+                    </div>
+                </div>
+            </div>
+        </div>
+
 
         <div id="panel-historial" class="tab-panel-content d-none">
             <div class="content-card">
@@ -1041,7 +1112,69 @@
             </div>
         </div>
         
+        <!-- MODAL ORDEN DE EXAMEN -->
+        <div class="modal fade" id="modalOrdenExamen" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content border-0 shadow">
+                    <div class="modal-header bg-indigo text-white" style="background-color: #6366F1;">
+                        <h5 class="modal-title fw-bold"><i class="fas fa-file-medical-alt me-2"></i>Nueva Orden de Examen</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">Nombre del Examen</label>
+                            <input type="text" id="ordenExamenNombre" class="form-control" placeholder="Ej: BHS, Perfil Lipídico, etc.">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-primary" onclick="guardarOrdenExamen()">Guardar Orden</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL RESULTADO DE EXAMEN -->
+        <div class="modal fade" id="modalResultadoExamen" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content border-0 shadow">
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title fw-bold"><i class="fas fa-upload me-2"></i>Registrar Resultado de Examen</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" id="resultadoExamenId">
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label small fw-bold text-muted">Imagen del Resultado</label>
+                                <div class="upload-zone" id="examenDropZone" onclick="document.getElementById('examenFileInput').click()" style="padding: 20px;">
+                                    <div id="examenDropContent">
+                                        <i class="fas fa-cloud-upload-alt fs-2"></i>
+                                        <p class="small mb-0">Haga clic o arrastre la imagen aquí</p>
+                                    </div>
+                                    <div id="examenFilePreview" class="d-none mt-2 text-center">
+                                        <img id="examenPreviewImg" src="#" style="max-width: 100%; max-height: 200px; border-radius: 8px;">
+                                    </div>
+                                </div>
+                                <input type="file" id="examenFileInput" class="d-none" accept="image/*" onchange="handleExamenFileSelect(event)">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label small fw-bold text-muted">Comentario / Respuesta Médica</label>
+                                <textarea id="resultadoExamenComentario" class="form-control" rows="8" placeholder="Escriba su observación sobre el resultado..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-success" id="btnGuardarResultado" onclick="guardarResultadoExamen()">Guardar Resultado</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- PHOTO MODAL -->
+
         <div id="photoModal" class="photo-modal" onclick="closePhotoModal()">
             <span class="close-modal">&times;</span>
             <div class="modal-content-wrapper" onclick="event.stopPropagation()">
@@ -1058,6 +1191,8 @@
     const pacienteId = @Model.IdPaciente;
     let galeriaLoaded = false;
     let documentosLoaded = false;
+    let examenesLoaded = false;
+
 
     function switchTab(tabName) {
         console.log('Switching to tab:', tabName);
@@ -1094,7 +1229,12 @@
         if (tabName === 'documentos' && !documentosLoaded) {
             cargarDocumentos();
         }
+        // Special load for Examenes
+        if (tabName === 'examenes' && !examenesLoaded) {
+            cargarExamenes();
+        }
     }
+
 
     function setToggle(field, value) {
         const group = document.querySelector(`.toggle-group[data-field="${field}"]`);
@@ -1618,12 +1758,241 @@
             else alert(result.message);
         } catch (e) { console.error(e); alert('Error al eliminar.'); }
     }
-
     // Initialize D&D on load
     document.addEventListener('DOMContentLoaded', () => {
         initDragAndDrop();
         initDocDragAndDrop();
     });
+    
+    // ============ EXAMENES MODULE ============
+    let selectedExamenFile = null;
+    let paginaActualExamenes = 1;
+
+
+    async function cargarExamenes(pagina = 1) {
+        paginaActualExamenes = pagina;
+        const container = document.getElementById('examenesContainer');
+        try {
+            const response = await fetch(`/Examenes/GetExamenes/${pacienteId}?page=${pagina}&pageSize=6`);
+            const result = await response.json();
+            if (result.success) {
+                renderExamenes(result);
+            }
+        } catch (e) {
+            console.error(e);
+            container.innerHTML = '<div class="text-center py-4 text-danger">Error al cargar exámenes.</div>';
+        } finally {
+            examenesLoaded = true;
+        }
+    }
+
+    function renderExamenes(result) {
+        const { data: examenes, totalPages, currentPage } = result;
+        const container = document.getElementById('examenesContainer');
+        
+        if (examenes.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-5 text-muted">
+                    <i class="fas fa-file-invoice fs-2 d-block mb-3 opacity-25"></i>
+                    <p class="mb-0">No se han ordenado exámenes para este paciente.</p>
+                </div>`;
+            return;
+        }
+
+        let html = `
+            <div class="table-responsive mt-3">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Examen</th>
+                            <th>Fecha Orden</th>
+                            <th>Fecha Realizado</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${examenes.map(e => `
+                            <tr>
+                                <td>
+                                    <div class="fw-bold text-dark">${e.nombreExamen}</div>
+                                    ${e.comentarioMedico ? `<div class="small text-muted text-truncate" style="max-width: 250px;">${e.comentarioMedico}</div>` : ''}
+                                </td>
+                                <td class="small">${e.fechaOrden}</td>
+                                <td class="small">${e.fechaResultado || '—'}</td>
+                                <td>
+                                    <span class="badge ${e.idEstado === 1 ? 'bg-warning-subtle text-warning' : (e.idEstado === 2 ? 'bg-success-subtle text-success' : 'bg-info-subtle text-info')}" style="border-radius:20px; font-size:0.7rem;">
+                                        ${e.estado}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="d-flex gap-1">
+                                        <button class="btn btn-sm btn-outline-primary" onclick="abrirModalResultadoExamen(${e.idExamen}, '${e.nombreExamen}', '${e.comentarioMedico || ''}')" title="Subir Resultado / Comentar">
+                                            <i class="fas ${e.idEstado === 1 ? 'fa-upload' : 'fa-edit'}"></i>
+                                        </button>
+                                        ${e.tieneImagen ? `
+                                            <button class="btn btn-sm btn-outline-info" onclick="verImagenExamen(${e.idExamen}, '${e.nombreExamen}')" title="Ver Imagen">
+                                                <i class="fas fa-image"></i>
+                                            </button>` : ''}
+                                        <button class="btn btn-sm btn-outline-danger" onclick="eliminarExamen(${e.idExamen})" title="Eliminar">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>`;
+
+        // Pagination controls Premium UX/UI
+        if (totalPages > 1 || result.totalItems > 0) {
+            html += `
+                <div class="d-flex justify-content-center align-items-center mt-4 mb-2">
+                    <nav>
+                        <ul class="examen-pagination">
+                            <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                                <a class="page-link" href="javascript:void(0)" onclick="cargarExamenes(${currentPage - 1})" title="Anterior">
+                                    <i class="fas fa-chevron-left" style="font-size: 0.8rem;"></i>
+                                </a>
+                            </li>
+                            ${Array.from({ length: totalPages }, (_, i) => i + 1).map(p => `
+                                <li class="page-item ${currentPage === p ? 'active' : ''}">
+                                    <a class="page-link" href="javascript:void(0)" onclick="cargarExamenes(${p})">${p}</a>
+                                </li>
+                            `).join('')}
+                            <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                                <a class="page-link" href="javascript:void(0)" onclick="cargarExamenes(${currentPage + 1})" title="Siguiente">
+                                    <i class="fas fa-chevron-right" style="font-size: 0.8rem;"></i>
+                                </a>
+                            </li>
+                            <li class="total-count">
+                                ${result.totalItems} ${result.totalItems === 1 ? 'examen' : 'exámenes'}
+                            </li>
+                        </ul>
+                    </nav>
+                </div>`;
+        }
+
+        container.innerHTML = html;
+    }
+
+    function abrirModalOrdenExamen() {
+        document.getElementById('ordenExamenNombre').value = '';
+        const modal = new bootstrap.Modal(document.getElementById('modalOrdenExamen'));
+        modal.show();
+    }
+
+    async function guardarOrdenExamen() {
+        const nombre = document.getElementById('ordenExamenNombre').value;
+        if (!nombre) return alert('Ingrese el nombre del examen.');
+
+        try {
+            const response = await fetch('/Examenes/GuardarExamen', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ idPaciente: pacienteId, nombreExamen: nombre })
+            });
+            const result = await response.json();
+            if (result.success) {
+                bootstrap.Modal.getInstance(document.getElementById('modalOrdenExamen')).hide();
+                cargarExamenes();
+            } else alert(result.message);
+        } catch (e) {
+            console.error(e);
+            alert('Error al guardar la orden.');
+        }
+    }
+
+    function abrirModalResultadoExamen(id, nombre, comentario) {
+        document.getElementById('resultadoExamenId').value = id;
+        document.getElementById('resultadoExamenComentario').value = comentario;
+        
+        // Reset file upload state
+        selectedExamenFile = null;
+        document.getElementById('examenFileInput').value = '';
+        document.getElementById('examenFilePreview').classList.add('d-none');
+        document.getElementById('examenDropContent').classList.remove('d-none');
+        
+        const modal = new bootstrap.Modal(document.getElementById('modalResultadoExamen'));
+        modal.show();
+    }
+
+    function handleExamenFileSelect(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (!file.type.startsWith('image/')) {
+            alert('Solo se permiten imágenes.');
+            return;
+        }
+        
+        selectedExamenFile = file;
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+            document.getElementById('examenPreviewImg').src = ev.target.result;
+            document.getElementById('examenFilePreview').classList.remove('d-none');
+            document.getElementById('examenDropContent').classList.add('d-none');
+        }
+        reader.readAsDataURL(file);
+    }
+
+    async function guardarResultadoExamen() {
+        const id = document.getElementById('resultadoExamenId').value;
+        const comentario = document.getElementById('resultadoExamenComentario').value;
+        
+        const formData = new FormData();
+        formData.append('idExamen', id);
+        formData.append('comentario', comentario);
+        if (selectedExamenFile) {
+            formData.append('file', selectedExamenFile);
+        }
+
+        const btn = document.getElementById('btnGuardarResultado');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Guardando...';
+
+        try {
+            const response = await fetch('/Examenes/SubirResultadoExamen', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+            if (result.success) {
+                bootstrap.Modal.getInstance(document.getElementById('modalResultadoExamen')).hide();
+                cargarExamenes();
+                alert('Resultado guardado correctamente.');
+            } else alert(result.message);
+        } catch (e) {
+            console.error(e);
+            alert('Error al guardar el resultado.');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = 'Guardar Resultado';
+        }
+    }
+
+    function verImagenExamen(id, nombre) {
+        const modal = document.getElementById('photoModal');
+        const modalImg = document.getElementById('modalImg');
+        const modalCaption = document.getElementById('modalCaption');
+        
+        modalImg.src = `/Examenes/GetResultadoImage/${id}`;
+        modalCaption.textContent = nombre;
+        
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+
+    async function eliminarExamen(id) {
+        if (!confirm('¿Está seguro de eliminar este registro de examen?')) return;
+        try {
+            const response = await fetch(`/Examenes/EliminarExamen/${id}`, { method: 'POST' });
+            const result = await response.json();
+            if (result.success) cargarExamenes();
+            else alert(result.message);
+        } catch (e) { console.error(e); alert('Error al eliminar.'); }
+    }
+
 
     // ============ CIERRE CONSULTA LOGIC ============
     let catTratamientos = [];

@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "D0bBJOHh4eg=",
+  "dgSpecHash": "b5Ut6yyIfpc=",
   "success": true,
-  "projectFilePath": "E:\\Programación\\Antigravity\\Meditech\\src\\MediTech\\MediTech.csproj",
+  "projectFilePath": "e:\\Programación\\Antigravity\\Meditech\\src\\MediTech\\MediTech.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Najip\\.nuget\\packages\\azure.core\\1.47.1\\azure.core.1.47.1.nupkg.sha512",
     "C:\\Users\\Najip\\.nuget\\packages\\azure.identity\\1.14.2\\azure.identity.1.14.2.nupkg.sha512",

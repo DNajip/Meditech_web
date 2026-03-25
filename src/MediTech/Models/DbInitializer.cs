@@ -359,7 +359,34 @@ namespace MediTech.Models
                         FOREIGN KEY(ID_CONSULTA) REFERENCES CLI.CONSULTAS(ID_CONSULTA)
                     );
                 END
+
+                -- Cleanup old table if exists
+                IF EXISTS (SELECT 1 FROM sys.tables t JOIN sys.schemas s ON t.schema_id = s.schema_id WHERE s.name = 'CLI' AND t.name = 'EXAMEN')
+                BEGIN
+                    DROP TABLE CLI.EXAMEN;
+                END
+
+                -- 1.9 Create CLI.EXAMENES if it doesn't exist
+                IF NOT EXISTS (SELECT 1 FROM sys.tables t JOIN sys.schemas s ON t.schema_id = s.schema_id WHERE s.name = 'CLI' AND t.name = 'EXAMENES')
+                BEGIN
+                    CREATE TABLE CLI.EXAMENES (
+                        ID_EXAMEN INT IDENTITY CONSTRAINT PK_EXAMENES PRIMARY KEY,
+                        ID_PACIENTE INT NOT NULL,
+                        ID_CONSULTA INT NULL,
+                        NOMBRE_EXAMEN NVARCHAR(200) NOT NULL,
+                        FECHA_ORDEN DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
+                        FECHA_RESULTADO DATETIME2 NULL,
+                        IMAGEN_RESULTADO VARBINARY(MAX) NULL,
+                        CONTENT_TYPE NVARCHAR(50) NULL,
+                        COMENTARIO_MEDICO NVARCHAR(MAX) NULL,
+                        ID_ESTADO INT NOT NULL DEFAULT 1,
+                        FOREIGN KEY(ID_PACIENTE) REFERENCES CLI.PACIENTES(ID_PACIENTE),
+                        FOREIGN KEY(ID_CONSULTA) REFERENCES CLI.CONSULTAS(ID_CONSULTA),
+                        FOREIGN KEY(ID_ESTADO) REFERENCES CAT.ESTADOS(ID_ESTADO)
+                    );
+                END
             ");
+
 
             // 2. Add TELEFONO column to CLI.CITAS
             context.Database.ExecuteSqlRaw(@"
@@ -406,19 +433,39 @@ namespace MediTech.Models
             context.Database.ExecuteSqlRaw(@"
                 IF EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'[INV].[PRODUCTOS]') AND name = 'ID_MONEDA')
                 BEGIN
-                    -- Drop constraint first if exists
-                    DECLARE @ConstraintName nvarchar(200)
-                    SELECT @ConstraintName = name FROM sys.foreign_keys WHERE parent_object_id = OBJECT_ID('[INV].[PRODUCTOS]') AND name LIKE '%MONEDA%'
-                    IF @ConstraintName IS NOT NULL EXEC('ALTER TABLE [INV].[PRODUCTOS] DROP CONSTRAINT ' + @ConstraintName)
+                    DECLARE @sqlP NVARCHAR(MAX) = '';
+                    SELECT @sqlP += 'ALTER TABLE [INV].[PRODUCTOS] DROP CONSTRAINT ' + QUOTENAME(name) + ';'
+                    FROM sys.objects 
+                    WHERE parent_object_id = OBJECT_ID('[INV].[PRODUCTOS]') 
+                    AND (type = 'F' OR type = 'D') -- Foreign keys or Default constraints
+                    AND name IN (
+                        SELECT fk.name FROM sys.foreign_keys fk JOIN sys.foreign_key_columns fkc ON fk.object_id = fkc.constraint_object_id
+                        JOIN sys.columns c ON fkc.parent_object_id = c.object_id AND fkc.parent_column_id = c.column_id
+                        WHERE c.name = 'ID_MONEDA' AND c.object_id = OBJECT_ID('[INV].[PRODUCTOS]')
+                        UNION
+                        SELECT d.name FROM sys.default_constraints d JOIN sys.columns c ON d.parent_object_id = c.object_id AND d.parent_column_id = c.column_id
+                        WHERE c.name = 'ID_MONEDA' AND c.object_id = OBJECT_ID('[INV].[PRODUCTOS]')
+                    );
+                    IF @sqlP <> '' EXEC sp_executesql @sqlP;
                     ALTER TABLE [INV].[PRODUCTOS] DROP COLUMN [ID_MONEDA];
                 END
 
                 IF EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'[CAT].[TRATAMIENTOS]') AND name = 'ID_MONEDA')
                 BEGIN
-                    -- Drop constraint first if exists
-                    DECLARE @TConstraintName nvarchar(200)
-                    SELECT @TConstraintName = name FROM sys.foreign_keys WHERE parent_object_id = OBJECT_ID('[CAT].[TRATAMIENTOS]') AND name LIKE '%MONEDA%'
-                    IF @TConstraintName IS NOT NULL EXEC('ALTER TABLE [CAT].[TRATAMIENTOS] DROP CONSTRAINT ' + @TConstraintName)
+                    DECLARE @sqlT NVARCHAR(MAX) = '';
+                    SELECT @sqlT += 'ALTER TABLE [CAT].[TRATAMIENTOS] DROP CONSTRAINT ' + QUOTENAME(name) + ';'
+                    FROM sys.objects 
+                    WHERE parent_object_id = OBJECT_ID('[CAT].[TRATAMIENTOS]') 
+                    AND (type = 'F' OR type = 'D')
+                    AND name IN (
+                        SELECT fk.name FROM sys.foreign_keys fk JOIN sys.foreign_key_columns fkc ON fk.object_id = fkc.constraint_object_id
+                        JOIN sys.columns c ON fkc.parent_object_id = c.object_id AND fkc.parent_column_id = c.column_id
+                        WHERE c.name = 'ID_MONEDA' AND c.object_id = OBJECT_ID('[CAT].[TRATAMIENTOS]')
+                        UNION
+                        SELECT d.name FROM sys.default_constraints d JOIN sys.columns c ON d.parent_object_id = c.object_id AND d.parent_column_id = c.column_id
+                        WHERE c.name = 'ID_MONEDA' AND c.object_id = OBJECT_ID('[CAT].[TRATAMIENTOS]')
+                    );
+                    IF @sqlT <> '' EXEC sp_executesql @sqlT;
                     ALTER TABLE [CAT].[TRATAMIENTOS] DROP COLUMN [ID_MONEDA];
                 END
             ");
@@ -616,6 +663,17 @@ namespace MediTech.Models
                         ROLLBACK;
                         THROW;
                     END CATCH
+                END
+            ");
+
+            // 6. Fix missing FechaResultado for exams that already have results or comments
+            context.Database.ExecuteSqlRaw(@"
+                IF EXISTS (SELECT 1 FROM sys.tables WHERE object_id = OBJECT_ID(N'[CLI].[EXAMENES]'))
+                BEGIN
+                    UPDATE [CLI].[EXAMENES] 
+                    SET [FECHA_RESULTADO] = [FECHA_ORDEN] 
+                    WHERE [FECHA_RESULTADO] IS NULL 
+                    AND ([COMENTARIO_MEDICO] IS NOT NULL OR [IMAGEN_RESULTADO] IS NOT NULL);
                 END
             ");
 
