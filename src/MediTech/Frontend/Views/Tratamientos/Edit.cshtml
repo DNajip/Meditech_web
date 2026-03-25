@@ -1,0 +1,156 @@
+@model MediTech.Backend.Models.Tratamiento
+@{
+    ViewData["Title"] = "Editar Tratamiento";
+}
+
+<style>
+    .form-container {
+        background: #FFFFFF;
+        border-radius: 16px;
+        border: 1px solid #E2E8F0;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        padding: 32px;
+        max-width: 900px;
+        margin: 0 auto;
+    }
+    .form-section-title {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #334155;
+        margin-bottom: 20px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .form-group label {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 6px;
+    }
+    .form-control, .form-select {
+        border-radius: 10px;
+        border: 1px solid #E2E8F0;
+        padding: 10px 16px;
+        font-size: 0.9rem;
+        transition: all 0.2s;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #3B82F6;
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+    }
+    .btn-submit {
+        background: #F59E0B;
+        color: white;
+        font-weight: 600;
+        padding: 12px 24px;
+        border-radius: 10px;
+        transition: all 0.2s;
+    }
+    .btn-submit:hover {
+        background: #D97706;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(217, 119, 6, 0.2);
+    }
+</style>
+
+<div class="mb-4 d-flex align-items-center justify-content-between">
+    <div>
+        <h2 class="fw-bold mb-0 text-dark">Editar Tratamiento</h2>
+        <p class="text-muted small mb-0">Actualiza la información técnica o comercial del servicio #@Model.IdTratamiento</p>
+    </div>
+    <a href="@Url.Action("Index")" class="btn btn-light" style="border-radius:10px;">
+        <i class="fas fa-arrow-left me-1"></i> Volver al Catálogo
+    </a>
+</div>
+
+<div class="form-container">
+    <form asp-action="Edit">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="IdTratamiento" />
+        
+        <div class="row g-4">
+            <!-- Sección 1: Datos Base -->
+            <div class="col-12">
+                <div class="form-section-title text-warning">
+                    <i class="fas fa-edit"></i> Gestión de Precios y Moneda
+                </div>
+            </div>
+
+            <div class="col-md-12">
+                <div class="form-group">
+                    <label asp-for="NombreTratamiento">Nombre del Tratamiento / Servicio</label>
+                    <input asp-for="NombreTratamiento" class="form-control" required />
+                    <span asp-validation-for="NombreTratamiento" class="text-danger small"></span>
+                </div>
+            </div>
+
+            <div class="col-md-12">
+                <div class="form-group">
+                    <label asp-for="Precio">Precio del Servicio</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0" style="border-radius: 10px 0 0 10px;"><i class="fas fa-tag text-muted"></i></span>
+                        <input asp-for="Precio" type="number" step="0.01" class="form-control border-start-0" required />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección 2: Detalles Clínicos -->
+            <div class="col-12 mt-5">
+                <div class="form-section-title text-success">
+                    <i class="fas fa-clipboard-list"></i> Especificaciones Médicas
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label asp-for="Dosis">Dosis Recomendada</label>
+                    <input asp-for="Dosis" class="form-control" />
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label asp-for="ViaAdministracion">Vía de Administración</label>
+                    <input asp-for="ViaAdministracion" class="form-control" />
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label asp-for="Frecuencia">Frecuencia</label>
+                    <input asp-for="Frecuencia" class="form-control" />
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label asp-for="DuracionTratamiento">Duración del Tratamiento</label>
+                    <input asp-for="DuracionTratamiento" class="form-control" />
+                </div>
+            </div>
+
+            <div class="col-md-6 mt-4">
+                <div class="form-group">
+                    <label asp-for="IdEstado">Estado del Servicio</label>
+                    <select asp-for="IdEstado" class="form-select" asp-items="ViewBag.IdEstado"></select>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-5 d-flex gap-3 justify-content-end">
+            <button type="submit" class="btn btn-submit px-5">
+                <i class="fas fa-save me-1"></i> Actualizar Cambios
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
+

@@ -1,0 +1,77 @@
+@model MediTech.Backend.Models.Cita
+@{
+    ViewData["Title"] = "Nueva Cita";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm border-0" style="border-radius: 16px;">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center mb-4">
+                    <a href="@Url.Action("Index")" class="btn btn-outline-secondary btn-sm me-3" style="border-radius: 8px;">
+                        <i class="fas fa-arrow-left"></i>
+                    </a>
+                    <h4 class="mb-0 fw-bold"><i class="fas fa-calendar-plus me-2 text-primary"></i>Agendar Nueva Cita</h4>
+                </div>
+
+                <form asp-action="Create">
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger" style="font-size: 0.85rem; border-radius: 8px;"></div>
+
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <label asp-for="IdPaciente" class="form-label small fw-bold text-secondary">Paciente</label>
+                            <select asp-for="IdPaciente" class="form-select" asp-items="ViewBag.Pacientes">
+                                <option value="">-- Seleccione un Paciente --</option>
+                            </select>
+                            <span asp-validation-for="IdPaciente" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-12">
+                            <label asp-for="IdTratamiento" class="form-label small fw-bold text-secondary">Tratamiento / Servicio</label>
+                            <select asp-for="IdTratamiento" class="form-select" asp-items="ViewBag.Tratamientos">
+                                <option value="">-- Seleccione un Tratamiento --</option>
+                            </select>
+                            <span asp-validation-for="IdTratamiento" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label asp-for="Fecha" class="form-label small fw-bold text-secondary">Fecha</label>
+                            <input asp-for="Fecha" type="date" class="form-control" min="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                            <span asp-validation-for="Fecha" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label asp-for="HoraInicio" class="form-label small fw-bold text-secondary">Hora Inicio</label>
+                            <input asp-for="HoraInicio" type="time" class="form-control" />
+                            <span asp-validation-for="HoraInicio" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label asp-for="HoraFin" class="form-label small fw-bold text-secondary">Hora Fin</label>
+                            <input asp-for="HoraFin" type="time" class="form-control" />
+                            <span asp-validation-for="HoraFin" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-12">
+                            <label asp-for="Observaciones" class="form-label small fw-bold text-secondary">Observaciones</label>
+                            <textarea asp-for="Observaciones" class="form-control" rows="3" placeholder="Detalles adicionales o motivos de la cita..."></textarea>
+                            <span asp-validation-for="Observaciones" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-top d-flex justify-content-between align-items-center">
+                        <p class="text-muted small mb-0"></p>
+                        <button type="submit" class="btn btn-primary px-4" style="border-radius: 8px;">
+                            <i class="fas fa-save me-1"></i> Guardar Cita
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
+

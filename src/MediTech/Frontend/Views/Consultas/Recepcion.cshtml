@@ -1,0 +1,292 @@
+@model MediTech.Backend.Models.Consulta
+@{
+    ViewData["Title"] = "Recepción del Paciente";
+    var patientName = $"{Model.Cita?.Paciente?.Persona?.PrimerNombre} {Model.Cita?.Paciente?.Persona?.PrimerApellido}";
+    var appointmentDate = Model.Cita?.Fecha.ToString("dd/MM/yyyy");
+    var appointmentTime = Model.Cita != null ? DateTime.Today.Add(Model.Cita.HoraInicio).ToString("hh:mm tt") : "";
+}
+
+<style>
+    .triage-container {
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+    .triage-header {
+        background: #ffffff;
+        border-radius: 16px;
+        padding: 24px;
+        border: 1px solid #e2e8f0;
+        margin-bottom: 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    .status-badge {
+        background: #fef3c7;
+        color: #92400e;
+        padding: 6px 16px;
+        border-radius: 9999px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .form-section {
+        background: #ffffff;
+        border-radius: 16px;
+        padding: 32px;
+        border: 1px solid #e2e8f0;
+        margin-bottom: 24px;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    }
+    .section-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .vital-card {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 16px;
+        transition: all 0.2s;
+    }
+    .vital-card:focus-within {
+        border-color: #3b82f6;
+        background: #ffffff;
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+    }
+    .vital-label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #64748b;
+        text-transform: uppercase;
+        margin-bottom: 8px;
+        display: block;
+    }
+    .vital-input {
+        border: none;
+        background: transparent;
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #1e293b;
+        width: 100%;
+        padding: 0;
+    }
+    .vital-input:focus { outline: none; }
+    .imc-display {
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+    }
+    .imc-value {
+        font-size: 2rem;
+        font-weight: 800;
+        color: #1d4ed8;
+    }
+    .btn-save {
+        background: #4f46e5;
+        color: white;
+        padding: 16px 32px;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 1.125rem;
+        border: none;
+        transition: all 0.2s;
+        box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.4);
+    }
+    .btn-save:hover {
+        background: #4338ca;
+        transform: translateY(-1px);
+        box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.4);
+    }
+</style>
+
+<div class="container py-4 triage-container">
+    <!-- HEADER -->
+    <div class="triage-header">
+        <div>
+            <h2 class="fw-bold mb-1" style="color: #1e293b;">Recepción del Paciente</h2>
+            <div class="d-flex align-items-center gap-3 text-secondary">
+                <span><i class="bi bi-person-fill me-1"></i> @patientName</span>
+                <span><i class="bi bi-calendar-event me-1"></i> @appointmentDate - @appointmentTime</span>
+            </div>
+        </div>
+        <div class="status-badge">
+            <span class="pulse-dot"></span>
+            Consulta: EN PROCESO
+        </div>
+    </div>
+
+    <form asp-action="Recepcion" method="post">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <input type="hidden" asp-for="IdCita" />
+        <input type="hidden" asp-for="IdMedico" />
+        <input type="hidden" asp-for="IdEstado" />
+        <input type="hidden" asp-for="IdConsulta" />
+
+        <!-- SECCIÓN 1: SIGNOS VITALES -->
+        <div class="form-section">
+            <div class="section-title">
+                <div class="p-2 bg-danger bg-opacity-10 text-danger rounded-3">
+                    <i class="bi bi-activity"></i>
+                </div>
+                SECCIÓN 1 — SIGNOS VITALES
+            </div>
+
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="vital-card">
+                        <label class="vital-label">Presión Arterial</label>
+                        <input name="signos.PresionArterial" class="vital-input" placeholder="Ej: 120/80" />
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="vital-card">
+                        <label class="vital-label">Temperatura (°C)</label>
+                        <input name="signos.Temperatura" id="inputTemp" type="number" step="0.1" class="vital-input" placeholder="°C" />
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="vital-card">
+                        <label class="vital-label">Frecuencia Cardíaca (LPM)</label>
+                        <input name="signos.FrecuenciaCardiaca" type="number" class="vital-input" placeholder="LPM" />
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="vital-card">
+                        <label class="vital-label">Saturación Oxígeno (%)</label>
+                        <input name="signos.SaturacionOxigeno" type="number" class="vital-input" placeholder="%" />
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="vital-card">
+                        <label class="vital-label">Peso (lbs)</label>
+                        <input name="signos.Peso" id="inputPeso" type="number" step="0.01" class="vital-input" placeholder="lbs" />
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="vital-card">
+                        <label class="vital-label">Altura (cm)</label>
+                        <input name="signos.Altura" id="inputAltura" type="number" step="0.1" class="vital-input" placeholder="cm" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <div class="imc-display">
+                    <div class="row align-items-center">
+                        <div class="col-md-6 border-end border-primary border-opacity-10">
+                            <span class="text-secondary small fw-bold text-uppercase d-block mb-1">Cálculo de IMC</span>
+                            <div class="imc-value" id="imcValue">--.-</div>
+                        </div>
+                        <div class="col-md-6 text-start ps-md-4">
+                            <div id="imcStatus" class="fw-bold mb-1">Introduzca peso y altura</div>
+                            <p class="small text-muted mb-0">IMC = peso(kg) / altura(m)² — El peso en lbs se convierte automáticamente.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN 2: DATOS CLÍNICOS INICIALES -->
+        <div class="form-section">
+            <div class="section-title">
+                <div class="p-2 bg-primary bg-opacity-10 text-primary rounded-3">
+                    <i class="bi bi-clipboard2-pulse"></i>
+                </div>
+                SECCIÓN 2 — DATOS CLÍNICOS INICIALES
+            </div>
+
+            <div class="mb-4">
+                <label asp-for="MotivoConsulta" class="form-label fw-bold small text-uppercase text-secondary">Motivo de consulta</label>
+                <textarea asp-for="MotivoConsulta" class="form-control" rows="3" placeholder="Paciente presenta..." style="border-radius: 12px; background: #f8fafc; border: 1px solid #e2e8f0;"></textarea>
+            </div>
+
+            <div class="mb-0">
+                <label asp-for="Observaciones" class="form-label fw-bold small text-uppercase text-secondary">Observaciones iniciales</label>
+                <textarea asp-for="Observaciones" class="form-control" rows="3" placeholder="Paciente camina con dificultad..." style="border-radius: 12px; background: #f8fafc; border: 1px solid #e2e8f0;"></textarea>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-5">
+            <a href="@Url.Action("Index", "Citas")" class="text-secondary text-decoration-none fw-bold">
+                <i class="bi bi-arrow-left me-1"></i> Cancelar y volver
+            </a>
+            <button type="submit" class="btn-save px-5">
+                Guardar y continuar <i class="bi bi-arrow-right ms-2"></i>
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        const inputPeso = document.getElementById('inputPeso');
+        const inputAltura = document.getElementById('inputAltura');
+        const imcValue = document.getElementById('imcValue');
+        const imcStatus = document.getElementById('imcStatus');
+
+        function calcularIMC() {
+            const pesoLbs = parseFloat(inputPeso.value);
+            const altura = parseFloat(inputAltura.value);
+
+            if (pesoLbs > 0 && altura > 0) {
+                const pesoKg = pesoLbs / 2.205; // Convertir lbs a kg
+                const alturaMetros = altura > 3 ? altura / 100 : altura;
+                const imc = pesoKg / (alturaMetros * alturaMetros);
+                imcValue.textContent = imc.toFixed(1);
+
+                if (imc < 18.5) {
+                    imcStatus.textContent = "Bajo peso";
+                    imcStatus.className = "fw-bold text-warning";
+                } else if (imc < 25) {
+                    imcStatus.textContent = "Peso normal";
+                    imcStatus.className = "fw-bold text-success";
+                } else if (imc < 30) {
+                    imcStatus.textContent = "Sobrepeso";
+                    imcStatus.className = "fw-bold text-warning";
+                } else {
+                    imcStatus.textContent = "Obesidad";
+                    imcStatus.className = "fw-bold text-danger";
+                }
+            } else {
+                imcValue.textContent = "--.-";
+                imcStatus.textContent = "Introduzca peso y altura";
+                imcStatus.className = "fw-bold text-secondary";
+            }
+        }
+
+        inputPeso.addEventListener('input', calcularIMC);
+        inputAltura.addEventListener('input', calcularIMC);
+
+        // Calcular inicialmente si ya hay datos
+        calcularIMC();
+    </script>
+}
+
+<style>
+    .pulse-dot {
+        width: 8px;
+        height: 8px;
+        background-color: #f59e0b;
+        border-radius: 50%;
+        display: inline-block;
+        animation: pulse 2s infinite;
+    }
+
+    @@keyframes pulse {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+    }
+</style>
+

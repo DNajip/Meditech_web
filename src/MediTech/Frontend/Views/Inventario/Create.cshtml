@@ -1,0 +1,83 @@
+@model MediTech.Backend.Models.Producto
+
+@{
+    ViewData["Title"] = "Nuevo Producto";
+}
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card card-premium border-0 shadow-lg">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h3 class="fw-bold text-dark mb-0">Registrar Nuevo Producto</h3>
+                    <p class="text-muted small">Complete la información para integrar al catálogo</p>
+                </div>
+                <div class="card-body p-4">
+                    <form asp-action="Create">
+                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                        
+                        <div class="row g-3">
+                            <!-- Nombre -->
+                            <div class="col-md-12">
+                                <label asp-for="Nombre" class="form-label fw-bold small text-uppercase">Nombre del Producto</label>
+                                <input asp-for="Nombre" class="form-control form-control-lg bg-light border-0" placeholder="Ej: Amoxicilina 500mg" />
+                                <span asp-validation-for="Nombre" class="text-danger small"></span>
+                            </div>
+
+                            <!-- Descripción -->
+                            <div class="col-md-12">
+                                <label asp-for="Descripcion" class="form-label fw-bold small text-uppercase">Descripción</label>
+                                <textarea asp-for="Descripcion" class="form-control bg-light border-0" rows="3" placeholder="Detalles o especificaciones..."></textarea>
+                                <span asp-validation-for="Descripcion" class="text-danger small"></span>
+                            </div>
+
+                            <!-- Precio -->
+                            <div class="col-md-12">
+                                <label asp-for="Precio" class="form-label fw-bold small text-uppercase">Precio de Venta (@ViewBag.MonedaBase?.Codigo)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-0"><i class="fas fa-tag"></i></span>
+                                    <input asp-for="Precio" class="form-control bg-light border-0" type="number" step="0.01" />
+                                </div>
+                                <span asp-validation-for="Precio" class="text-danger small"></span>
+                            </div>
+
+                            <!-- Stocks -->
+                            <div class="col-md-6">
+                                <label asp-for="Stock" class="form-label fw-bold small text-uppercase">Stock Inicial</label>
+                                <input asp-for="Stock" class="form-control bg-light border-0" type="number" />
+                                <span asp-validation-for="Stock" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="StockMinimo" class="form-label fw-bold small text-uppercase">Stock Mínimo Alerta</label>
+                                <input asp-for="StockMinimo" class="form-control bg-light border-0" type="number" />
+                                <span asp-validation-for="StockMinimo" class="text-danger small"></span>
+                            </div>
+
+                            <!-- Activo -->
+                            <div class="col-md-12">
+                                <div class="form-check form-switch mt-2">
+                                    <input class="form-check-input" type="checkbox" asp-for="Activo" checked>
+                                    <label class="form-check-label fw-bold" asp-for="Activo">Producto Activo en Catálogo</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 mt-5">
+                            <a asp-action="Index" class="btn btn-light-premium px-4">Cancelar</a>
+                            <button type="submit" class="btn btn-primary-premium px-5 shadow-sm">Guardar Producto</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card-premium { border-radius: 20px; }
+    .form-control-lg { border-radius: 12px; }
+    .form-control, .form-select { border-radius: 10px; padding: 0.75rem 1rem; }
+    .btn-light-premium { background: #f8f9fa; color: #6c757d; border-radius: 10px; padding: 0.6rem 1.5rem; }
+</style>
+

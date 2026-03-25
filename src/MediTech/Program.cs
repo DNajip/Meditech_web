@@ -1,8 +1,14 @@
 using Microsoft.EntityFrameworkCore;
-using MediTech.Models;
+using MediTech.Backend.Models;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Mvc.Razor;
+using Microsoft.Extensions.FileProviders;
 
-var builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+{
+    Args = args,
+    WebRootPath = "Frontend/wwwroot"
+});
 
 // Ensure appsettings.json is loaded from the correct directory
 // This handles cases where VS Code debugger sets CWD to solution root
@@ -34,6 +40,13 @@ builder.Configuration
 
 
 // Add services to the container.
+builder.Services.Configure<RazorViewEngineOptions>(options =>
+{
+    options.ViewLocationFormats.Clear();
+    options.ViewLocationFormats.Add("/Frontend/Views/{1}/{0}.cshtml");
+    options.ViewLocationFormats.Add("/Frontend/Views/Shared/{0}.cshtml");
+});
+
 var mvcBuilder = builder.Services.AddControllersWithViews();
 
 builder.Services.AddMemoryCache();
@@ -125,3 +138,4 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();
+
