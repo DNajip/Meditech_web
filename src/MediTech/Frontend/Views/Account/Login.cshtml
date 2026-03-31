@@ -1,8 +1,9 @@
 @model dynamic
 @{
-    ViewData["Title"] = "Iniciar Sesión";
+    ViewData["Title"] = "Login";
     Layout = null;
 }
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -143,7 +144,7 @@
     <div class="login-container">
         <div class="card login-card">
             <div class="login-header">
-                <img src="~/images/logo.png" alt="MediTech Logo" class="login-logo" />
+                <img src="~/images/logo.png" alt="MediTech Logo" class="login-logo" asp-append-version="true" />
                 <h4>Acceso al Sistema</h4>
             </div>
             <div class="card-body">

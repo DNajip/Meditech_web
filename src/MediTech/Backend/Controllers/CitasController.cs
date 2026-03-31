@@ -37,14 +37,14 @@ public class CitasController(MediTechContext context, ILogger<CitasController> l
                 : $"{c.PosiblePaciente?.PrimerNombre ?? "S/N"} {c.PosiblePaciente?.PrimerApellido ?? ""}".Trim(),
             start = c.Fecha.Add(c.HoraInicio),
             end = c.Fecha.Add(c.HoraFin),
-            color = c.IdPaciente == null ? "#F59E0B" : (c.IdEstado == 2 ? "#10B981" : "#3B82F6"), // Amber for prospect, Green for attended
+            color = c.IdEstadoCita == 4 ? "#E1E4E8" : (c.IdPaciente == null ? "#F59E0B" : (c.IdEstadoCita == 2 ? "#10B981" : "#3B82F6")), // Gray for canceled (4)
             extendedProps = new
             {
                 pacienteId = c.IdPaciente,
                 posiblePacienteId = c.IdPosiblePaciente,
                 tratamiento = c.Tratamiento?.NombreTratamiento ?? "Consulta General",
                 observaciones = c.Observaciones ?? "",
-                estadoId = c.IdEstado,
+                estadoId = c.IdEstadoCita,
                 telefono = c.Telefono,
                 isProspect = c.IdPaciente == null
             }
@@ -76,7 +76,7 @@ public class CitasController(MediTechContext context, ILogger<CitasController> l
             horaFin = c.HoraFin.ToString(@"hh\:mm"),
             telefono = c.Telefono,
             tratamiento = c.Tratamiento?.NombreTratamiento ?? "Consulta General",
-            estadoId = c.IdEstado
+            estadoId = c.IdEstadoCita
         });
 
         return Json(result);
@@ -88,7 +88,7 @@ public class CitasController(MediTechContext context, ILogger<CitasController> l
             .Include(c => c.Paciente).ThenInclude(p => p!.Persona)
             .Include(c => c.Tratamiento)
             .Include(c => c.Estado)
-            .Where(c => c.Fecha == today && c.IdEstado == 1)
+            .Where(c => c.Fecha == today && c.IdEstadoCita == 1)
             .OrderBy(c => c.HoraInicio)
             .ToListAsync();
 
@@ -196,8 +196,8 @@ public class CitasController(MediTechContext context, ILogger<CitasController> l
             horaInicio = DateTime.Today.Add(cita.HoraInicio).ToString("hh:mm tt"),
             horaFin = DateTime.Today.Add(cita.HoraFin).ToString("hh:mm tt"),
             observaciones = cita.Observaciones ?? "",
-            estado = cita.Estado?.DescEstado ?? "ACTIVO",
-            estadoId = cita.IdEstado,
+            estado = cita.EstadoCita?.DescEstadoCita ?? "ACTIVO",
+            estadoId = cita.IdEstadoCita,
             telefono = cita.Telefono
         });
     }
@@ -384,19 +384,16 @@ public class CitasController(MediTechContext context, ILogger<CitasController> l
 
         try
         {
-            cita.IdEstado = 2; // Atendida / En Sala
+            cita.IdEstadoCita = 2; // Atendida / En Sala
             _context.Update(cita);
             await _context.SaveChangesAsync();
-
-            TempData["SuccessMessage"] = "Paciente registrado como En Sala de Espera / Atendido.";
+            return Json(new { success = true, idCita = id });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error changing appointment status.");
-            TempData["ErrorMessage"] = "No se pudo actualizar el estado de la cita.";
+            return Json(new { success = false, message = "No se pudo actualizar el estado de la cita." });
         }
-
-        return RedirectToAction(nameof(Index));
     }
 
     // POST: Citas/Cancel/5
@@ -409,19 +406,16 @@ public class CitasController(MediTechContext context, ILogger<CitasController> l
 
         try
         {
-            cita.IdEstado = 3; // Cancelada
+            cita.IdEstadoCita = 4; // 4: Cancelada
             _context.Update(cita);
             await _context.SaveChangesAsync();
-
-            TempData["SuccessMessage"] = "Cita cancelada correctamente.";
+            return Json(new { success = true, message = "Cita cancelada correctamente." });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error canceling appointment.");
-            TempData["ErrorMessage"] = "No se pudo cancelar la cita.";
+            return Json(new { success = false, message = "No se pudo cancelar la cita." });
         }
-
-        return RedirectToAction(nameof(Index));
     }
 
     // POST: Citas/Delete/5
@@ -586,7 +580,7 @@ public class CitasController(MediTechContext context, ILogger<CitasController> l
             var cita = await _context.Citas.FindAsync(idCita);
             if (cita != null)
             {
-                cita.IdEstado = 2; // Atendida / En Sala
+                cita.IdEstadoCita = 2; // Atendida / En Sala
                 _context.Update(cita);
                 await _context.SaveChangesAsync();
             }

@@ -348,8 +348,18 @@ namespace MediTech.Backend.Controllers
         [HttpPost]
         public async Task<IActionResult> CerrarConsulta([FromBody] CerrarConsultaDto data)
         {
+            Console.WriteLine("=== CIERRE CONSULTA: Inicio ===");
+
             if (data == null || data.IdConsulta <= 0)
+            {
+                Console.WriteLine("CIERRE CONSULTA: Datos inválidos o IdConsulta <= 0");
                 return Json(new { success = false, message = "Datos inválidos." });
+            }
+
+            // Null safety para Items
+            data.Items ??= new List<ItemCierreDto>();
+
+            Console.WriteLine($"CIERRE CONSULTA: IdConsulta={data.IdConsulta}, Items={data.Items.Count}, Diagnóstico={data.DiagnosticoFinal?.Length ?? 0} chars");
 
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
@@ -359,7 +369,10 @@ namespace MediTech.Backend.Controllers
                     .FirstOrDefaultAsync(c => c.IdConsulta == data.IdConsulta);
 
                 if (consulta == null)
+                {
+                    Console.WriteLine($"CIERRE CONSULTA: Consulta {data.IdConsulta} NO encontrada en BD.");
                     return Json(new { success = false, message = "Consulta no encontrada." });
+                }
 
                 var estadoFinalizada = await _context.Estados.FirstOrDefaultAsync(e => e.DescEstado == "FINALIZADA");
                 var idEstadoFinalizada = estadoFinalizada?.IdEstado ?? 3;
@@ -373,9 +386,19 @@ namespace MediTech.Backend.Controllers
                 consulta.IdEstado = idEstadoFinalizada;
                 _context.Update(consulta);
 
-                // 2. Crear Cuenta en CAJA
+                // 2. Actualizar estado de la Cita (sincronizar calendario)
+                if (consulta.Cita != null)
+                {
+                    consulta.Cita.IdEstadoCita = 3; // FINALIZADA/ATENDIDA
+                    _context.Update(consulta.Cita);
+                    Console.WriteLine($"CIERRE CONSULTA: Cita {consulta.Cita.IdCita} actualizada a IdEstadoCita=3");
+                }
+
+                // 3. Crear Cuenta en CAJA
                 var configMoneda = await _context.ConfiguracionesMoneda.FirstOrDefaultAsync();
-                decimal total = data.Items.Sum(i => i.Subtotal);
+                // Recalcular total en el backend (no confiar solo en subtotal del frontend)
+                decimal total = data.Items.Sum(i => i.Cantidad * i.PrecioUnitario);
+                Console.WriteLine($"CIERRE CONSULTA: Total calculado = {total}");
 
                 var nuevaCuenta = new Cuenta
                 {
@@ -390,7 +413,9 @@ namespace MediTech.Backend.Controllers
                 _context.Cuentas.Add(nuevaCuenta);
                 await _context.SaveChangesAsync(); // Para obtener IdCuenta
 
-                // 3. Procesar Items (Detalles clínicos, Cuenta Detalles e Inventario)
+                Console.WriteLine($"CIERRE CONSULTA: Cuenta creada con IdCuenta={nuevaCuenta.IdCuenta}");
+
+                // 4. Procesar Items (Detalles clínicos, Cuenta Detalles e Inventario)
                 foreach (var item in data.Items)
                 {
                     // Detalle Clínico
@@ -402,7 +427,7 @@ namespace MediTech.Backend.Controllers
                         Descripcion = item.Descripcion,
                         Cantidad = item.Cantidad,
                         PrecioUnitario = item.PrecioUnitario,
-                        Subtotal = item.Subtotal
+                        Subtotal = item.Cantidad * item.PrecioUnitario
                     };
                     _context.ConsultaDetalles.Add(consultaDetalle);
 
@@ -415,7 +440,7 @@ namespace MediTech.Backend.Controllers
                         Descripcion = item.Descripcion,
                         Cantidad = item.Cantidad,
                         PrecioUnitario = item.PrecioUnitario,
-                        Subtotal = item.Subtotal
+                        Subtotal = item.Cantidad * item.PrecioUnitario
                     };
                     _context.CuentaDetalles.Add(cuentaDetalle);
 
@@ -436,22 +461,26 @@ namespace MediTech.Backend.Controllers
                         {
                             IdProducto = producto.IdProducto,
                             TipoMovimiento = "VENTA",
-                            Cantidad = item.Cantidad, // Cantidad en positivo (representa la salida porque es VENTA u otro flujo interno lo asume, para reportes lo dejaremos positivo, restado de stock)
+                            Cantidad = item.Cantidad,
                             Observacion = $"Cierre de consulta #{consulta.IdConsulta}",
                             FechaMovimiento = DateTime.Now
                         };
                         _context.MovimientosInventario.Add(movInventario);
                     }
+
+                    Console.WriteLine($"  Item: {item.TipoItem} - {item.Descripcion} x{item.Cantidad} @ {item.PrecioUnitario}");
                 }
 
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
-                return Json(new { success = true, idConsulta = consulta.IdConsulta });
+                Console.WriteLine($"=== CIERRE CONSULTA: Éxito. CuentaId={nuevaCuenta.IdCuenta} ===");
+                return Json(new { success = true, idConsulta = consulta.IdConsulta, cuentaId = nuevaCuenta.IdCuenta });
             }
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
+                Console.WriteLine($"=== CIERRE CONSULTA: ERROR — {ex.Message} ===");
                 return Json(new { success = false, message = ex.Message });
             }
         }

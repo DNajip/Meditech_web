@@ -13,8 +13,9 @@ namespace MediTech.Backend.Models
             // Apply schema migrations for new columns/tables
             ApplyMigrations(context);
 
-            // Clean clinical and financial data to avoid FK conflicts when deleting users (Development only)
-            context.Database.ExecuteSqlRaw("DELETE FROM CAJA.PAGOS; DELETE FROM CAJA.CUENTA_DETALLE; DELETE FROM CAJA.CUENTAS; DELETE FROM CLI.SIGNOS_VITALES; DELETE FROM CLI.DIAGNOSTICOS; DELETE FROM CLI.CONSULTA_DETALLE; DELETE FROM CLI.CONSULTAS;");
+            // NOTE: Removed aggressive DELETE of clinical/financial data.
+            // The previous DELETE FROM CLI.CONSULTAS was destroying active consultations on every restart,
+            // causing "Consulta no encontrada" errors in the closure flow.
             
             
             var existingAdmin = context.Usuarios
@@ -26,6 +27,9 @@ namespace MediTech.Backend.Models
             {
                 Console.WriteLine($"Deleting existing admin user and related records. ID: {existingAdmin.IdUsuario}");
                 
+                // Clear module permissions to avoid FK conflict
+                context.Database.ExecuteSqlRaw("DELETE FROM ADM.USUARIO_MODULOS WHERE ID_USUARIO = {0}", existingAdmin.IdUsuario);
+
                 var empleado = existingAdmin.Empleado;
                 var persona = empleado?.Persona;
 
@@ -188,6 +192,29 @@ namespace MediTech.Backend.Models
             }
 
             SeedTreatments(context);
+
+            // 5. Assign all modules to users for testing (Assign all to admin, some to others)
+            var allModules = context.Modulos.ToList();
+            var adminUser = context.Usuarios.Include(u => u.UsuarioModulos).FirstOrDefault(u => u.Username == "admin");
+            if (adminUser != null && !adminUser.UsuarioModulos.Any())
+            {
+                foreach (var mod in allModules)
+                {
+                    context.UsuarioModulos.Add(new UsuarioModulo { IdUsuario = adminUser.IdUsuario, IdModulo = mod.IdModulo });
+                }
+            }
+
+            var doctorUser = context.Usuarios.Include(u => u.UsuarioModulos).FirstOrDefault(u => u.Username == "doctor");
+            if (doctorUser != null && !doctorUser.UsuarioModulos.Any())
+            {
+                // Doctors see Citas, Pacientes, Consultas, Examenes
+                var docControllers = new[] { "Home", "Citas", "Pacientes", "Consultas" };
+                var docModules = allModules.Where(m => docControllers.Contains(m.Controller));
+                foreach (var mod in docModules)
+                {
+                    context.UsuarioModulos.Add(new UsuarioModulo { IdUsuario = doctorUser.IdUsuario, IdModulo = mod.IdModulo });
+                }
+            }
 
             context.SaveChanges();
             Console.WriteLine("--- DB INITIALIZER END ---");
@@ -675,7 +702,52 @@ namespace MediTech.Backend.Models
                     WHERE [FECHA_RESULTADO] IS NULL 
                     AND ([COMENTARIO_MEDICO] IS NOT NULL OR [IMAGEN_RESULTADO] IS NOT NULL);
                 END
+
+                -- 7. Create ADM.MODULOS and ADM.USUARIO_MODULOS
+                IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'MODULOS' AND schema_id = SCHEMA_ID('ADM'))
+                BEGIN
+                    CREATE TABLE ADM.MODULOS (
+                        ID_MODULO INT IDENTITY PRIMARY KEY,
+                        NOMBRE VARCHAR(100) NOT NULL,
+                        ICONO VARCHAR(50), 
+                        CONTROLLER VARCHAR(100) NOT NULL, 
+                        ORDEN INT DEFAULT 0,
+                        ID_ESTADO INT DEFAULT 1,
+                        FOREIGN KEY (ID_ESTADO) REFERENCES CAT.ESTADOS(ID_ESTADO)
+                    );
+                END
+
+                IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'USUARIO_MODULOS' AND schema_id = SCHEMA_ID('ADM'))
+                BEGIN
+                    CREATE TABLE ADM.USUARIO_MODULOS (
+                        ID_USUARIO INT NOT NULL,
+                        ID_MODULO INT NOT NULL,
+                        PRIMARY KEY (ID_USUARIO, ID_MODULO),
+                        FOREIGN KEY (ID_USUARIO) REFERENCES ADM.USUARIOS(ID_USUARIO),
+                        FOREIGN KEY (ID_MODULO) REFERENCES ADM.MODULOS(ID_MODULO)
+                    );
+                END
+
+                -- Ensure modules have IdEstado = 1
+                UPDATE ADM.MODULOS SET ID_ESTADO = 1 WHERE ID_ESTADO IS NULL;
             ");
+
+            // Seed Modules if empty
+            if (!context.Modulos.Any())
+            {
+                context.Modulos.AddRange(
+                    new Modulo { Nombre = "Dashboard", Icono = "fas fa-th-large", Controller = "Home", Orden = 1, IdEstado = 1 },
+                    new Modulo { Nombre = "Citas", Icono = "fas fa-calendar-alt", Controller = "Citas", Orden = 2, IdEstado = 1 },
+                    new Modulo { Nombre = "Pacientes", Icono = "fas fa-user-injured", Controller = "Pacientes", Orden = 3, IdEstado = 1 },
+                    new Modulo { Nombre = "Tratamientos", Icono = "fas fa-hand-holding-medical", Controller = "Tratamientos", Orden = 4, IdEstado = 1 },
+                    new Modulo { Nombre = "Consultas", Icono = "fas fa-stethoscope", Controller = "Consultas", Orden = 5, IdEstado = 1 },
+                    new Modulo { Nombre = "Inventario", Icono = "fas fa-boxes", Controller = "Inventario", Orden = 6, IdEstado = 1 },
+                    new Modulo { Nombre = "Caja y Pagos", Icono = "fas fa-cash-register", Controller = "Caja", Orden = 7, IdEstado = 1 },
+
+                    new Modulo { Nombre = "Configuración", Icono = "fas fa-cog", Controller = "Configuracion", Orden = 9, IdEstado = 1 }
+                );
+                context.SaveChanges();
+            }
 
             Console.WriteLine("Schema migrations applied.");
         }

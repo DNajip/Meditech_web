@@ -1,131 +1,230 @@
 @model MediTech.Backend.Models.ConfiguracionMoneda
 @{
-    ViewData["Title"] = "Configuración de Moneda";
+    ViewData["Title"] = "Configuración del Sistema";
     var tasaActiva = ViewBag.TasaActiva as MediTech.Backend.Models.TasaCambio;
     var historial = ViewBag.Historial as List<MediTech.Backend.Models.TasaCambio>;
     var monedas = ViewBag.Monedas as List<MediTech.Backend.Models.Moneda>;
+    var usuarios = ViewBag.Usuarios as List<MediTech.Backend.Models.Usuario>;
+    var todosModulos = ViewBag.TodosModulos as List<MediTech.Backend.Models.Modulo>;
+    var roles = ViewBag.Roles as List<MediTech.Backend.Models.Role>;
 }
 
 <div class="row mb-4">
     <div class="col-12">
         <h2 class="fw-bold"><i class="fas fa-cog me-2 text-primary"></i>Configuración de Sistema</h2>
-        <p class="text-muted">Gestión de moneda base, tasas de cambio y parámetros financieros.</p>
+        <p class="text-muted">Gestión de moneda, usuarios y permisos del sistema.</p>
     </div>
 </div>
 
-<div class="row">
-    <!-- Moneda Base -->
-    <div class="col-md-6 mb-4">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body">
-                <div class="d-flex align-items-center mb-3">
-                    <div class="bg-primary bg-opacity-10 p-2 rounded-3 me-3 text-primary">
-                        <i class="fas fa-coins fa-lg"></i>
+<div class="accordion border-0 shadow-sm" id="configAccordion">
+    
+    <!-- SECCIÓN 1: ADMINISTRACIÓN DE MONEDA Y TASA -->
+    <div class="accordion-item border-0 mb-3 rounded-3 overflow-hidden shadow-sm">
+        <h2 class="accordion-header" id="headingMoneda">
+            <button class="accordion-button bg-white text-dark fw-bold py-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapseMoneda" aria-expanded="true" aria-controls="collapseMoneda">
+                <div class="d-flex align-items-center w-100">
+                    <div class="bg-primary bg-opacity-10 p-2 rounded-2 me-3 text-primary">
+                        <i class="fas fa-coins"></i>
                     </div>
-                    <h5 class="card-title mb-0 fw-bold">Moneda Base</h5>
+                    <span>Administración de moneda y tasa</span>
                 </div>
-                
-                <form asp-action="CambiarMonedaBase" method="post">
-                    <div class="mb-3">
-                        <label class="form-label text-secondary small fw-bold">MONEDA PRINCIPAL DEL SISTEMA</label>
-                        <select name="idMonedaBase" class="form-select border-light bg-light" onchange="showWarning()">
-                            @foreach (var m in monedas!)
-                            {
-                                <option value="@m.IdMoneda" selected="@(Model?.IdMonedaBase == m.IdMoneda)">
-                                    @m.Nombre (@m.Codigo - @m.Simbolo)
-                                </option>
-                            }
-                        </select>
-                    </div>
-                    
-                    <div id="baseWarning" class="alert alert-warning small py-2 d-none">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        <strong>Importante:</strong> El cambio de moneda base solo afectará a nuevos registros y no recalculará saldos históricos.
+            </button>
+        </h2>
+        <div id="collapseMoneda" class="accordion-collapse collapse show" aria-labelledby="headingMoneda" data-bs-parent="#configAccordion">
+            <div class="accordion-body bg-white pt-0">
+                <div class="row">
+                    <!-- Moneda Base -->
+                    <div class="col-md-6 mb-4">
+                        <div class="card border-0 bg-light h-100">
+                            <div class="card-body">
+                                <h6 class="fw-bold mb-3 text-secondary">MONEDA BASE</h6>
+                                <form asp-action="CambiarMonedaBase" method="post">
+                                    <div class="mb-3">
+                                        <select name="idMonedaBase" class="form-select border-0 shadow-sm" onchange="showWarning()">
+                                            @foreach (var m in monedas!)
+                                            {
+                                                <option value="@m.IdMoneda" selected="@(Model?.IdMonedaBase == m.IdMoneda)">
+                                                    @m.Nombre (@m.Codigo - @m.Simbolo)
+                                                </option>
+                                            }
+                                        </select>
+                                    </div>
+                                    <div id="baseWarning" class="alert alert-warning small py-2 d-none">
+                                        <i class="fas fa-exclamation-triangle me-2"></i> Solo afecta nuevos registros.
+                                    </div>
+                                    <button type="submit" class="btn btn-primary btn-sm w-100">Actualizar Moneda</button>
+                                </form>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-primary">Actualizar Moneda</button>
+                    <!-- Tasa Actual -->
+                    <div class="col-md-6 mb-4">
+                        <div class="card border-0 bg-light h-100">
+                            <div class="card-body">
+                                <h6 class="fw-bold mb-3 text-secondary">TASA DE CAMBIO</h6>
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h3 class="mb-0 fw-bold text-success">@(tasaActiva?.Valor.ToString("N6") ?? "N/A")</h3>
+                                    <span class="badge bg-success bg-opacity-10 text-success rounded-pill">Activa</span>
+                                </div>
+                                <form asp-action="GuardarTasa" method="post">
+                                    <div class="input-group input-group-sm mb-2">
+                                        <span class="input-group-text bg-white border-0 shadow-sm">1 USD = </span>
+                                        <input type="number" step="0.000001" name="valor" class="form-control border-0 shadow-sm" required value="@tasaActiva?.Valor.ToString("F6").Replace(",",".")">
+                                        <button class="btn btn-success" type="submit">Actualizar</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
                     </div>
-                </form>
+
+                    <!-- Historial -->
+                    <div class="col-12">
+                        <div class="card border-0 bg-light">
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-hover mb-0 align-middle">
+                                        <thead class="bg-dark bg-opacity-10">
+                                            <tr class="x-small fw-bold">
+                                                <th class="ps-3 py-2">FECHA</th>
+                                                <th class="py-2">VALOR (USD → NIO)</th>
+                                                <th class="py-2 text-center">ESTADO</th>
+                                                <th class="py-2 pe-3">USUARIO</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var t in historial!)
+                                            {
+                                                <tr class="small transition-all">
+                                                    <td class="ps-3 py-2">@t.Fecha.ToString("g")</td>
+                                                    <td><span class="fw-bold text-primary">@t.Valor.ToString("N6")</span></td>
+                                                    <td class="text-center">
+                                                        <span class="badge @(t.Activo ? "bg-success" : "bg-secondary opacity-50") rounded-pill" style="font-size: 0.65rem;">
+                                                            @(t.Activo ? "ACTIVO" : "ANTERIOR")
+                                                        </span>
+                                                    </td>
+                                                    <td class="pe-3 text-muted">@t.UsuarioModificacion</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Tasa de Cambio Activa -->
-    <div class="col-md-6 mb-4">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body">
-                <div class="d-flex align-items-center mb-1">
-                    <div class="bg-success bg-opacity-10 p-2 rounded-3 me-3 text-success">
-                        <i class="fas fa-exchange-alt fa-lg"></i>
+    <!-- SECCIÓN 2: ADMINISTRACIÓN DE USUARIOS -->
+    <div class="accordion-item border-0 mb-3 rounded-3 overflow-hidden shadow-sm">
+        <h2 class="accordion-header" id="headingUsuarios">
+            <button class="accordion-button bg-white text-dark fw-bold py-3 collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseUsuarios" aria-expanded="false" aria-controls="collapseUsuarios">
+                <div class="d-flex align-items-center w-100">
+                    <div class="bg-info bg-opacity-10 p-2 rounded-2 me-3 text-info">
+                        <i class="fas fa-users"></i>
                     </div>
-                    <h5 class="card-title mb-0 fw-bold">Tasa de Cambio</h5>
+                    <span>Administración de usuarios</span>
                 </div>
-                
-                <div class="p-3 bg-light rounded-3 my-3">
-                    <div class="row align-items-center">
-                        <div class="col">
-                            <span class="text-secondary small">TASA ACTUAL (USD → NIO)</span>
-                            <h2 class="mb-0 fw-bold text-success">@(tasaActiva?.Valor.ToString("N6") ?? "NO DEFINIDA")</h2>
-                        </div>
-                        <div class="col-auto text-end">
-                            <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3">Activa</span>
-                        </div>
-                    </div>
-                    <hr class="my-2 border-secondary opacity-10">
-                    <div class="d-flex justify-content-between small text-muted">
-                        <span><i class="fas fa-calendar-alt me-1"></i> @tasaActiva?.Fecha.ToString("g")</span>
-                        <span><i class="fas fa-user-edit me-1"></i> @tasaActiva?.UsuarioModificacion</span>
-                    </div>
-                </div>
-
-                <form asp-action="GuardarTasa" method="post">
-                    <div class="input-group mb-2">
-                        <span class="input-group-text bg-white border-end-0">USD $1.00 = </span>
-                        <input type="number" step="0.000001" min="0.000001" name="valor" class="form-control border-start-0" 
-                               placeholder="Valor en NIO" required value="@tasaActiva?.Valor.ToString("F6").Replace(",",".")">
-                        <button class="btn btn-success" type="submit">Actualizar Tasa</button>
-                    </div>
-                    <p class="text-muted x-small text-center"><i class="fas fa-info-circle me-1"></i> La nueva tasa será la única activa para nuevas valorizaciones y pagos.</p>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Historial -->
-    <div class="col-12">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white border-0 pt-4 pb-0">
-                <h5 class="fw-bold mb-0">Historial de Tasas de Cambio</h5>
-            </div>
-            <div class="card-body">
+            </button>
+        </h2>
+        <div id="collapseUsuarios" class="accordion-collapse collapse" aria-labelledby="headingUsuarios" data-bs-parent="#configAccordion">
+            <div class="accordion-body bg-white pt-0">
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle">
+                    <table class="table table-hover align-middle border-0">
                         <thead class="bg-light">
-                            <tr class="text-secondary small">
-                                <th class="border-0">FECHA</th>
-                                <th class="border-0">VALOR (USD → NIO)</th>
-                                <th class="border-0 text-center">ESTADO</th>
-                                <th class="border-0">USUARIO</th>
+                            <tr class="text-secondary small fw-bold">
+                                <th class="ps-3 border-0">USUARIO</th>
+                                <th class="border-0">ROL</th>
+                                <th class="border-0">MÓDULOS ACTIVOS</th>
+                                <th class="text-end pe-3 border-0">
+                                    <button type="button" class="btn btn-primary btn-sm rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#modalNuevoUsuario">
+                                        <i class="fas fa-plus me-1"></i> Nuevo Usuario
+                                    </button>
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach (var t in historial!)
+                            @foreach (var u in usuarios!)
                             {
                                 <tr>
-                                    <td class="small">@t.Fecha.ToString("g")</td>
-                                    <td><span class="fw-bold text-primary">@t.Valor.ToString("N6")</span></td>
-                                    <td class="text-center">
-                                        @if (t.Activo)
-                                        {
-                                            <span class="badge bg-success rounded-pill x-small">ACTIVO</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-secondary opacity-50 rounded-pill x-small">ANTERIOR</span>
-                                        }
+                                    <td class="ps-3">
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-sm bg-primary bg-opacity-10 text-primary rounded-circle me-2 d-flex align-items-center justify-content-center fw-bold" style="width: 32px; height: 32px; font-size: 0.8rem;">
+                                                @(u.Username.Substring(0,1).ToUpper())
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold small">@u.Username</div>
+                                                <div class="x-small text-muted">@(u.Empleado?.Persona?.PrimerNombre ?? "N/A")</div>
+                                            </div>
+                                        </div>
                                     </td>
-                                    <td class="small text-muted">@t.UsuarioModificacion</td>
+                                    <td>
+                                        <span class="badge bg-soft-primary text-primary px-2 py-1 rounded-pill" style="font-size: 0.7rem;">
+                                            @u.Role?.DescRol
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex flex-wrap gap-1">
+                                            @if (u.UsuarioModulos != null && u.UsuarioModulos.Any())
+                                            {
+                                                foreach (var um in u.UsuarioModulos.OrderBy(x => x.Modulo?.Orden))
+                                                {
+                                                    <span class="badge bg-light text-dark border border-secondary border-opacity-10 fw-normal" style="font-size: 0.65rem;">
+                                                        <i class="@um.Modulo?.Icono me-1"></i> @um.Modulo?.Nombre
+                                                    </span>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted small italic">Sin módulos asignados</span>
+                                            }
+                                        </div>
+                                    </td>
+                                    <td class="text-end pe-3">
+                                        <button type="button" class="btn btn-outline-info btn-sm rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#modalPermisos-@u.IdUsuario" style="font-size: 0.75rem;">
+                                            <i class="fas fa-key me-1"></i> Permisos
+                                        </button>
+
+                                        <!-- MODAL DE PERMISOS -->
+                                        <div class="modal fade" id="modalPermisos-@u.IdUsuario" tabindex="-1" aria-hidden="true">
+                                            <div class="modal-dialog modal-dialog-centered">
+                                                <div class="modal-content border-0 shadow-lg shadow-sm">
+                                                    <div class="modal-header border-0 bg-light">
+                                                        <h5 class="modal-title fw-bold">Permisos de Módulos</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <form asp-action="GuardarPermisosUsuario" method="post">
+                                                        <div class="modal-body text-start">
+                                                            <input type="hidden" name="idUsuario" value="@u.IdUsuario" />
+                                                            <p class="mb-3 text-muted small">Seleccione los módulos a los que el usuario <strong>@u.Username</strong> tendrá acceso:</p>
+                                                            
+                                                            <div class="row g-2">
+                                                                @foreach (var mod in todosModulos!)
+                                                                {
+                                                                    var check = u.UsuarioModulos?.Any(um => um.IdModulo == mod.IdModulo) ?? false;
+                                                                    <div class="col-6">
+                                                                        <div class="form-check p-2 border rounded-3 bg-light transition-all hover-shadow-sm d-flex align-items-center">
+                                                                            <input class="form-check-input ms-3 me-3" type="checkbox" name="modulosSeleccionados" value="@mod.IdModulo" id="mod-@u.IdUsuario-@mod.IdModulo" @(check ? "checked" : "")>
+                                                                            <label class="form-check-label d-flex align-items-center gap-2 mb-0 cursor-pointer w-100" for="mod-@u.IdUsuario-@mod.IdModulo">
+                                                                                <i class="@mod.Icono text-primary opacity-75"></i>
+                                                                                <span class="small fw-medium">@mod.Nombre</span>
+                                                                            </label>
+                                                                        </div>
+                                                                    </div>
+                                                                }
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer border-0 pt-0">
+                                                            <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                                                            <button type="submit" class="btn btn-info btn-sm text-white px-4">Guardar Cambios</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
                                 </tr>
                             }
                         </tbody>
@@ -136,9 +235,95 @@
     </div>
 </div>
 
+<!-- MODAL NUEVO USUARIO -->
+<div class="modal fade" id="modalNuevoUsuario" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-0 bg-light">
+                <h5 class="modal-title fw-bold text-primary">Registrar Nuevo Usuario</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form asp-action="RegistrarUsuario" method="post">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">Nombre</label>
+                            <input type="text" name="nombre" class="form-control form-control-sm" required placeholder="Ej: Juan" />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">Apellido</label>
+                            <input type="text" name="apellido" class="form-control form-control-sm" required placeholder="Ej: Perez" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold">Rol en el Sistema</label>
+                            <select name="idRol" class="form-select form-select-sm" required>
+                                @if (roles != null) {
+                                    foreach (var r in roles) {
+                                        <option value="@r.IdRol">@r.DescRol</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                        <div class="col-12 mt-3 p-3 bg-light rounded-3 border border-dashed text-center">
+                            <i class="fas fa-user-shield text-muted mb-2"></i>
+                            <div class="small fw-bold text-secondary">Credenciales de Acceso</div>
+                        </div>
+                        <div class="col-12 text-start">
+                            <label class="form-label small fw-bold">Nombre de Usuario</label>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text bg-white border-end-0"><i class="fas fa-at text-muted"></i></span>
+                                <input type="text" name="username" class="form-control border-start-0" required placeholder="Ej: jperez" />
+                            </div>
+                        </div>
+                        <div class="col-12 text-start">
+                            <label class="form-label small fw-bold">Contraseña Inicial</label>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text bg-white border-end-0"><i class="fas fa-lock text-muted"></i></span>
+                                <input type="password" name="password" class="form-control border-start-0" required placeholder="********" />
+                            </div>
+                            <div class="x-small text-muted mt-1">El usuario podrá cambiarla después de su primer ingreso.</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="submit" class="btn btn-primary btn-sm px-4">Crear Usuario</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <style>
     .x-small { font-size: 0.75rem; }
     .bg-light { background-color: #F8FAFC !important; }
+    .bg-soft-primary { background-color: #EFF6FF !important; }
+    
+    .accordion-button:not(.collapsed) {
+        background-color: white !important;
+        box-shadow: none !important;
+        color: var(--primary-blue) !important;
+    }
+    
+    .accordion-button:focus {
+        box-shadow: none !important;
+        border-color: rgba(0,0,0,.125);
+    }
+
+    .accordion-button::after {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%2364748B'%3e%3cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3e%3c/svg%3e") !important;
+        background-size: 1.25rem !important;
+        transition: transform 0.2s ease-in-out !important;
+    }
+
+    .transition-all { transition: all 0.2s ease; }
+    .hover-shadow-sm:hover { box-shadow: 0 .125rem .25rem rgba(0,0,0,.075) !important; background-color: #f1f5f9 !important; }
+    .cursor-pointer { cursor: pointer; }
+    
+    .form-check-input:checked {
+        background-color: var(--primary-blue);
+        border-color: var(--primary-blue);
+    }
 </style>
 
 @section Scripts {

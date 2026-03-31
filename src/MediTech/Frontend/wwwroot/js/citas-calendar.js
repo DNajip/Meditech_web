@@ -1,7 +1,3 @@
-/* ============================================================
-   MediTech – Citas Calendar JavaScript (Rediseño UI)
-   ============================================================ */
-
 document.addEventListener('DOMContentLoaded', function () {
 
     // 1. DOM Elements References
@@ -44,6 +40,11 @@ document.addEventListener('DOMContentLoaded', function () {
         return `${String(hours).padStart(2,'0')}:${m} ${ampm}`;
     }
 
+    if (typeof FullCalendar === 'undefined') {
+        console.error('FullCalendar is not defined. Check if the script is loaded correctly.');
+        return;
+    }
+
     // 3. FullCalendar Instance Configuration
     const calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'timeGridWeek',
@@ -68,11 +69,12 @@ document.addEventListener('DOMContentLoaded', function () {
         // CUSTOM EVENT RENDER
         eventContent: function(arg) {
             let treatmentText = arg.event.extendedProps.tratamiento || 'General';
-            // Extract the simple time 
             let timeText = arg.timeText;
+            let isCanceled = arg.event.extendedProps.estadoId === 4;
+            let canceledClass = isCanceled ? 'event-canceled' : '';
             
             let htmlStr = `
-                <div class="custom-event-content">
+                <div class="custom-event-content ${canceledClass}">
                     <div class="custom-event-time">${timeText}</div>
                     <div class="custom-event-title">${arg.event.title}</div>
                     <div class="custom-event-treatment">${treatmentText}</div>
@@ -406,25 +408,35 @@ document.addEventListener('DOMContentLoaded', function () {
     window.guardarCita = function() {
         const type = document.querySelector('input[name="tipoPaciente"]:checked').value;
         const form = document.getElementById('formCita');
+        const alertEl = document.getElementById('modalAlert');
         
-        // Limpiar teléfono (solo dígitos) según sugerencia de usuario
+        // Limpiar alertas previas
+        alertEl.classList.add('d-none');
+        alertEl.textContent = "";
+
+        // Limpiar teléfono (solo dígitos)
         const rawPhone = phoneInput.value;
         const cleanPhone = rawPhone.replace(/\D/g, '');
         phoneInput.value = cleanPhone;
+
+        // Validaciones de UI
         if (type === 'prospecto') {
             if (!document.getElementById('modalProspectoNombre').value || !document.getElementById('modalProspectoApellido').value) {
-                alert("Por favor complete nombre y apellido del prospecto.");
+                alertEl.textContent = "Por favor complete nombre y apellido del prospecto.";
+                alertEl.classList.remove('d-none');
                 return;
             }
         } else {
             if (!document.getElementById('PacienteId').value && !document.getElementById('PosiblePacienteId').value) {
-                alert("Por favor seleccione un paciente de la lista.");
+                alertEl.textContent = "Por favor seleccione un paciente de la lista de resultados.";
+                alertEl.classList.remove('d-none');
                 return;
             }
         }
 
         if (!treatmentId.value) {
-            alert("Por favor seleccione un tratamiento de la lista de sugerencias.");
+            alertEl.textContent = "Debe seleccionar un tratamiento de la lista de sugerencias.";
+            alertEl.classList.remove('d-none');
             return;
         }
 
@@ -544,21 +556,34 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         const btnCancel = document.getElementById('btnCancelCita');
-        if (data.estadoId === 3 || data.estadoId === 2) {
+        if (data.estadoId === 4 || data.estadoId === 2 || data.estadoId === 3) {
             btnCancel.style.display = 'none';
         } else {
             btnCancel.style.display = 'block';
             btnCancel.onclick = function() {
                 if(confirm('¿Está seguro de cancelar esta cita?')) {
-                    const form = document.createElement('form');
-                    form.method = 'POST';
-                    form.action = `/Citas/Cancel/${data.id}`;
-                    const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
-                    const tokenInput = document.createElement('input');
-                    tokenInput.type = 'hidden'; tokenInput.name = '__RequestVerificationToken'; tokenInput.value = token;
-                    form.appendChild(tokenInput);
-                    document.body.appendChild(form);
-                    form.submit();
+                    const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+                    const formData = new FormData();
+                    if (token) formData.append('__RequestVerificationToken', token);
+
+                    fetch(`/Citas/Cancel/${data.id}`, {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(r => r.json())
+                    .then(res => {
+                        if (res.success) {
+                            calendar.refetchEvents();
+                            bootstrap.Modal.getInstance(modalDetalleEl).hide();
+                            if (window.loadTodayAgenda) window.loadTodayAgenda();
+                        } else {
+                            alert(res.message || "Error al cancelar la cita.");
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Error cancelando cita:', err);
+                        alert("Error de conexión al intentar cancelar la cita.");
+                    });
                 }
             };
         }
@@ -691,15 +716,30 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     window.marcarAtendida = function(idCita) {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = `/Citas/MarcarAtendida/${idCita}`;
-        const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
-        const tokenInput = document.createElement('input');
-        tokenInput.type = 'hidden'; tokenInput.name = '__RequestVerificationToken'; tokenInput.value = token;
-        form.appendChild(tokenInput);
-        document.body.appendChild(form);
-        form.submit();
+        if (!confirm('¿Confirmar la llegada de este paciente?')) return;
+
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+        const formData = new FormData();
+        if (token) formData.append('__RequestVerificationToken', token);
+
+        fetch(`/Citas/MarcarAtendida/${idCita}`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                calendar.refetchEvents();
+                bootstrap.Modal.getInstance(modalDetalleEl).hide();
+                if (window.loadTodayAgenda) window.loadTodayAgenda();
+            } else {
+                alert(data.message || 'Error al confirmar llegada.');
+            }
+        })
+        .catch(err => {
+            console.error('Error:', err);
+            alert('Error de conexión al confirmar llegada.');
+        });
     }
 
     window.ejecutarConversion = function() {
@@ -731,9 +771,17 @@ document.addEventListener('DOMContentLoaded', function () {
     };
 
     // 9. Initial Render & Load
+    console.log('Rendering calendar...');
     calendar.render();
     window.loadTodayAgenda();
     
+    // Hide loading spinner after render
+    setTimeout(() => {
+        const loadingEl = document.getElementById('fullcalendar-loading');
+        if (loadingEl) loadingEl.style.display = 'none';
+        if (calendarEl) calendarEl.style.opacity = '1';
+    }, 500);
+
     // Sync initial view button state (default is week)
     if (btnViewWeek) updateActiveButton(btnViewWeek);
 });

@@ -42,6 +42,8 @@ namespace MediTech.Backend.Models
 
         [ForeignKey("IdEstado")]
         public Estado? Estado { get; set; }
+
+        public virtual ICollection<UsuarioModulo> UsuarioModulos { get; set; } = new List<UsuarioModulo>();
     }
 }
 

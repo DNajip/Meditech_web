@@ -1,6 +1,8 @@
 @{
     var userName = User.Identity?.IsAuthenticated == true ? User.Identity.Name : "";
     var userRole = User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
+    var allowedModules = User.Claims.Where(c => c.Type == "Module").Select(c => c.Value).ToList();
+    
     var initials = "";
     if (!string.IsNullOrEmpty(userName))
     {
@@ -187,18 +189,41 @@
         <div class="sidebar-section-label">Principal</div>
         <ul class="sidebar-nav">
             <li><a href="@Url.Action("Index","Home")" class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "active" : "")"><i class="fas fa-th-large"></i> Dashboard</a></li>
-            <li><a href="@Url.Action("Index","Citas")" class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Citas" ? "active" : "")"><i class="fas fa-calendar-alt"></i> Citas</a></li>
-            <li><a href="@Url.Action("Index","Pacientes")" class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Pacientes" ? "active" : "")"><i class="fas fa-user-injured"></i> Pacientes</a></li>
-            <li><a href="@Url.Action("Index","Tratamientos")" class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Tratamientos" ? "active" : "")"><i class="fas fa-hand-holding-medical"></i> Tratamientos</a></li>
-            <li><a href="@Url.Action("Index","Consultas")" class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Consultas" ? "active" : "")"><i class="fas fa-stethoscope"></i> Consultas</a></li>
-            <li><a href="@Url.Action("Index","Inventario")" class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Inventario" ? "active" : "")"><i class="fas fa-boxes"></i> Inventario</a></li>
+            
+            @if (allowedModules.Contains("Citas") || userRole == "ADMINISTRADOR") {
+                <li><a href="@Url.Action("Index","Citas")" class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Citas" ? "active" : "")"><i class="fas fa-calendar-alt"></i> Citas</a></li>
+            }
+            
+            @if (allowedModules.Contains("Pacientes") || userRole == "ADMINISTRADOR") {
+                <li><a href="@Url.Action("Index","Pacientes")" class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Pacientes" ? "active" : "")"><i class="fas fa-user-injured"></i> Pacientes</a></li>
+            }
+            
+            @if (allowedModules.Contains("Tratamientos") || userRole == "ADMINISTRADOR") {
+                <li><a href="@Url.Action("Index","Tratamientos")" class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Tratamientos" ? "active" : "")"><i class="fas fa-hand-holding-medical"></i> Tratamientos</a></li>
+            }
+            
+            @if (allowedModules.Contains("Consultas") || userRole == "ADMINISTRADOR") {
+                <li><a href="@Url.Action("Index","Consultas")" class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Consultas" ? "active" : "")"><i class="fas fa-stethoscope"></i> Consultas</a></li>
+            }
+            
+            @if (allowedModules.Contains("Inventario") || userRole == "ADMINISTRADOR") {
+                <li><a href="@Url.Action("Index","Inventario")" class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Inventario" ? "active" : "")"><i class="fas fa-boxes"></i> Inventario</a></li>
+            }
+
+
         </ul>
 
         <div class="sidebar-section-label">Administración</div>
         <ul class="sidebar-nav">
-            <li><a href="@Url.Action("Index","Caja")" class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Caja" ? "active" : "")"><i class="fas fa-cash-register"></i> Caja y Pagos</a></li>
+            @if (allowedModules.Contains("Caja") || userRole == "ADMINISTRADOR") {
+                <li><a href="@Url.Action("Index","Caja")" class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Caja" ? "active" : "")"><i class="fas fa-cash-register"></i> Caja y Pagos</a></li>
+            }
+            
             <li><a href="#"><i class="fas fa-chart-bar"></i> Reportes</a></li>
-            <li><a href="@Url.Action("Index","Configuracion")" class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Configuracion" ? "active" : "")"><i class="fas fa-cog"></i> Configuración</a></li>
+            
+            @if (userRole == "ADMINISTRADOR") {
+                <li><a href="@Url.Action("Index","Configuracion")" class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Configuracion" ? "active" : "")"><i class="fas fa-cog"></i> Configuración</a></li>
+            }
         </ul>
 
         <!-- Logout at bottom -->
@@ -257,7 +282,7 @@
             && (ViewContext.RouteData.Values["action"]?.ToString() == "Index"
                 || ViewContext.RouteData.Values["action"] == null);
     }
-    <main class="main-content" style="@(isCitas ? "padding:0; overflow:hidden;" : "")">
+    <main class="main-content" style="@(isCitas ? "padding:0;" : "")">
         @RenderBody()
     </main>
 

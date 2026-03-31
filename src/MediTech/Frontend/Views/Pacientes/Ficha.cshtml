@@ -2130,7 +2130,7 @@
         }
         
         if (idConsultaActivaParaCierre <= 0) {
-            return alert('Error: No se encontró la consulta activa.');
+            return alert('Error: No se encontró la consulta activa. Verifique que la consulta esté en proceso.');
         }
 
         const btn = document.getElementById('btnConfirmarCierre');
@@ -2138,18 +2138,21 @@
         btn.disabled = true;
 
         const payload = {
-            idConsulta: idConsultaActivaParaCierre,
+            idConsulta: parseInt(idConsultaActivaParaCierre),
             diagnosticoFinal: document.getElementById('cierreDiagnostico').value,
             observaciones: document.getElementById('cierreObservaciones').value,
             items: itemsCierre.map(i => ({
                 tipoItem: i.tipoItem,
-                idReferencia: i.idReferencia,
+                idReferencia: parseInt(i.idReferencia),
                 descripcion: i.descripcion,
-                cantidad: i.cantidad,
-                precioUnitario: i.precioUnitario,
-                subtotal: i.subtotal
+                cantidad: parseInt(i.cantidad),
+                precioUnitario: parseFloat(i.precioUnitario),
+                subtotal: parseFloat((parseInt(i.cantidad) * parseFloat(i.precioUnitario)).toFixed(2))
             }))
         };
+
+        // Debugging: verificar payload en F12 > Console
+        console.log('=== CIERRE CONSULTA: Payload ===', JSON.stringify(payload, null, 2));
 
         try {
             const response = await fetch('/Consultas/CerrarConsulta', {
@@ -2157,7 +2160,19 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
+
+            console.log('CIERRE CONSULTA: HTTP Status =', response.status, response.statusText);
+
+            if (!response.ok) {
+                console.error('CIERRE CONSULTA: Respuesta HTTP no exitosa:', response.status);
+                alert('Error del servidor: ' + response.status + ' ' + response.statusText);
+                btn.innerHTML = '<i class="fas fa-check me-2"></i>Confirmar y Facturar';
+                btn.disabled = false;
+                return;
+            }
+
             const result = await response.json();
+            console.log('CIERRE CONSULTA: Resultado =', result);
             
             if (result.success) {
                 alert('\u00a1Consulta finalizada y cuenta generada exitosamente!');
@@ -2168,7 +2183,7 @@
                 btn.disabled = false;
             }
         } catch (e) {
-            console.error(e);
+            console.error('CIERRE CONSULTA: Error de red:', e);
             alert('Error de red o conexión al intentar cerrar.');
             btn.innerHTML = '<i class="fas fa-check me-2"></i>Confirmar y Facturar';
             btn.disabled = false;

@@ -43,6 +43,8 @@ public class AccountController : Controller
             .Include(u => u.Role)
             .Include(u => u.Empleado)
                 .ThenInclude(e => e!.Persona)
+            .Include(u => u.UsuarioModulos)
+                .ThenInclude(um => um.Modulo)
             .FirstOrDefaultAsync(u => u.Username == username && u.IdEstado == 1);
 
         if (user == null || !VerifyPassword(password, user.PasswordHash, user.PasswordSalt))
@@ -65,6 +67,18 @@ public class AccountController : Controller
         if (user.Role != null)
         {
             claims.Add(new Claim(ClaimTypes.Role, user.Role.DescRol));
+        }
+
+        // Agregar claims de módulos permitidos
+        if (user.UsuarioModulos != null)
+        {
+            foreach (var um in user.UsuarioModulos)
+            {
+                if (um.Modulo != null)
+                {
+                    claims.Add(new Claim("Module", um.Modulo.Controller));
+                }
+            }
         }
 
         var claimsIdentity = new ClaimsIdentity(

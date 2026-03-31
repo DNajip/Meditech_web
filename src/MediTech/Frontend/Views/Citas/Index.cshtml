@@ -3,10 +3,6 @@
     Layout = "_Layout";
 }
 
-@section Styles {
-    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.css" rel="stylesheet" />
-    <link rel="stylesheet" href="~/css/citas-calendar.css" asp-append-version="true" />
-}
 
 <div class="p-4" style="background-color: #F3F4F6; min-height: calc(100vh - 60px);">
 
@@ -30,7 +26,7 @@
             <!-- Center Title -->
             <div class="text-center">
                 <small class="text-uppercase fw-bold text-muted mb-1 d-block" style="letter-spacing: 1px; font-size:1.20rem;">Agenda Médica</small>
-                <h5 class="mb-0 fw-bold text-dark" id="calendarTitle">Octubre 2024</h5>
+                <h5 class="mb-0 fw-bold text-dark" id="calendarTitle"></h5>
             </div>
 
             <!-- Right Controls: View Switcher -->
@@ -41,14 +37,18 @@
             </div>
 
         </div>
-        <div class="card-body p-4">
-            <div id="fullcalendar" style="min-height: 600px;"></div>
+        <div class="card-body p-4 position-relative">
+            <div id="fullcalendar-loading" class="position-absolute top-50 start-50 translate-middle text-center" style="z-index: 10;">
+                <div class="spinner-border text-primary mb-2" role="status"></div>
+                <div class="text-muted small fw-medium">Preparando agenda...</div>
+            </div>
+            <div id="fullcalendar" style="min-height: 650px; opacity: 0; transition: opacity 0.3s ease;"></div>
         </div>
     </div>
 
     <!-- Floating Action Button: Agenda de Hoy -->
     <button class="btn shadow-lg position-fixed d-flex align-items-center"
-        style="bottom: 30px; right: 30px; border-radius: 50px; z-index: 1040; padding: 12px 24px; font-weight: 600; background-color: #4F46E5; color: white; border: none; transition: transform 0.2s;"
+        style="bottom: 60px; right: 40px; border-radius: 50px; z-index: 1040; padding: 12px 24px; font-weight: 600; background-color: #4F46E5; color: white; border: none; transition: transform 0.2s;"
         data-bs-toggle="offcanvas" data-bs-target="#agendaHoy" onmouseover="this.style.transform='scale(1.05)'"
         onmouseout="this.style.transform='scale(1)'">
         <i class="fas fa-calendar-day me-2 fs-5"></i> Ver agenda de hoy
@@ -361,7 +361,7 @@
                         </span>
                     </div>
                 </div>
-                <div class="d-flex align-items-center gap-3">
+                <div class="d-flex align-items-center gap-3 ms-auto align-self-start">
                     <span class="badge rounded-pill px-3 py-2" style="background: #fef3c7; color: #92400e; font-size: 0.8rem;"
                         ><span style="width:8px;height:8px;background:#f59e0b;border-radius:50%;display:inline-block;margin-right:6px;animation:pulse 2s infinite;"></span>EN PROCESO</span>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -448,8 +448,28 @@
     </div>
 </div>
 
+@section Styles {
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@@6.1.14/index.global.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/citas-calendar.css" asp-append-version="true" />
+    <style>
+        .event-canceled {
+            opacity: 0.65;
+            background-color: #E1E4E8 !important;
+            border-color: #D1D5DB !important;
+        }
+        .event-canceled .custom-event-title,
+        .event-canceled .custom-event-treatment {
+            text-decoration: line-through;
+            color: #6B7280 !important;
+        }
+        .event-canceled .custom-event-time {
+            color: #9CA3AF !important;
+        }
+    </style>
+}
+
 @section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@@fullcalendar/core@6.1.14/locales/es.global.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@@6.1.14/index.global.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@@fullcalendar/core@@6.1.14/locales/es.global.min.js"></script>
     <script src="~/js/citas-calendar.js" asp-append-version="true"></script>
 }

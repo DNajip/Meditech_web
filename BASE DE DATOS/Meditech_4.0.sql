@@ -1,6 +1,6 @@
 /*========================================================
-MEDITECH DB v4.0 - Edición Consolidada Final
-Arquitectura profesional: Clínica + Inventario + Caja + Exámenes
+MEDITECH DB v4.0 - Edición Consolidada Final (Incluye Roles Granulares)
+Arquitectura profesional: Clínica + Inventario + Caja + Exámenes + Permisos
 ========================================================*/
 
 USE MediTech;
@@ -163,6 +163,28 @@ CREATE TABLE ADM.USUARIOS(
     ID_ESTADO INT,
     FOREIGN KEY(ID_EMPLEADO) REFERENCES ADM.EMPLEADOS(ID_EMPLEADO),
     FOREIGN KEY(ID_ROL) REFERENCES CAT.ROLES(ID_ROL)
+);
+GO
+
+-- Módulos del Sistema
+CREATE TABLE ADM.MODULOS (
+    ID_MODULO INT IDENTITY PRIMARY KEY,
+    NOMBRE VARCHAR(100) NOT NULL,
+    ICONO VARCHAR(50), -- FontAwesome class
+    CONTROLLER VARCHAR(100) NOT NULL, -- Nombre del controlador sin 'Controller'
+    ORDEN INT DEFAULT 0,
+    ID_ESTADO INT DEFAULT 1,
+    FOREIGN KEY (ID_ESTADO) REFERENCES CAT.ESTADOS(ID_ESTADO)
+);
+GO
+
+-- Relación Usuario-Módulos (Permisos Granulares)
+CREATE TABLE ADM.USUARIO_MODULOS (
+    ID_USUARIO INT NOT NULL,
+    ID_MODULO INT NOT NULL,
+    PRIMARY KEY (ID_USUARIO, ID_MODULO),
+    FOREIGN KEY (ID_USUARIO) REFERENCES ADM.USUARIOS(ID_USUARIO),
+    FOREIGN KEY (ID_MODULO) REFERENCES ADM.MODULOS(ID_MODULO)
 );
 GO
 
@@ -574,4 +596,27 @@ INSERT INTO CAT.TRATAMIENTOS (NOMBRE_TRATAMIENTO, PRECIO) VALUES
 ('LIMPIEZA DENTAL', 50), 
 ('EXTRACCION SIMPLE', 45), 
 ('ORTODONCIA - CONTROL', 35);
+GO
+
+-- Módulos Base
+SET IDENTITY_INSERT ADM.MODULOS ON;
+INSERT INTO ADM.MODULOS (ID_MODULO, NOMBRE, ICONO, CONTROLLER, ORDEN) VALUES
+(1, 'Dashboard', 'fas fa-th-large', 'Home', 1),
+(2, 'Citas', 'fas fa-calendar-alt', 'Citas', 2),
+(3, 'Pacientes', 'fas fa-user-injured', 'Pacientes', 3),
+(4, 'Tratamientos', 'fas fa-hand-holding-medical', 'Tratamientos', 4),
+(5, 'Consultas', 'fas fa-stethoscope', 'Consultas', 5),
+(6, 'Inventario', 'fas fa-boxes', 'Inventario', 6),
+(7, 'Caja y Pagos', 'fas fa-cash-register', 'Caja', 7),
+(8, 'Exámenes', 'fas fa-microscope', 'Examenes', 8),
+(9, 'Configuración', 'fas fa-cog', 'Configuracion', 9);
+SET IDENTITY_INSERT ADM.MODULOS OFF;
+GO
+
+-- Asignación inicial de módulos al administrador (ID_ROL = 1)
+INSERT INTO ADM.USUARIO_MODULOS (ID_USUARIO, ID_MODULO)
+SELECT U.ID_USUARIO, M.ID_MODULO
+FROM ADM.USUARIOS U
+CROSS JOIN ADM.MODULOS M
+WHERE U.ID_ROL = 1;
 GO
