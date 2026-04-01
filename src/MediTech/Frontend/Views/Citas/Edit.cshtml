@@ -97,7 +97,7 @@
                     </div>
                     <form asp-action="Delete" method="post" id="deleteForm">
                         <input type="hidden" name="id" value="@Model.IdCita" />
-                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="if(confirm('¿Estás seguro de eliminar esta cita?')){ document.getElementById('deleteForm').submit(); }">
+                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="confirmarEliminacionEdit()">
                             <i class="fas fa-trash me-1"></i> Eliminar Cita
                         </button>
                     </form>
@@ -163,6 +163,20 @@
                 }
             });
         });
+
+        function confirmarEliminacionEdit() {
+            MediConfirm.show({
+                title: '¿Eliminar cita?',
+                message: 'Esta acción eliminará la cita permanentemente de la agenda.',
+                variant: 'danger',
+                confirmText: 'Sí, eliminar cita',
+                cancelText: 'Volver'
+            }).then(confirmed => {
+                if (confirmed) {
+                    document.getElementById('deleteForm')?.submit();
+                }
+            });
+        }
     </script>
 }
 

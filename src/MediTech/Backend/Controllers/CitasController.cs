@@ -60,6 +60,7 @@ public class CitasController(MediTechContext context, ILogger<CitasController> l
         var hoy = DateTime.Today;
         var citas = await _context.Citas
             .Include(c => c.Paciente).ThenInclude(p => p!.Persona)
+            .Include(c => c.PosiblePaciente)
             .Include(c => c.Tratamiento)
             .Include(c => c.Estado)
             .Where(c => c.Fecha == hoy)
@@ -86,6 +87,7 @@ public class CitasController(MediTechContext context, ILogger<CitasController> l
         var today = DateTime.Today;
         var citas = await _context.Citas
             .Include(c => c.Paciente).ThenInclude(p => p!.Persona)
+            .Include(c => c.PosiblePaciente)
             .Include(c => c.Tratamiento)
             .Include(c => c.Estado)
             .Where(c => c.Fecha == today && c.IdEstadoCita == 1)
@@ -177,6 +179,7 @@ public class CitasController(MediTechContext context, ILogger<CitasController> l
     {
         var cita = await _context.Citas
             .Include(c => c.Paciente).ThenInclude(p => p!.Persona)
+            .Include(c => c.PosiblePaciente)
             .Include(c => c.Tratamiento)
             .Include(c => c.Estado)
             .FirstOrDefaultAsync(m => m.IdCita == id);
@@ -186,7 +189,9 @@ public class CitasController(MediTechContext context, ILogger<CitasController> l
         return Json(new
         {
             id = cita.IdCita,
-            paciente = $"{cita.Paciente?.Persona?.PrimerNombre} {cita.Paciente?.Persona?.PrimerApellido}",
+            paciente = cita.IdPaciente != null 
+                ? $"{cita.Paciente?.Persona?.PrimerNombre ?? "S/N"} {cita.Paciente?.Persona?.PrimerApellido ?? ""}".Trim()
+                : $"{cita.PosiblePaciente?.PrimerNombre ?? "S/N"} {cita.PosiblePaciente?.PrimerApellido ?? ""}".Trim(),
             pacienteId = cita.IdPaciente,
             posiblePacienteId = cita.IdPosiblePaciente,
             identificacion = cita.Paciente?.Persona?.NumIdentificacion ?? "",

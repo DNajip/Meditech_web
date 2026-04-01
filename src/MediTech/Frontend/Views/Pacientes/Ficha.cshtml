@@ -1346,13 +1346,13 @@
                 setTimeout(() => check.remove(), 3000);
                 
                 historialData = data;
-                alert('¡Historial guardado exitosamente!');
+                MediToast.success('¡Historial guardado exitosamente!');
             } else {
-                alert('Error al guardar: ' + result.message);
+                MediToast.error('Error al guardar: ' + result.message);
             }
         } catch (e) {
             console.error(e);
-            alert('Error al conectar con el servidor.');
+            MediToast.error('Error al conectar con el servidor.');
         } finally {
             btn.innerHTML = originalText;
             btn.disabled = false;
@@ -1395,7 +1395,7 @@
 
     function prepareFile(file) {
         if (!file.type.startsWith('image/')) {
-            alert('Solo se permiten archivos de imagen.');
+            MediToast.warning('Solo se permiten archivos de imagen.');
             return;
         }
         selectedFile = file;
@@ -1420,7 +1420,7 @@
 
     async function uploadSelectedFile() {
         if (!selectedFile) {
-            alert('Por favor, seleccione una foto primero haciendo clic en la zona de carga.');
+            MediToast.warning('Por favor, seleccione una foto primero haciendo clic en la zona de carga.');
             return;
         }
 
@@ -1451,13 +1451,13 @@
                 if (dropContent) dropContent.classList.remove('d-none');
                 
                 cargarGaleria();
-                alert('¡Foto guardada con éxito!');
+                MediToast.success('¡Foto guardada con éxito!');
             } else {
-                alert('Error: ' + result.message);
+                MediToast.error('Error: ' + result.message);
             }
         } catch (e) {
             console.error(e);
-            alert('Error al conectar con el servidor.');
+            MediToast.error('Error al conectar con el servidor.');
         } finally {
             btn.innerHTML = originalText;
             btn.disabled = false;
@@ -1542,13 +1542,28 @@
     }
 
     async function eliminarFoto(id) {
-        if (!confirm('¿Está seguro de eliminar esta foto?')) return;
-        try {
-            const response = await fetch(`/Galeria/DeleteFoto/${id}`, { method: 'POST' });
-            const result = await response.json();
-            if (result.success) cargarGaleria();
-            else alert(result.message);
-        } catch (e) { console.error(e); alert('Error al eliminar.'); }
+        MediConfirm.show({
+            title: '¿Eliminar foto?',
+            message: '¿Está seguro de eliminar esta foto clínica permanentemente?',
+            variant: 'danger',
+            confirmText: 'Sí, eliminar',
+            cancelText: 'Cancelar'
+        }).then(async (confirmed) => {
+            if (!confirmed) return;
+            try {
+                const response = await fetch(`/Galeria/DeleteFoto/${id}`, { method: 'POST' });
+                const result = await response.json();
+                if (result.success) {
+                    MediToast.success('Foto eliminada.');
+                    cargarGaleria();
+                } else {
+                    MediToast.error(result.message);
+                }
+            } catch (e) { 
+                console.error(e); 
+                MediToast.error('Error al eliminar.'); 
+            }
+        });
     }
 
     function verFotoFull(id) {
@@ -1637,7 +1652,7 @@
     }
 
     async function uploadDocumento() {
-        if (!selectedDocFile) { alert('Seleccione un archivo primero.'); return; }
+        if (!selectedDocFile) { MediToast.warning('Seleccione un archivo primero.'); return; }
 
         const formData = new FormData();
         formData.append('idPaciente', pacienteId);
@@ -1660,13 +1675,13 @@
                 const dropContent = document.getElementById('docDropZoneContent');
                 if (dropContent) dropContent.classList.remove('d-none');
                 cargarDocumentos();
-                alert('\u00a1Documento guardado con \u00e9xito!');
+                MediToast.success('¡Documento guardado con éxito!');
             } else {
-                alert('Error: ' + result.message);
+                MediToast.error('Error: ' + result.message);
             }
         } catch (e) {
             console.error(e);
-            alert('Error al conectar con el servidor.');
+            MediToast.error('Error al conectar con el servidor.');
         } finally {
             btn.innerHTML = originalText;
             btn.disabled = false;
@@ -1750,13 +1765,28 @@
     }
 
     async function eliminarDocumento(id) {
-        if (!confirm('\u00bfEst\u00e1 seguro de eliminar este documento?')) return;
-        try {
-            const response = await fetch(`/Documentos/DeleteDocumento/${id}`, { method: 'POST' });
-            const result = await response.json();
-            if (result.success) cargarDocumentos();
-            else alert(result.message);
-        } catch (e) { console.error(e); alert('Error al eliminar.'); }
+        MediConfirm.show({
+            title: '¿Eliminar documento?',
+            message: '¿Está seguro de eliminar este documento permanentemente?',
+            variant: 'danger',
+            confirmText: 'Sí, eliminar',
+            cancelText: 'Cancelar'
+        }).then(async (confirmed) => {
+            if (!confirmed) return;
+            try {
+                const response = await fetch(`/Documentos/DeleteDocumento/${id}`, { method: 'POST' });
+                const result = await response.json();
+                if (result.success) {
+                    MediToast.success('Documento eliminado.');
+                    cargarDocumentos();
+                } else {
+                    MediToast.error(result.message);
+                }
+            } catch (e) { 
+                console.error(e); 
+                MediToast.error('Error al eliminar.'); 
+            }
+        });
     }
     // Initialize D&D on load
     document.addEventListener('DOMContentLoaded', () => {
@@ -1885,7 +1915,7 @@
 
     async function guardarOrdenExamen() {
         const nombre = document.getElementById('ordenExamenNombre').value;
-        if (!nombre) return alert('Ingrese el nombre del examen.');
+        if (!nombre) { MediToast.warning('Ingrese el nombre del examen.'); return; }
 
         try {
             const response = await fetch('/Examenes/GuardarExamen', {
@@ -1897,10 +1927,11 @@
             if (result.success) {
                 bootstrap.Modal.getInstance(document.getElementById('modalOrdenExamen')).hide();
                 cargarExamenes();
-            } else alert(result.message);
+                MediToast.success('Examen ordenado correctamente.');
+            } else MediToast.error(result.message);
         } catch (e) {
             console.error(e);
-            alert('Error al guardar la orden.');
+            MediToast.error('Error al guardar la orden.');
         }
     }
 
@@ -1922,7 +1953,7 @@
         const file = e.target.files[0];
         if (!file) return;
         if (!file.type.startsWith('image/')) {
-            alert('Solo se permiten imágenes.');
+            MediToast.warning('Solo se permiten imágenes.');
             return;
         }
         
@@ -1960,11 +1991,11 @@
             if (result.success) {
                 bootstrap.Modal.getInstance(document.getElementById('modalResultadoExamen')).hide();
                 cargarExamenes();
-                alert('Resultado guardado correctamente.');
-            } else alert(result.message);
+                MediToast.success('Resultado guardado correctamente.');
+            } else MediToast.error(result.message);
         } catch (e) {
             console.error(e);
-            alert('Error al guardar el resultado.');
+            MediToast.error('Error al guardar el resultado.');
         } finally {
             btn.disabled = false;
             btn.innerHTML = 'Guardar Resultado';
@@ -1984,13 +2015,28 @@
     }
 
     async function eliminarExamen(id) {
-        if (!confirm('¿Está seguro de eliminar este registro de examen?')) return;
-        try {
-            const response = await fetch(`/Examenes/EliminarExamen/${id}`, { method: 'POST' });
-            const result = await response.json();
-            if (result.success) cargarExamenes();
-            else alert(result.message);
-        } catch (e) { console.error(e); alert('Error al eliminar.'); }
+        MediConfirm.show({
+            title: '¿Eliminar examen?',
+            message: '¿Está seguro de eliminar este registro de examen?',
+            variant: 'danger',
+            confirmText: 'Sí, eliminar',
+            cancelText: 'Cancelar'
+        }).then(async (confirmed) => {
+            if (!confirmed) return;
+            try {
+                const response = await fetch(`/Examenes/EliminarExamen/${id}`, { method: 'POST' });
+                const result = await response.json();
+                if (result.success) {
+                    MediToast.success('Registro de examen eliminado.');
+                    cargarExamenes();
+                } else {
+                    MediToast.error(result.message);
+                }
+            } catch (e) { 
+                console.error(e); 
+                MediToast.error('Error al eliminar.'); 
+            }
+        });
     }
 
 
@@ -2042,16 +2088,16 @@
         const inpPrecio = document.getElementById(isTrat ? 'precioCierreTratamiento' : 'precioCierreProducto');
         
         const idRef = parseInt(sel.value);
-        if (!idRef) return alert('Seleccione un ítem.');
+        if (!idRef) { MediToast.warning('Seleccione un ítem.'); return; }
         const precio = parseFloat(inpPrecio.value);
-        if (isNaN(precio) || precio < 0) return alert('Precio inválido.');
+        if (isNaN(precio) || precio < 0) { MediToast.warning('Precio inválido.'); return; }
         
         // Tratamientos always have quantity 1. Products take quantity from input.
         let cant = 1;
         if (!isTrat) {
             const inpCant = document.getElementById('cantCierreProducto');
             cant = parseInt(inpCant.value);
-            if (isNaN(cant) || cant <= 0) return alert('Cantidad inválida.');
+            if (isNaN(cant) || cant <= 0) { MediToast.warning('Cantidad inválida.'); return; }
         }
 
         let desc = sel.options[sel.selectedIndex].text;
@@ -2063,7 +2109,8 @@
             const cantInCart = itemsCierre.filter(i => i.tipoItem === 'PRODUCTO' && i.idReferencia === idRef).reduce((acc, curr) => acc + curr.cantidad, 0);
             
             if (prod && (cant + cantInCart) > prod.stock) {
-                return alert(`Stock insuficiente. Solo hay ${prod.stock} unidades de ${prod.nombre} (ya tiene ${cantInCart} agregadas).`);
+                MediToast.warning(`Stock insuficiente. Solo hay ${prod.stock} unidades de ${prod.nombre} (ya tiene ${cantInCart} agregadas).`);
+                return;
             }
             desc = desc.split(' (Stock')[0]; // Limpiar el texto visual del select para guardar nomás el nombre
         }
@@ -2123,14 +2170,21 @@
     }
 
     async function submitCierreConsulta() {
-        if (itemsCierre.length === 0) {
-            if (!confirm('No ha agregado tratamientos ni productos a la cuenta. ¿Está seguro de que desea cerrar la consulta de todos modos?')) return;
-        } else {
-            if (!confirm('¿Está seguro de cerrar la consulta y generar la facturación?')) return;
-        }
+        MediConfirm.show({
+            title: '¿Confirmar Cierre de Consulta?',
+            message: 'Se generará la cuenta de cobro y se cerrará el expediente de esta visita.',
+            variant: 'primary',
+            confirmText: 'Sí, finalizar y facturar',
+            cancelText: 'Revisar detalles',
+            icon: 'bi-receipt'
+        }).then(async (confirmed) => {
+            if (!confirmed) return;
+        
+
         
         if (idConsultaActivaParaCierre <= 0) {
-            return alert('Error: No se encontró la consulta activa. Verifique que la consulta esté en proceso.');
+            MediToast.error('Error: No se encontró la consulta activa. Verifique que la consulta esté en proceso.');
+            return;
         }
 
         const btn = document.getElementById('btnConfirmarCierre');
@@ -2154,40 +2208,39 @@
         // Debugging: verificar payload en F12 > Console
         console.log('=== CIERRE CONSULTA: Payload ===', JSON.stringify(payload, null, 2));
 
-        try {
-            const response = await fetch('/Consultas/CerrarConsulta', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
+            try {
+                const response = await fetch('/Consultas/CerrarConsulta', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
 
-            console.log('CIERRE CONSULTA: HTTP Status =', response.status, response.statusText);
+                if (!response.ok) {
+                    MediToast.error('Error del servidor: ' + response.status + ' ' + response.statusText);
+                    btn.innerHTML = '<i class="fas fa-check me-2"></i>Confirmar y Facturar';
+                    btn.disabled = false;
+                    return;
+                }
 
-            if (!response.ok) {
-                console.error('CIERRE CONSULTA: Respuesta HTTP no exitosa:', response.status);
-                alert('Error del servidor: ' + response.status + ' ' + response.statusText);
+                const result = await response.json();
+                
+                if (result.success) {
+                    MediToast.success('¡Consulta finalizada y cuenta generada exitosamente!');
+                    setTimeout(() => {
+                        window.location.href = '/Citas/Index';
+                    }, 1500);
+                } else {
+                    MediToast.error('Ocurrió un error: ' + result.message);
+                    btn.innerHTML = '<i class="fas fa-check me-2"></i>Confirmar y Facturar';
+                    btn.disabled = false;
+                }
+            } catch (e) {
+                console.error('CIERRE CONSULTA: Error de red:', e);
+                MediToast.error('Error de red o conexión al intentar cerrar.');
                 btn.innerHTML = '<i class="fas fa-check me-2"></i>Confirmar y Facturar';
                 btn.disabled = false;
-                return;
             }
-
-            const result = await response.json();
-            console.log('CIERRE CONSULTA: Resultado =', result);
-            
-            if (result.success) {
-                alert('\u00a1Consulta finalizada y cuenta generada exitosamente!');
-                window.location.href = '/Citas/Index';
-            } else {
-                alert('Ocurrió un error: ' + result.message);
-                btn.innerHTML = '<i class="fas fa-check me-2"></i>Confirmar y Facturar';
-                btn.disabled = false;
-            }
-        } catch (e) {
-            console.error('CIERRE CONSULTA: Error de red:', e);
-            alert('Error de red o conexión al intentar cerrar.');
-            btn.innerHTML = '<i class="fas fa-check me-2"></i>Confirmar y Facturar';
-            btn.disabled = false;
-        }
+        });
     }
 </script>
 }

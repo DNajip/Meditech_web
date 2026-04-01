@@ -43,7 +43,7 @@
                 {
                     <form asp-action="Cancel" method="post" style="display:inline;">
                         <input type="hidden" name="id" value="@Model.IdCita" />
-                        <button type="submit" class="btn btn-outline-danger" style="border-radius: 8px;" onclick="return confirm('¿Desea cancelar esta cita?')">
+                        <button type="button" class="btn btn-outline-danger" style="border-radius: 8px;" onclick="confirmarCancelacionDetails()">
                             <i class="fas fa-times-circle me-1"></i> Cancelar Cita
                         </button>
                     </form>
@@ -113,4 +113,23 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        function confirmarCancelacionDetails() {
+            MediConfirm.show({
+                title: '¿Desea cancelar esta cita?',
+                message: 'Esta acción no se puede deshacer y la cita se marcará como cancelada.',
+                variant: 'danger',
+                confirmText: 'Sí, cancelar cita',
+                cancelText: 'Volver'
+            }).then(confirmed => {
+                if (confirmed) {
+                    const form = document.querySelector('form[asp-action="Cancel"]');
+                    if (form) form.submit();
+                }
+            });
+        }
+    </script>
+}
 

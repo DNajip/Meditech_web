@@ -469,7 +469,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         document.getElementById('PosiblePacienteId').value = data.id;
                         submitAppointment();
                     } else {
-                        alert(data.message);
+                        MediToast.error(data.message);
                         btn.disabled = false;
                         btn.innerHTML = 'Agendar Cita';
                     }
@@ -561,30 +561,39 @@ document.addEventListener('DOMContentLoaded', function () {
         } else {
             btnCancel.style.display = 'block';
             btnCancel.onclick = function() {
-                if(confirm('¿Está seguro de cancelar esta cita?')) {
-                    const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
-                    const formData = new FormData();
-                    if (token) formData.append('__RequestVerificationToken', token);
+                MediConfirm.show({
+                    title: '¿Cancelar esta cita?',
+                    message: 'Esta acción no se puede deshacer y la cita se marcará como cancelada.',
+                    variant: 'danger',
+                    confirmText: 'Sí, cancelar cita',
+                    cancelText: 'No, mantener'
+                }).then(confirmed => {
+                    if (confirmed) {
+                        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+                        const formData = new FormData();
+                        if (token) formData.append('__RequestVerificationToken', token);
 
-                    fetch(`/Citas/Cancel/${data.id}`, {
-                        method: 'POST',
-                        body: formData
-                    })
-                    .then(r => r.json())
-                    .then(res => {
-                        if (res.success) {
-                            calendar.refetchEvents();
-                            bootstrap.Modal.getInstance(modalDetalleEl).hide();
-                            if (window.loadTodayAgenda) window.loadTodayAgenda();
-                        } else {
-                            alert(res.message || "Error al cancelar la cita.");
-                        }
-                    })
-                    .catch(err => {
-                        console.error('Error cancelando cita:', err);
-                        alert("Error de conexión al intentar cancelar la cita.");
-                    });
-                }
+                        fetch(`/Citas/Cancel/${data.id}`, {
+                            method: 'POST',
+                            body: formData
+                        })
+                        .then(r => r.json())
+                        .then(res => {
+                            if (res.success) {
+                                MediToast.success("Cita cancelada correctamente.");
+                                calendar.refetchEvents();
+                                bootstrap.Modal.getInstance(modalDetalleEl).hide();
+                                if (window.loadTodayAgenda) window.loadTodayAgenda();
+                            } else {
+                                MediToast.error(res.message || "Error al cancelar la cita.");
+                            }
+                        })
+                        .catch(err => {
+                            console.error('Error cancelando cita:', err);
+                            MediToast.error("Error de conexión al intentar cancelar la cita.");
+                        });
+                    }
+                });
             };
         }
 
@@ -609,7 +618,7 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(r => r.json())
             .then(data => {
                 if (!data.success) {
-                    alert(data.error || 'Error al cargar datos de recepción.');
+                    MediToast.error(data.error || 'Error al cargar datos de recepción.');
                     return;
                 }
 
@@ -648,7 +657,7 @@ document.addEventListener('DOMContentLoaded', function () {
             })
             .catch(err => {
                 console.error('Error:', err);
-                alert('Error de conexión al cargar el formulario de recepción.');
+                MediToast.error('Error de conexión al cargar el formulario de recepción.');
             });
     }
 
@@ -716,29 +725,38 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     window.marcarAtendida = function(idCita) {
-        if (!confirm('¿Confirmar la llegada de este paciente?')) return;
+        MediConfirm.show({
+            title: 'Confirmar llegada',
+            message: '¿Desea marcar a este paciente como presente en la clínica?',
+            variant: 'success',
+            confirmText: 'Sí, confirmar llegada',
+            cancelText: 'Cancelar'
+        }).then(confirmed => {
+            if (!confirmed) return;
 
-        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
-        const formData = new FormData();
-        if (token) formData.append('__RequestVerificationToken', token);
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+            const formData = new FormData();
+            if (token) formData.append('__RequestVerificationToken', token);
 
-        fetch(`/Citas/MarcarAtendida/${idCita}`, {
-            method: 'POST',
-            body: formData
-        })
-        .then(r => r.json())
-        .then(data => {
-            if (data.success) {
-                calendar.refetchEvents();
-                bootstrap.Modal.getInstance(modalDetalleEl).hide();
-                if (window.loadTodayAgenda) window.loadTodayAgenda();
-            } else {
-                alert(data.message || 'Error al confirmar llegada.');
-            }
-        })
-        .catch(err => {
-            console.error('Error:', err);
-            alert('Error de conexión al confirmar llegada.');
+            fetch(`/Citas/MarcarAtendida/${idCita}`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    MediToast.success("Llegada confirmada.");
+                    calendar.refetchEvents();
+                    bootstrap.Modal.getInstance(modalDetalleEl).hide();
+                    if (window.loadTodayAgenda) window.loadTodayAgenda();
+                } else {
+                    MediToast.error(data.message || 'Error al confirmar llegada.');
+                }
+            })
+            .catch(err => {
+                console.error('Error:', err);
+                MediToast.error('Error de conexión al confirmar llegada.');
+            });
         });
     }
 
@@ -763,7 +781,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 // Redirigir al flujo de consulta según requerimiento
                 window.location.href = `/Consultas/Recepcion/${idCita}`;
             } else {
-                alert(data.message);
+                MediToast.error(data.message);
                 btn.disabled = false;
                 btn.innerHTML = '<i class="bi bi-check-circle me-1"></i> Finalizar Conversión';
             }

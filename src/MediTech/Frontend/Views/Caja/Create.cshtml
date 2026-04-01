@@ -239,7 +239,7 @@
         if (!sel.value) return;
         const cant = parseInt(document.getElementById('cantProducto').value) || 1;
         const stock = parseInt(opt.dataset.stock) || 0;
-        if (cant > stock) { alert('Stock insuficiente. Disponible: ' + stock); return; }
+        if (cant > stock) { MediToast.warning('Stock insuficiente. Disponible: ' + stock); return; }
         addRow('PRODUCTO', sel.value, opt.dataset.nombre, cant, parseFloat(opt.dataset.precio) || 0);
         bootstrap.Modal.getInstance(document.getElementById('modalProducto')).hide();
         sel.selectedIndex = 0;

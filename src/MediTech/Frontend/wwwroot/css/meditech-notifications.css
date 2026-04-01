@@ -1,0 +1,394 @@
+/* ============================================
+   MediTech Premium Notification System
+   - Toasts (success, error, warning, info)
+   - Confirmation Modals
+   ============================================ */
+
+/* ---- Toast Container ---- */
+#meditoast-container {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 99999;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 420px;
+    pointer-events: none;
+}
+
+/* ---- Individual Toast ---- */
+.meditoast {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 18px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    pointer-events: auto;
+    position: relative;
+    overflow: hidden;
+    animation: meditoast-slide-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    min-width: 320px;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.meditoast:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15), 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.meditoast.removing {
+    animation: meditoast-slide-out 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* ---- Toast Icon ---- */
+.meditoast-icon {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+}
+
+/* ---- Toast Content ---- */
+.meditoast-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.meditoast-title {
+    font-weight: 700;
+    font-size: 0.85rem;
+    margin-bottom: 2px;
+    line-height: 1.3;
+}
+
+.meditoast-message {
+    font-size: 0.82rem;
+    color: #64748b;
+    line-height: 1.45;
+    word-break: break-word;
+}
+
+/* ---- Toast Close Button ---- */
+.meditoast-close {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 2px 4px;
+    border-radius: 6px;
+    transition: all 0.15s ease;
+    line-height: 1;
+}
+
+.meditoast-close:hover {
+    background: rgba(0, 0, 0, 0.06);
+    color: #475569;
+}
+
+/* ---- Toast Progress Bar ---- */
+.meditoast-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    border-radius: 0 0 14px 14px;
+    animation: meditoast-progress linear forwards;
+}
+
+.meditoast:hover .meditoast-progress {
+    animation-play-state: paused;
+}
+
+/* ---- Toast Variants ---- */
+
+/* Success */
+.meditoast--success {
+    border-left: 4px solid #10b981;
+}
+.meditoast--success .meditoast-icon {
+    background: rgba(16, 185, 129, 0.12);
+    color: #059669;
+}
+.meditoast--success .meditoast-title {
+    color: #065f46;
+}
+.meditoast--success .meditoast-progress {
+    background: linear-gradient(90deg, #10b981, #34d399);
+}
+
+/* Error */
+.meditoast--error {
+    border-left: 4px solid #ef4444;
+}
+.meditoast--error .meditoast-icon {
+    background: rgba(239, 68, 68, 0.12);
+    color: #dc2626;
+}
+.meditoast--error .meditoast-title {
+    color: #991b1b;
+}
+.meditoast--error .meditoast-progress {
+    background: linear-gradient(90deg, #ef4444, #f87171);
+}
+
+/* Warning */
+.meditoast--warning {
+    border-left: 4px solid #f59e0b;
+}
+.meditoast--warning .meditoast-icon {
+    background: rgba(245, 158, 11, 0.12);
+    color: #d97706;
+}
+.meditoast--warning .meditoast-title {
+    color: #92400e;
+}
+.meditoast--warning .meditoast-progress {
+    background: linear-gradient(90deg, #f59e0b, #fbbf24);
+}
+
+/* Info */
+.meditoast--info {
+    border-left: 4px solid #4f46e5;
+}
+.meditoast--info .meditoast-icon {
+    background: rgba(79, 70, 229, 0.12);
+    color: #4338ca;
+}
+.meditoast--info .meditoast-title {
+    color: #312e81;
+}
+.meditoast--info .meditoast-progress {
+    background: linear-gradient(90deg, #4f46e5, #818cf8);
+}
+
+/* ---- Animations ---- */
+@keyframes meditoast-slide-in {
+    from {
+        transform: translateX(120%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes meditoast-slide-out {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+        max-height: 120px;
+        margin-bottom: 12px;
+    }
+    to {
+        transform: translateX(120%);
+        opacity: 0;
+        max-height: 0;
+        margin-bottom: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+    }
+}
+
+@keyframes meditoast-progress {
+    from { width: 100%; }
+    to { width: 0%; }
+}
+
+
+/* ============================================
+   MediConfirm — Premium Confirmation Modal
+   ============================================ */
+
+.mediconfirm-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: mediconfirm-overlay-in 0.25s ease forwards;
+}
+
+.mediconfirm-overlay.removing {
+    animation: mediconfirm-overlay-out 0.2s ease forwards;
+}
+
+.mediconfirm-dialog {
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.18), 0 8px 24px rgba(0, 0, 0, 0.08);
+    max-width: 420px;
+    width: 92%;
+    padding: 32px 28px 24px;
+    text-align: center;
+    animation: mediconfirm-dialog-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.mediconfirm-overlay.removing .mediconfirm-dialog {
+    animation: mediconfirm-dialog-out 0.2s ease forwards;
+}
+
+.mediconfirm-icon-wrap {
+    width: 60px;
+    height: 60px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 18px;
+    font-size: 1.6rem;
+}
+
+/* Variant: Danger */
+.mediconfirm--danger .mediconfirm-icon-wrap {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+}
+.mediconfirm--danger .mediconfirm-btn-confirm {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+.mediconfirm--danger .mediconfirm-btn-confirm:hover {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
+}
+
+/* Variant: Warning (default for confirms) */
+.mediconfirm--warning .mediconfirm-icon-wrap {
+    background: rgba(245, 158, 11, 0.1);
+    color: #d97706;
+}
+.mediconfirm--warning .mediconfirm-btn-confirm {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+.mediconfirm--warning .mediconfirm-btn-confirm:hover {
+    background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35);
+}
+
+/* Variant: Success (for positive confirmations like "Confirmar Llegada") */
+.mediconfirm--success .mediconfirm-icon-wrap {
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
+}
+.mediconfirm--success .mediconfirm-btn-confirm {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+.mediconfirm--success .mediconfirm-btn-confirm:hover {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+}
+
+/* Variant: Primary */
+.mediconfirm--primary .mediconfirm-icon-wrap {
+    background: rgba(79, 70, 229, 0.1);
+    color: #4f46e5;
+}
+.mediconfirm--primary .mediconfirm-btn-confirm {
+    background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+}
+.mediconfirm--primary .mediconfirm-btn-confirm:hover {
+    background: linear-gradient(135deg, #4338ca 0%, #3730a3 100%);
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
+}
+
+.mediconfirm-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 8px;
+}
+
+.mediconfirm-message {
+    font-size: 0.9rem;
+    color: #64748b;
+    line-height: 1.5;
+    margin-bottom: 24px;
+}
+
+.mediconfirm-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.mediconfirm-btn-cancel {
+    flex: 1;
+    padding: 10px 20px;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    color: #64748b;
+    font-weight: 600;
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.mediconfirm-btn-cancel:hover {
+    background: #f1f5f9;
+    color: #475569;
+    border-color: #cbd5e1;
+}
+
+.mediconfirm-btn-confirm {
+    flex: 1;
+    padding: 10px 20px;
+    border-radius: 10px;
+    border: none;
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+/* ---- Modal Animations ---- */
+@keyframes mediconfirm-overlay-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+@keyframes mediconfirm-overlay-out {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+@keyframes mediconfirm-dialog-in {
+    from { transform: scale(0.9) translateY(20px); opacity: 0; }
+    to { transform: scale(1) translateY(0); opacity: 1; }
+}
+@keyframes mediconfirm-dialog-out {
+    from { transform: scale(1) translateY(0); opacity: 1; }
+    to { transform: scale(0.9) translateY(20px); opacity: 0; }
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 576px) {
+    #meditoast-container {
+        top: 12px;
+        right: 12px;
+        left: 12px;
+        max-width: none;
+    }
+    .meditoast {
+        min-width: auto;
+    }
+    .mediconfirm-dialog {
+        padding: 24px 20px 20px;
+    }
+}
