@@ -34,18 +34,18 @@
                         <h5 class="fw-bold mb-0"><i class="fas fa-user-circle text-primary me-2"></i>Datos de Cuenta</h5>
                     </div>
                     <div class="card-body px-4">
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Paciente <span class="text-danger">*</span></label>
-                            <select name="idPaciente" class="form-select" required id="selectPaciente">
-                                <option value="">-- Seleccionar Paciente --</option>
-                                @if (pacientes != null)
-                                {
-                                    @foreach (var p in pacientes)
-                                    {
-                                        <option value="@p.IdPaciente">@p.Persona?.PrimerNombre @p.Persona?.PrimerApellido</option>
-                                    }
-                                }
-                            </select>
+                        <div class="mb-3 position-relative">
+                            <label class="form-label fw-semibold text-muted small text-uppercase">Paciente <span class="text-danger">*</span></label>
+                            <div class="input-group shadow-sm border-0 bg-light-faded rounded-3 overflow-hidden">
+                                <span class="input-group-text bg-transparent border-0"><i class="fas fa-search text-primary"></i></span>
+                                <input type="text" id="pacienteSearch" class="form-control border-0 bg-transparent shadow-none py-2" placeholder="Buscar por Nombre, Cédula o Teléfono..." autocomplete="off">
+                                <button class="btn border-0 text-muted" type="button" id="btnClearPaciente" style="display:none;"><i class="fas fa-times"></i></button>
+                            </div>
+                            <input type="hidden" name="idPaciente" id="idPaciente" required>
+                            
+                            <!-- Dropdown de resultados -->
+                            <div id="pacienteResults" class="autocomplete-results shadow-lg border text-start rounded-3 mt-1 py-1 position-absolute w-100 bg-white" style="display:none; z-index: 3000; max-height: 300px; overflow-y: auto; top: 100%;">
+                            </div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Moneda de la Cuenta</label>
@@ -205,8 +205,91 @@
 </div>
 
 @section Scripts {
+<style>
+    .autocomplete-item { transition: all 0.2s; cursor: pointer; }
+    .autocomplete-item:hover { background-color: rgba(13, 110, 253, 0.05); }
+    .bg-light-faded { background-color: #f8f9fa; }
+</style>
 <script>
     let rowIndex = 0;
+
+    // Autocomplete Pacientes (Phase 3 #13)
+    const inputSearch = document.getElementById('pacienteSearch');
+    const inputId = document.getElementById('idPaciente');
+    const resultsDiv = document.getElementById('pacienteResults');
+    const btnClear = document.getElementById('btnClearPaciente');
+    let debounceTimer;
+
+    inputSearch.addEventListener('input', function() {
+        const term = this.value.trim();
+        clearTimeout(debounceTimer);
+        
+        if (term.length < 2) {
+            resultsDiv.style.display = 'none';
+            btnClear.style.display = 'none';
+            inputId.value = '';
+            return;
+        }
+
+        btnClear.style.display = 'block';
+        resultsDiv.innerHTML = '<div class="p-3 text-center text-muted small"><span class="spinner-border spinner-border-sm me-2"></span>Buscando...</div>';
+        resultsDiv.style.display = 'block';
+
+        debounceTimer = setTimeout(() => {
+            fetch(`/Caja/GetPacientesSearch?term=${encodeURIComponent(term)}`)
+                .then(res => {
+                    if (!res.ok) throw new Error("Error en servidor");
+                    return res.json();
+                })
+                .then(data => {
+                    resultsDiv.innerHTML = '';
+                    if (data.length === 0) {
+                        resultsDiv.innerHTML = '<div class="p-3 text-center text-muted small"><i class="fas fa-user-slash me-2"></i>No se encontraron resultados</div>';
+                    } else {
+                        data.forEach(p => {
+                            const item = document.createElement('div');
+                            item.className = 'autocomplete-item p-3 border-bottom';
+                            item.innerHTML = `
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-sm bg-soft-primary rounded-circle me-3 d-flex align-items-center justify-content-center" style="width:35px;height:35px;">
+                                        <i class="fas fa-user text-primary small"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold text-dark text-start">${p.nombre}</div>
+                                        <div class="text-muted small text-start"><i class="fas fa-id-card me-1"></i>${p.detalle}</div>
+                                    </div>
+                                </div>
+                            `;
+                            item.onclick = () => {
+                                inputSearch.value = p.nombre;
+                                inputId.value = p.id;
+                                resultsDiv.style.display = 'none';
+                                inputSearch.classList.add('is-valid');
+                            };
+                            resultsDiv.appendChild(item);
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error("Search Error:", error);
+                    resultsDiv.innerHTML = '<div class="p-3 text-center text-danger small"><i class="fas fa-exclamation-triangle me-2"></i>Error al buscar</div>';
+                });
+        }, 300);
+    });
+
+    btnClear.onclick = () => {
+        inputSearch.value = '';
+        inputId.value = '';
+        resultsDiv.style.display = 'none';
+        btnClear.style.display = 'none';
+        inputSearch.classList.remove('is-valid');
+    };
+
+    document.addEventListener('click', (e) => {
+        if (!inputSearch.contains(e.target) && !resultsDiv.contains(e.target)) {
+            resultsDiv.style.display = 'none';
+        }
+    });
 
     document.getElementById('btnAddTratamiento').addEventListener('click', () => {
         const modal = new bootstrap.Modal(document.getElementById('modalTratamiento'));

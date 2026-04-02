@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("db_checker")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+fa34c563754e97a60afcc1f555a8f1bf4ab6994d")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7655312aa273f8ec3ddeef0f5763980513f035d7")]
 [assembly: System.Reflection.AssemblyProductAttribute("db_checker")]
 [assembly: System.Reflection.AssemblyTitleAttribute("db_checker")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

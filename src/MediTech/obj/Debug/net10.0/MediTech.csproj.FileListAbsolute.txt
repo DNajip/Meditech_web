@@ -617,8 +617,11 @@ E:\Programación\Antigravity\Meditech\src\MediTech\obj\Debug\net10.0\MediTech.so
 E:\Programación\Antigravity\Meditech\src\MediTech\obj\Debug\net10.0\rjimswa.dswa.cache.json
 E:\Programación\Antigravity\Meditech\src\MediTech\obj\Debug\net10.0\rjsmrazor.dswa.cache.json
 E:\Programación\Antigravity\Meditech\src\MediTech\obj\Debug\net10.0\rjsmcshtml.dswa.cache.json
+E:\Programación\Antigravity\Meditech\src\MediTech\obj\Debug\net10.0\scopedcss\Frontend\Views\Shared\_Layout.cshtml.rz.scp.css
 E:\Programación\Antigravity\Meditech\src\MediTech\obj\Debug\net10.0\scopedcss\bundle\MediTech.styles.css
 E:\Programación\Antigravity\Meditech\src\MediTech\obj\Debug\net10.0\scopedcss\projectbundle\MediTech.bundle.scp.css
+E:\Programación\Antigravity\Meditech\src\MediTech\obj\Debug\net10.0\compressed\xun1eaufp6-{0}-88hmuxvva7-88hmuxvva7.gz
+E:\Programación\Antigravity\Meditech\src\MediTech\obj\Debug\net10.0\compressed\dxebqtc1eq-{0}-88hmuxvva7-88hmuxvva7.gz
 E:\Programación\Antigravity\Meditech\src\MediTech\obj\Debug\net10.0\staticwebassets.build.json
 E:\Programación\Antigravity\Meditech\src\MediTech\obj\Debug\net10.0\staticwebassets.build.json.cache
 E:\Programación\Antigravity\Meditech\src\MediTech\obj\Debug\net10.0\staticwebassets.development.json
@@ -630,6 +633,3 @@ E:\Programación\Antigravity\Meditech\src\MediTech\obj\Debug\net10.0\refint\Medi
 E:\Programación\Antigravity\Meditech\src\MediTech\obj\Debug\net10.0\MediTech.pdb
 E:\Programación\Antigravity\Meditech\src\MediTech\obj\Debug\net10.0\MediTech.genruntimeconfig.cache
 E:\Programación\Antigravity\Meditech\src\MediTech\obj\Debug\net10.0\ref\MediTech.dll
-e:\Programación\Antigravity\Meditech\src\MediTech\obj\Debug\net10.0\scopedcss\Frontend\Views\Shared\_Layout.cshtml.rz.scp.css
-e:\Programación\Antigravity\Meditech\src\MediTech\obj\Debug\net10.0\compressed\xun1eaufp6-{0}-88hmuxvva7-88hmuxvva7.gz
-e:\Programación\Antigravity\Meditech\src\MediTech\obj\Debug\net10.0\compressed\dxebqtc1eq-{0}-88hmuxvva7-88hmuxvva7.gz

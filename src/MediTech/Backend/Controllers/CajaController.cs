@@ -21,14 +21,17 @@ public class CajaController : Controller
     public async Task<IActionResult> Index(string? estado, DateTime? fecha, string? buscar, int page = 1)
     {
         int pageSize = 10;
+        var hoy = DateTime.Today;
 
         var query = _context.Cuentas
-            .Include(c => c.Paciente).ThenInclude(p => p!.Persona)
-            .Include(c => c.MonedaBase)
+            .AsNoTracking()
             .Include(c => c.Pagos)
+            .Include(c => c.MonedaBase)
+            .Include(c => c.Paciente)
+                .ThenInclude(p => p.Persona)
             .AsQueryable();
 
-        // Filtro por búsqueda de nombre
+        // Filtro por búsqueda de nombre o ID
         if (!string.IsNullOrEmpty(buscar))
         {
             query = query.Where(c => (c.Paciente!.Persona!.PrimerNombre + " " + c.Paciente.Persona.PrimerApellido).Contains(buscar) ||
@@ -42,11 +45,9 @@ public class CajaController : Controller
         }
 
         // Estadísticas optimizadas (SQL)
-        var hoy = DateTime.Today;
         var config = await _context.ConfiguracionesMoneda.Include(c => c.MonedaBase).FirstOrDefaultAsync();
         ViewBag.MonedaBase = config?.MonedaBase;
 
-        // Calculamos stats directamente en SQL
         ViewBag.IngresosHoy = await _context.Pagos
             .Where(p => p.FechaPago.Date == hoy)
             .SumAsync(p => p.MontoBase ?? 0);
@@ -55,7 +56,7 @@ public class CajaController : Controller
             .CountAsync(c => c.FechaCreacion.Date == hoy);
 
         ViewBag.CuentasPendientes = await _context.Cuentas
-            .CountAsync(c => c.Pagos.Sum(p => p.MontoBase ?? 0) < c.TotalFinal);
+            .CountAsync(c => (c.TotalFinal ?? 0) > c.Pagos.Sum(p => p.MontoBase ?? 0) && (c.TotalFinal ?? 0) > 0);
 
         ViewBag.TotalRecaudado = await _context.Pagos
             .SumAsync(p => p.MontoBase ?? 0);
@@ -81,7 +82,7 @@ public class CajaController : Controller
 
         ViewBag.CurrentPage = page;
         ViewBag.TotalPages = (int)Math.Ceiling((double)totalItems / pageSize);
-        ViewBag.TotalItems = totalItems; // Para el indicador "Mostrando X de Z"
+        ViewBag.TotalItems = totalItems;
         ViewBag.EstadoFilter = estado;
         ViewBag.FechaFilter = fecha?.ToString("yyyy-MM-dd");
         ViewBag.BuscarFilter = buscar;
@@ -92,12 +93,6 @@ public class CajaController : Controller
     // GET: Caja/Create
     public async Task<IActionResult> Create()
     {
-        ViewBag.Pacientes = await _context.Pacientes
-            .Include(p => p.Persona)
-            .Where(p => p.IdEstado == 1)
-            .OrderBy(p => p.Persona!.PrimerApellido)
-            .ToListAsync();
-
         ViewBag.Tratamientos = await _context.Tratamientos
             .Where(t => t.IdEstado == 1)
             .OrderBy(t => t.NombreTratamiento)
@@ -115,7 +110,50 @@ public class CajaController : Controller
         return View();
     }
 
-    // ViewModel para creación de cuenta (Fix Binding Errors)
+    // AJAX: Buscar Pacientes (Phase 3 #13 - Stable)
+    [HttpGet]
+    public async Task<IActionResult> GetPacientesSearch(string term)
+    {
+        try 
+        {
+            if (string.IsNullOrWhiteSpace(term) || term.Length < 2) return Json(new List<object>());
+
+            var pattern = $"%{term}%";
+            var query = _context.Pacientes
+                .AsNoTracking()
+                .Include(p => p.Persona)
+                .Where(p => p.IdEstado == 1 && p.Persona != null);
+
+            // Búsqueda robusta por múltiples campos
+            query = query.Where(p => 
+                EF.Functions.Like(p.Persona!.PrimerNombre, pattern) ||
+                EF.Functions.Like(p.Persona.SegundoNombre ?? "", pattern) ||
+                EF.Functions.Like(p.Persona.PrimerApellido, pattern) ||
+                EF.Functions.Like(p.Persona.SegundoApellido ?? "", pattern) ||
+                EF.Functions.Like(p.Persona.NumIdentificacion, pattern) ||
+                EF.Functions.Like(p.Persona.Telefono ?? "", pattern)
+            );
+
+            var pacientes = await query
+                .Take(10)
+                .Select(p => new {
+                    id = p.IdPaciente,
+                    nombre = (p.Persona!.PrimerNombre + " " + p.Persona.PrimerApellido).Trim(),
+                    detalle = (p.Persona.NumIdentificacion ?? "S/I") + " | " + (p.Persona.Telefono ?? "S/T")
+                })
+                .ToListAsync();
+
+            return Json(pacientes);
+        }
+        catch (Exception ex)
+        {
+            // Log real en servidor para diagnóstico
+            Console.WriteLine($"[CajaController] Search Error: {ex.Message}");
+            return StatusCode(500, new { success = false, message = "Error interno de servidor." });
+        }
+    }
+
+    // ViewModel para creación de cuenta
     public class CreateCuentaViewModel
     {
         public int IdPaciente { get; set; }
@@ -183,7 +221,6 @@ public class CajaController : Controller
             _context.Cuentas.Add(cuenta);
             await _context.SaveChangesAsync();
 
-            // Asignar IdCuenta y descontar stock
             foreach (var d in detalles)
             {
                 d.IdCuenta = cuenta.IdCuenta;
@@ -223,7 +260,6 @@ public class CajaController : Controller
 
         if (cuenta == null) return NotFound();
 
-        // Moneda Base: Si la cuenta no la tiene (legacy), usar la global
         if (cuenta.MonedaBase != null)
         {
             ViewBag.MonedaBase = cuenta.MonedaBase;
@@ -236,7 +272,6 @@ public class CajaController : Controller
         
         ViewBag.Monedas = await _context.Monedas.ToListAsync();
 
-        // Tasa de cambio con caché
         var activeTasa = await _context.TasasCambio.FirstOrDefaultAsync(t => t.Activo);
         if (activeTasa == null)
         {
@@ -250,7 +285,6 @@ public class CajaController : Controller
             ViewBag.TasaDestinoId = activeTasa.IdMonedaDestino;
         }
 
-        // Saldo pendiente
         var totalPagado = cuenta.Pagos.Sum(p => p.MontoBase ?? 0);
         ViewBag.TotalPagado = totalPagado;
         ViewBag.SaldoPendiente = (cuenta.TotalFinal ?? 0) - totalPagado;
@@ -272,7 +306,6 @@ public class CajaController : Controller
 
             if (cuenta == null) return NotFound(new { success = false, message = "Cuenta no encontrada" });
 
-            // Obtener tasa de cambio con caché
             if (!_cache.TryGetValue(TasaCacheKey, out decimal tasaCambio))
             {
                 var activeTasa = await _context.TasasCambio.FirstOrDefaultAsync(t => t.Activo);
@@ -327,7 +360,7 @@ public class CajaController : Controller
         }
     }
 
-    // POST: Caja/AnularCuenta (Phase 3 #8)
+    // POST: Caja/AnularCuenta
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> AnularCuenta(int id)
@@ -340,7 +373,6 @@ public class CajaController : Controller
             return Json(new { success = false, message = "No se puede anular una cuenta que ya tiene pagos registrados." });
         }
 
-        // Devolver stock si tenía productos (Phase 3 #8 + Reversión de #5)
         var detalles = await _context.CuentaDetalles.Where(d => d.IdCuenta == id && d.TipoItem == "PRODUCTO").ToListAsync();
         foreach (var det in detalles)
         {
@@ -351,12 +383,10 @@ public class CajaController : Controller
             }
         }
 
-        // "Anular" poniendo totales en 0 o eliminando detalles
         cuenta.TotalBruto = 0;
         cuenta.TotalFinal = 0;
         cuenta.Descuento = 0;
         
-        // Opcional: Podríamos tener un campo ESTADO, pero aquí lo manejamos por totales/detalles
         _context.CuentaDetalles.RemoveRange(_context.CuentaDetalles.Where(d => d.IdCuenta == id));
         _context.Cuentas.Update(cuenta);
         await _context.SaveChangesAsync();
@@ -364,4 +394,3 @@ public class CajaController : Controller
         return Json(new { success = true, message = "Cuenta anulada correctamente y stock devuelto." });
     }
 }
-
