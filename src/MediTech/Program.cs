@@ -4,36 +4,60 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc.Razor;
 using Microsoft.Extensions.FileProviders;
 
+// 1. Precise Path Resolution — always use the project root (where Frontend/ lives)
+// When launched from VS debugger the DLL runs from bin/Debug/net10.0/,
+// so we climb the directory tree to find the true project root.
+// NOTE: We look for the "Frontend" directory (NOT appsettings.json) because
+// the SDK copies appsettings.json into the bin/ output, which would cause
+// the search to stop too early and miss the real project root.
+var baseDirectory = AppContext.BaseDirectory;
+var contentRoot = baseDirectory;
+
+var dirInfo = new DirectoryInfo(baseDirectory);
+while (dirInfo != null)
+{
+    // The real project root has the Frontend directory AND the .csproj file
+    if (Directory.Exists(Path.Combine(dirInfo.FullName, "Frontend"))
+        && File.Exists(Path.Combine(dirInfo.FullName, "MediTech.csproj")))
+    {
+        break;
+    }
+    dirInfo = dirInfo.Parent;
+}
+
+if (dirInfo != null)
+    contentRoot = dirInfo.FullName;
+
+// The wwwroot physically lives at <project>/Frontend/wwwroot
+var webRootPath = Path.Combine(contentRoot, "Frontend", "wwwroot");
+
+// Fail fast if the folder doesn't exist — this surfaces the real problem immediately
+if (!Directory.Exists(webRootPath))
+    throw new DirectoryNotFoundException(
+        $"WebRoot not found at '{webRootPath}'. " +
+        $"ContentRoot resolved to: '{contentRoot}'. " +
+        $"BaseDirectory was: '{baseDirectory}'");
+
+// === DIAGNOSTIC OUTPUT (remove after debugging) ===
+Console.WriteLine($"=== MediTech Path Diagnostics ===");
+Console.WriteLine($"  AppContext.BaseDirectory : {baseDirectory}");
+Console.WriteLine($"  ContentRoot              : {contentRoot}");
+Console.WriteLine($"  WebRootPath              : {webRootPath}");
+Console.WriteLine($"  WebRoot exists           : {Directory.Exists(webRootPath)}");
+Console.WriteLine($"  logo.png exists          : {File.Exists(Path.Combine(webRootPath, "images", "logo.png"))}");
+Console.WriteLine($"=================================");
+
+// Initialize Builder with explicit paths
 var builder = WebApplication.CreateBuilder(new WebApplicationOptions
 {
     Args = args,
-    WebRootPath = "Frontend/wwwroot"
+    ContentRootPath = contentRoot,
+    WebRootPath = webRootPath
 });
 
-// Ensure appsettings.json is loaded from the correct directory
-// This handles cases where VS Code debugger sets CWD to solution root
-var projectDir = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location)!;
-// When running via 'dotnet run', appsettings.json is in the project directory, not bin
-// Try project directory first (where .csproj lives)
-var possibleProjectDir = Directory.GetCurrentDirectory();
-var appsettingsPath = Path.Combine(possibleProjectDir, "appsettings.json");
-
-if (!File.Exists(appsettingsPath))
-{
-    // Fallback: walk up from bin/Debug/net10.0 to find the project dir
-    var dir = new DirectoryInfo(projectDir);
-    while (dir != null && !File.Exists(Path.Combine(dir.FullName, "appsettings.json")))
-    {
-        dir = dir.Parent;
-    }
-    if (dir != null)
-    {
-        possibleProjectDir = dir.FullName;
-    }
-}
-
+// Configure Configuration to use the correct ContentRoot
 builder.Configuration
-    .SetBasePath(possibleProjectDir)
+    .SetBasePath(contentRoot)
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
     .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true)
     .AddEnvironmentVariables();
@@ -53,7 +77,13 @@ builder.Services.AddMemoryCache();
 
 if (builder.Environment.IsDevelopment())
 {
-    mvcBuilder.AddRazorRuntimeCompilation();
+    mvcBuilder.AddRazorRuntimeCompilation(options => {
+        var viewsPath = Path.Combine(builder.Environment.ContentRootPath, "Frontend", "Views");
+        if (Directory.Exists(viewsPath))
+        {
+            options.FileProviders.Add(new PhysicalFileProvider(viewsPath));
+        }
+    });
 }
 
 // Database Context — validate connection string
@@ -109,7 +139,13 @@ if (!app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
 }
-app.UseStaticFiles();
+// 4. Serving Static Files — use the pre-calculated path, not app.Environment.WebRootPath
+// (which can be null when the host hasn't resolved the path correctly)
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(webRootPath),
+    RequestPath = ""
+});
 
 app.UseRouting();
 
@@ -138,4 +174,3 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();
-

@@ -90,20 +90,12 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRlbmRcVmlld3NcSG9tZVxQcml2YWN5LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[E:/Programación/Antigravity/Meditech/src/MediTech/Frontend/Views/Inventario/Ajustar.cshtml]
-build_metadata.AdditionalFiles.TargetPath = RnJvbnRlbmRcVmlld3NcSW52ZW50YXJpb1xBanVzdGFyLmNzaHRtbA==
-build_metadata.AdditionalFiles.CssScope = 
-
 [E:/Programación/Antigravity/Meditech/src/MediTech/Frontend/Views/Inventario/Create.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRlbmRcVmlld3NcSW52ZW50YXJpb1xDcmVhdGUuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
 [E:/Programación/Antigravity/Meditech/src/MediTech/Frontend/Views/Inventario/Details.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRlbmRcVmlld3NcSW52ZW50YXJpb1xEZXRhaWxzLmNzaHRtbA==
-build_metadata.AdditionalFiles.CssScope = 
-
-[E:/Programación/Antigravity/Meditech/src/MediTech/Frontend/Views/Inventario/Edit.cshtml]
-build_metadata.AdditionalFiles.TargetPath = RnJvbnRlbmRcVmlld3NcSW52ZW50YXJpb1xFZGl0LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
 [E:/Programación/Antigravity/Meditech/src/MediTech/Frontend/Views/Inventario/Index.cshtml]
@@ -140,10 +132,6 @@ build_metadata.AdditionalFiles.CssScope =
 
 [E:/Programación/Antigravity/Meditech/src/MediTech/Frontend/Views/Shared/_ValidationScriptsPartial.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRlbmRcVmlld3NcU2hhcmVkXF9WYWxpZGF0aW9uU2NyaXB0c1BhcnRpYWwuY3NodG1s
-build_metadata.AdditionalFiles.CssScope = 
-
-[E:/Programación/Antigravity/Meditech/src/MediTech/Frontend/Views/Tratamientos/Create.cshtml]
-build_metadata.AdditionalFiles.TargetPath = RnJvbnRlbmRcVmlld3NcVHJhdGFtaWVudG9zXENyZWF0ZS5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
 [E:/Programación/Antigravity/Meditech/src/MediTech/Frontend/Views/Tratamientos/Details.cshtml]

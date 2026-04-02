@@ -19,14 +19,29 @@ public class TratamientosController : Controller
     }
 
     // GET: Tratamientos
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index(int page = 1)
     {
+        int pageSize = 15;
+        var totalItems = await _context.Tratamientos.CountAsync();
+        var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+
         var tratamientos = await _context.Tratamientos
             .Include(t => t.Estado)
             .OrderBy(t => t.NombreTratamiento)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync();
+
         var config = await _context.ConfiguracionesMoneda.Include(c => c.MonedaBase).FirstOrDefaultAsync();
         ViewBag.MonedaBase = config?.MonedaBase;
+
+        ViewBag.CurrentPage = page;
+        ViewBag.TotalPages = totalPages;
+        ViewBag.TotalItems = totalItems;
+        ViewBag.PageSize = pageSize;
+
+        // Modal context for creation - Only ACTIVO and INACTIVO
+        ViewBag.IdEstado = new SelectList(await GetFilteredEstadosAsync(), "IdEstado", "DescEstado");
 
         return View(tratamientos);
     }
@@ -48,10 +63,9 @@ public class TratamientosController : Controller
         return View(tratamiento);
     }
 
-    // GET: Tratamientos/Create
     public async Task<IActionResult> Create()
     {
-        ViewBag.IdEstado = new SelectList(await _context.Estados.ToListAsync(), "IdEstado", "DescEstado");
+        ViewBag.IdEstado = new SelectList(await GetFilteredEstadosAsync(), "IdEstado", "DescEstado");
         return View();
     }
 
@@ -62,12 +76,43 @@ public class TratamientosController : Controller
     {
         if (ModelState.IsValid)
         {
-            _context.Add(tratamiento);
-            await _context.SaveChangesAsync();
-            TempData["SuccessMessage"] = "Tratamiento creado correctamente.";
-            return RedirectToAction(nameof(Index));
+            try 
+            {
+                _context.Add(tratamiento);
+                await _context.SaveChangesAsync();
+                
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = true, message = "Tratamiento creado correctamente." });
+                }
+
+                TempData["SuccessMessage"] = "Tratamiento creado correctamente.";
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al crear tratamiento.");
+                
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = false, message = "Error en la base de datos.", errors = new List<string> { ex.InnerException?.Message ?? ex.Message } });
+                }
+                
+                ModelState.AddModelError("", "Ocurrió un error al guardar en la base de datos.");
+            }
         }
-        ViewBag.IdEstado = new SelectList(await _context.Estados.ToListAsync(), "IdEstado", "DescEstado", tratamiento.IdEstado);
+
+        if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+        {
+            var errors = ModelState.Values
+                .SelectMany(v => v.Errors)
+                .Select(e => !string.IsNullOrEmpty(e.ErrorMessage) ? e.ErrorMessage : e.Exception?.Message ?? "Error desconocido")
+                .ToList();
+                
+            return Json(new { success = false, message = "Datos inválidos.", errors });
+        }
+
+        ViewBag.IdEstado = new SelectList(await GetFilteredEstadosAsync(), "IdEstado", "DescEstado", tratamiento.IdEstado);
         return View(tratamiento);
     }
 
@@ -79,7 +124,7 @@ public class TratamientosController : Controller
         var tratamiento = await _context.Tratamientos.FindAsync(id);
         if (tratamiento == null) return NotFound();
 
-        ViewBag.IdEstado = new SelectList(await _context.Estados.ToListAsync(), "IdEstado", "DescEstado", tratamiento.IdEstado);
+        ViewBag.IdEstado = new SelectList(await GetFilteredEstadosAsync(), "IdEstado", "DescEstado", tratamiento.IdEstado);
         return View(tratamiento);
     }
 
@@ -97,17 +142,52 @@ public class TratamientosController : Controller
                 tratamiento.FechaActualizacion = DateTime.Now;
                 _context.Update(tratamiento);
                 await _context.SaveChangesAsync();
+                
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = true, message = "Tratamiento actualizado correctamente." });
+                }
+
                 TempData["SuccessMessage"] = "Tratamiento actualizado correctamente.";
+                return RedirectToAction(nameof(Index));
             }
             catch (DbUpdateConcurrencyException)
             {
                 if (!TratamientoExists(tratamiento.IdTratamiento)) return NotFound();
                 else throw;
             }
-            return RedirectToAction(nameof(Index));
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error al actualizar tratamiento {id}.");
+                
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = false, message = "Error en la base de datos.", errors = new List<string> { ex.InnerException?.Message ?? ex.Message } });
+                }
+                
+                ModelState.AddModelError("", "Ocurrió un error al actualizar en la base de datos.");
+            }
         }
-        ViewBag.IdEstado = new SelectList(await _context.Estados.ToListAsync(), "IdEstado", "DescEstado", tratamiento.IdEstado);
+
+        if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+        {
+            var errors = ModelState.Values
+                .SelectMany(v => v.Errors)
+                .Select(e => !string.IsNullOrEmpty(e.ErrorMessage) ? e.ErrorMessage : e.Exception?.Message ?? "Error desconocido")
+                .ToList();
+                
+            return Json(new { success = false, message = "Datos inválidos.", errors });
+        }
+
+        ViewBag.IdEstado = new SelectList(await GetFilteredEstadosAsync(), "IdEstado", "DescEstado", tratamiento.IdEstado);
         return View(tratamiento);
+    }
+
+    private async Task<List<Estado>> GetFilteredEstadosAsync()
+    {
+        return await _context.Estados
+            .Where(e => e.DescEstado.Trim().ToUpper() == "ACTIVO" || e.DescEstado.Trim().ToUpper() == "INACTIVO")
+            .ToListAsync();
     }
 
     private bool TratamientoExists(int id)

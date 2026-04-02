@@ -27,10 +27,10 @@
 // ============================================
 const MediToast = (() => {
     const ICONS = {
-        success: 'bi-check-circle-fill',
-        error:   'bi-x-circle-fill',
-        warning: 'bi-exclamation-triangle-fill',
-        info:    'bi-info-circle-fill'
+        success: 'fa-check-circle',
+        error:   'fa-times-circle',
+        warning: 'fa-exclamation-triangle',
+        info:    'fa-info-circle'
     };
 
     const TITLES = {
@@ -67,14 +67,14 @@ const MediToast = (() => {
         toast.className = `meditoast meditoast--${type}`;
         toast.innerHTML = `
             <div class="meditoast-icon">
-                <i class="bi ${icon}"></i>
+                <i class="fas ${icon}"></i>
             </div>
             <div class="meditoast-content">
                 <div class="meditoast-title">${title}</div>
                 <div class="meditoast-message">${message}</div>
             </div>
             <button class="meditoast-close" aria-label="Cerrar">
-                <i class="bi bi-x-lg"></i>
+                <i class="fas fa-times"></i>
             </button>
             <div class="meditoast-progress" style="animation-duration: ${duration}ms;"></div>
         `;
@@ -129,10 +129,10 @@ const MediToast = (() => {
 // ============================================
 const MediConfirm = (() => {
     const VARIANT_ICONS = {
-        danger:  'bi-exclamation-triangle-fill',
-        warning: 'bi-question-circle-fill',
-        success: 'bi-check-circle-fill',
-        primary: 'bi-question-circle-fill'
+        danger:  'fa-exclamation-triangle',
+        warning: 'fa-question-circle',
+        success: 'fa-check-circle',
+        primary: 'fa-question-circle'
     };
 
     /**
@@ -162,7 +162,7 @@ const MediConfirm = (() => {
             overlay.innerHTML = `
                 <div class="mediconfirm-dialog">
                     <div class="mediconfirm-icon-wrap">
-                        <i class="bi ${icon}"></i>
+                        <i class="fas ${icon}"></i>
                     </div>
                     <div class="mediconfirm-title">${title}</div>
                     <div class="mediconfirm-message">${message}</div>

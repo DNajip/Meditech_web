@@ -12,14 +12,16 @@
             <p class="text-muted">Control de existencias e insumos médicos</p>
         </div>
         <div class="d-flex gap-2">
-            <a asp-action="Create" class="btn btn-primary-premium shadow-sm">
+            <button type="button" class="btn btn-primary-premium shadow-sm" data-bs-toggle="modal" data-bs-target="#createProductoModal">
                 <i class="fas fa-plus-circle me-2"></i>Nuevo Producto
-            </a>
+            </button>
             <button class="btn btn-outline-secondary-premium shadow-sm" onclick="window.print()">
                 <i class="fas fa-print me-2"></i>Reporte
             </button>
         </div>
-    </div>    <!-- Stats Cards -->
+    </div>
+
+    <!-- Stats Cards -->
     <div class="row g-3 mb-4">
         <div class="col-md-3">
             <div class="card card-premium h-100 border-0 shadow-sm overflow-hidden">
@@ -159,10 +161,10 @@
                             </td>
                             <td class="text-end pe-4">
                                 <div class="btn-group">
-                                    <a asp-action="Ajustar" asp-route-id="@item.IdProducto" class="btn btn-sm btn-outline-info" title="Ajustar Stock">
+                                    <a href="javascript:void(0)" onclick="openAjusteModal(@item.IdProducto)" class="btn btn-sm btn-outline-info" title="Ajustar Stock">
                                         <i class="fas fa-exchange-alt"></i>
                                     </a>
-                                    <a asp-action="Edit" asp-route-id="@item.IdProducto" class="btn btn-sm btn-outline-primary" title="Editar">
+                                    <a href="javascript:void(0)" onclick="openEditModal(@item.IdProducto)" class="btn btn-sm btn-outline-primary" title="Editar">
                                         <i class="fas fa-edit"></i>
                                     </a>
                                     <a asp-action="Details" asp-route-id="@item.IdProducto" class="btn btn-sm btn-outline-secondary" title="Ver Detalle">
@@ -207,6 +209,472 @@
     </div>
 </div>
 
+<!-- Modal: Registro de Nuevo Producto -->
+<div class="modal fade" id="createProductoModal" tabindex="-1" aria-labelledby="createProductoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-header bg-transparent border-0 pt-4 px-4 d-flex align-items-center">
+                <div class="icon-shape bg-soft-primary rounded-circle me-3 p-3">
+                    <i class="fas fa-box-open text-primary fs-4"></i>
+                </div>
+                <div>
+                    <h4 class="modal-title fw-bold text-dark mb-0" id="createProductoModalLabel">Registrar Nuevo Producto</h4>
+                    <p class="text-muted small mb-0">Gestión de Catálogo e Inventario</p>
+                </div>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 pt-2">
+                <form id="createProductoForm">
+                    @Html.AntiForgeryToken()
+                    <div class="row g-4">
+                        <!-- Sección 1: Información Básica -->
+                        <div class="col-12">
+                            <label class="form-label fw-bold small text-uppercase text-muted silver-label mb-2">Nombre del Producto</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-0"><i class="fas fa-boxes text-muted small"></i></span>
+                                <input name="Nombre" class="form-control bg-light border-0 py-3" placeholder="Ej: Amoxicilina 500mg" required />
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-bold small text-uppercase text-muted silver-label mb-2">Descripción Corta</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-0"><i class="fas fa-align-left text-muted small"></i></span>
+                                <textarea name="Description" class="form-control bg-light border-0" rows="3" placeholder="Detalles o especificaciones del producto..."></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Sección 2: Financiero -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-uppercase text-muted silver-label mb-2">Precio de Venta (@(ViewBag.MonedaBase?.Codigo ?? "USD"))</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-0"><i class="fas fa-tag text-muted small"></i></span>
+                                <input name="Precio" class="form-control bg-light border-0 py-3" type="number" step="0.01" placeholder="0.00" required />
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 d-flex align-items-center">
+                            <div class="form-check form-switch mt-4">
+                                <input class="form-check-input" type="checkbox" name="Activo" value="true" checked id="switchActivo">
+                                <label class="form-check-label fw-bold text-dark ms-2" for="switchActivo">Producto Activo en Catálogo</label>
+                            </div>
+                        </div>
+
+                        <!-- Sección 3: Inventario -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-uppercase text-muted silver-label mb-2">Stock Inicial</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-0"><i class="fas fa-cubes text-muted small"></i></span>
+                                <input name="Stock" class="form-control bg-light border-0 py-3" type="number" value="0" required />
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-uppercase text-muted silver-label mb-2">Stock Mínimo Alerta</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-0"><i class="fas fa-bell text-muted small"></i></span>
+                                <input name="StockMinimo" class="form-control bg-light border-0 py-3" type="number" value="10" required />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-3 mt-5 pt-3 border-top">
+                        <button type="button" class="btn btn-light-premium px-4" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary-premium px-5 shadow-sm">
+                            <i class="fas fa-save me-2"></i>Guardar Producto
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Modal: Editar Producto -->
+<div class="modal fade" id="editProductoModal" tabindex="-1" aria-labelledby="editProductoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-header bg-transparent border-0 pt-4 px-4 d-flex align-items-center">
+                <div class="icon-shape bg-soft-primary rounded-circle me-3 p-3">
+                    <i class="fas fa-edit text-primary fs-4"></i>
+                </div>
+                <div>
+                    <h4 class="modal-title fw-bold text-dark mb-0" id="editProductoModalLabel">Editar Producto</h4>
+                    <span id="labelEditProductName" class="text-primary small fw-semibold">Cargando...</span>
+                </div>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 pt-2">
+                <form id="editProductoForm">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="IdProducto" id="editIdProducto" />
+                    <input type="hidden" name="FechaCreacion" id="editFechaCreacion" />
+                    <input type="hidden" name="Stock" id="editStockHidden" />
+                    
+                    <div class="row g-4">
+                        <!-- Sección 1: Información Básica -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-uppercase text-muted silver-label mb-2">Nombre del Producto</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-0"><i class="fas fa-boxes text-muted small"></i></span>
+                                <input name="Nombre" id="editNombre" class="form-control bg-light border-0 py-3" required />
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-uppercase text-muted silver-label mb-2">Descripción</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-0"><i class="fas fa-align-left text-muted small"></i></span>
+                                <input name="Descripcion" id="editDescripcion" class="form-control bg-light border-0 py-3" />
+                            </div>
+                        </div>
+
+                        <!-- Sección 2: Financiero -->
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold small text-uppercase text-muted silver-label mb-2">Precio de Venta (@(ViewBag.MonedaBase?.Codigo ?? "USD"))</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-0"><i class="fas fa-tag text-muted small"></i></span>
+                                <input name="Precio" id="editPrecio" class="form-control bg-light border-0 py-3" type="number" step="0.01" required />
+                            </div>
+                        </div>
+
+                        <!-- Sección 3: Inventario -->
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small text-uppercase text-muted silver-label mb-2">Stock Actual</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-0"><i class="fas fa-cubes text-muted small"></i></span>
+                                <input id="editStockDisplay" class="form-control bg-light border-0 py-3 fw-bold text-primary" readonly />
+                            </div>
+                            <div class="form-text text-muted x-small mt-1">Use "Ajustar" para cambios físicos.</div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small text-uppercase text-muted silver-label mb-2">Stock Mínimo</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-0"><i class="fas fa-bell text-muted small"></i></span>
+                                <input name="StockMinimo" id="editStockMinimo" class="form-control bg-light border-0 py-3" type="number" required />
+                            </div>
+                        </div>
+
+                        <div class="col-md-4 d-flex align-items-center">
+                            <div class="form-check form-switch mt-4">
+                                <input class="form-check-input" type="checkbox" name="Activo" id="editActivo" value="true">
+                                <label class="form-check-label fw-bold text-dark ms-2" for="editActivo">Producto Activo</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-3 mt-5 pt-3 border-top">
+                        <button type="button" class="btn btn-light-premium px-4" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" id="btnConfirmarEdit" class="btn btn-primary-premium px-5 shadow-sm">
+                            <i class="fas fa-save me-2"></i>Actualizar Cambios
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Ajuste de Inventario -->
+<div class="modal fade" id="ajusteStockModal" tabindex="-1" aria-labelledby="ajusteStockModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-header bg-transparent border-0 pt-4 px-4 d-flex align-items-center">
+                <div class="icon-shape bg-soft-info rounded-circle me-3 p-3">
+                    <i class="fas fa-exchange-alt text-info fs-4"></i>
+                </div>
+                <div>
+                    <h4 class="modal-title fw-bold text-dark mb-0" id="ajusteStockModalLabel">Ajuste de Inventario</h4>
+                    <span id="labelProductName" class="text-primary small fw-semibold">Cargando...</span>
+                </div>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 pt-2">
+                <div class="d-flex justify-content-between align-items-center mb-4 p-3 bg-light rounded-3">
+                    <span class="text-muted small fw-bold text-uppercase">Stock Actual</span>
+                    <div class="badge bg-white text-primary border border-primary border-opacity-25 px-3 py-2 rounded-pill fs-6" id="badgeStockActual">--</div>
+                </div>
+
+                <form id="ajusteStockForm">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" id="ajusteIdProducto" />
+                    
+                    <div class="mb-4">
+                        <label class="form-label fw-bold small text-uppercase text-muted silver-label mb-2">Tipo de Movimiento</label>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <input type="radio" class="btn-check" name="tipo" id="btn-ingreso" value="INGRESO" checked autocomplete="off">
+                                <label class="btn btn-outline-success w-100 py-3 d-flex flex-column align-items-center gap-1" for="btn-ingreso">
+                                    <i class="fas fa-plus-circle fs-5"></i>
+                                    <span class="small fw-bold">INGRESO</span>
+                                </label>
+                            </div>
+                            <div class="col-6">
+                                <input type="radio" class="btn-check" name="tipo" id="btn-salida" value="AJUSTE_NEG" autocomplete="off">
+                                <label class="btn btn-outline-danger w-100 py-3 d-flex flex-column align-items-center gap-1" for="btn-salida">
+                                    <i class="fas fa-minus-circle fs-5"></i>
+                                    <span class="small fw-bold">SALIDA</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-12">
+                            <label class="form-label fw-bold small text-uppercase text-muted silver-label mb-2">Cantidad</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-0"><i class="fas fa-sort-numeric-up text-muted"></i></span>
+                                <input type="number" name="cantidad" id="ajusteCantidad" class="form-control bg-light border-0 py-3 fw-bold" value="1" min="1" required />
+                            </div>
+                            <div id="errorStockAjuste" class="text-danger x-small mt-1 d-none"><i class="fas fa-exclamation-circle me-1"></i>Stock insuficiente para esta salida</div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-bold small text-uppercase text-muted silver-label mb-2">Observación (Opcional)</label>
+                            <textarea name="observacion" class="form-control bg-light border-0" rows="2" placeholder="Motivo del ajuste..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-3 mt-4 pt-3 border-top">
+                        <button type="button" class="btn btn-light-premium px-4" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" id="btnConfirmarAjuste" class="btn btn-primary-premium px-5 shadow-sm">
+                            <i class="fas fa-check-circle me-2"></i>Aplicar Ajuste
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            console.log("MediTech Inventory Module Initialized");
+
+            // Modal Instances
+            const adjustmentModal = new bootstrap.Modal(document.getElementById('ajusteStockModal'));
+            const editModal = new bootstrap.Modal(document.getElementById('editProductoModal'));
+            let currentProductStock = 0;
+
+            // Global function to open edit modal
+            window.openEditModal = function(id) {
+                console.log("MediTech Debug: Opening edit modal for ID:", id);
+                $.ajax({
+                    url: '@Url.Action("Edit", "Inventario")/' + id,
+                    type: 'GET',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    success: function(data) {
+                        console.log("MediTech Debug: Product edit data received:", data);
+                        $('#editIdProducto').val(data.idProducto);
+                        $('#editFechaCreacion').val(data.fechaCreacion);
+                        $('#editStockHidden').val(data.stock);
+                        $('#labelEditProductName').text(data.nombre);
+                        $('#editNombre').val(data.nombre);
+                        $('#editDescripcion').val(data.descripcion);
+                        $('#editPrecio').val(data.precio);
+                        $('#editStockDisplay').val(data.stock);
+                        $('#editStockMinimo').val(data.stockMinimo);
+                        $('#editActivo').prop('checked', data.activo);
+                        
+                        editModal.show();
+                    },
+                    error: function(xhr) {
+                        console.error("MediTech Debug: Error loading edit data:", xhr);
+                        if (typeof MediToast !== 'undefined') MediToast.error('Error al cargar datos del producto');
+                    }
+                });
+            };
+
+            // Handle Edit Submit
+            $('#editProductoForm').on('submit', function(e) {
+                e.preventDefault();
+                console.log("MediTech Debug: Edit form submitted");
+                const $form = $(this);
+                const $btn = $('#btnConfirmarEdit');
+                const originalText = $btn.html();
+
+                $btn.html('<i class="fas fa-spinner fa-spin me-2"></i>Actualizando...').prop('disabled', true);
+
+                $.ajax({
+                    url: '@Url.Action("Edit")/' + ($('#editIdProducto').val() || ''),
+                    type: 'POST',
+                    data: $form.serialize(),
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    success: function(response) {
+                        console.log("MediTech Debug: Edit POST Success response:", response);
+                        if (response.success) {
+                            if (typeof MediToast !== 'undefined') MediToast.success("Cambios actualizados");
+                            editModal.hide();
+                            setTimeout(() => location.reload(), 1500);
+                        } else {
+                            console.warn("MediTech Debug: Edit POST Success but logic error:", response);
+                            if (typeof MediToast !== 'undefined') MediToast.error(response.message || 'Error al actualizar');
+                            $btn.html(originalText).prop('disabled', false);
+                        }
+                    },
+                    error: function(xhr) {
+                        console.error("MediTech Debug: Edit AJAX POST Error:", xhr);
+                        if (typeof MediToast !== 'undefined') MediToast.error('Error de comunicación');
+                        $btn.html(originalText).prop('disabled', false);
+                    }
+                });
+            });
+
+            // Global function to open adjustment modal
+            window.openAjusteModal = function(id) {
+                console.log("MediTech Debug: Opening adjustment modal for ID:", id);
+                $.ajax({
+                    url: '@Url.Action("Ajustar", "Inventario")/' + id,
+                    type: 'GET',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    success: function(data) {
+                        console.log("MediTech Debug: Product data received:", data);
+                        $('#ajusteIdProducto').val(data.idProducto);
+                        $('#labelProductName').text(data.nombre);
+                        $('#badgeStockActual').text(data.stock);
+                        currentProductStock = parseInt(data.stock) || 0;
+                        
+                        // Reset form
+                        $('#ajusteStockForm')[0].reset();
+                        $('#errorStockAjuste').addClass('d-none');
+                        $('#ajusteCantidad').removeClass('is-invalid');
+                        $('#btnConfirmarAjuste').prop('disabled', false);
+                        
+                        adjustmentModal.show();
+                    },
+                    error: function(xhr) {
+                        console.error("MediTech Debug: Error loading product data:", xhr);
+                        if (typeof MediToast !== 'undefined') MediToast.error('Error al cargar datos del producto');
+                    }
+                });
+            };
+
+            // Real-time stock validation
+            function validateAjusteStock() {
+                const $checkedRadio = $('input[name="tipo"]:checked');
+                const tipo = $checkedRadio.val();
+                const cantidadInput = $('#ajusteCantidad').val();
+                const cantidad = parseInt(cantidadInput) || 0;
+                
+                console.log("MediTech Debug: Validating adjustment - Tipo:", tipo, "Cant:", cantidad, "Stock:", currentProductStock);
+
+                const errDiv = $('#errorStockAjuste');
+                const btn = $('#btnConfirmarAjuste');
+                
+                if (tipo === "AJUSTE_NEG") {
+                    if (cantidad > currentProductStock) {
+                        errDiv.removeClass('d-none');
+                        btn.prop('disabled', true).addClass('opacity-50');
+                        $('#ajusteCantidad').addClass('is-invalid');
+                    } else {
+                        errDiv.addClass('d-none');
+                        btn.prop('disabled', false).removeClass('opacity-50');
+                        $('#ajusteCantidad').removeClass('is-invalid');
+                    }
+                } else {
+                    // INGRESO
+                    errDiv.addClass('d-none');
+                    btn.prop('disabled', false).removeClass('opacity-50');
+                    $('#ajusteCantidad').removeClass('is-invalid');
+                }
+            }
+
+            // Wire UI events
+            $('#ajusteCantidad').on('input change', validateAjusteStock);
+            $('input[name="tipo"]').on('click change', function() {
+                console.log("MediTech Debug: Radio click/change detected");
+                validateAjusteStock();
+            });
+
+            // Handle Adjustment Submit
+            $('#ajusteStockForm').on('submit', function(e) {
+                e.preventDefault();
+                console.log("MediTech Debug: Adjustment form submitted");
+                const $form = $(this);
+                const $btn = $('#btnConfirmarAjuste');
+                const originalText = $btn.html();
+
+                const formData = $form.serialize();
+                console.log("MediTech Debug: Serialized data:", formData);
+
+                $btn.html('<i class="fas fa-spinner fa-spin me-2"></i>Procesando...').prop('disabled', true);
+
+                $.ajax({
+                    url: '@Url.Action("Ajustar")',
+                    type: 'POST',
+                    data: formData,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    success: function(response) {
+                        console.log("MediTech Debug: POST Success response:", response);
+                        if (response.success) {
+                            if (typeof MediToast !== 'undefined') MediToast.success(response.message);
+                            adjustmentModal.hide();
+                            setTimeout(() => location.reload(), 1500);
+                        } else {
+                            console.warn("MediTech Debug: POST Success but logic error:", response);
+                            if (typeof MediToast !== 'undefined') MediToast.error(response.message || 'Error en el ajuste');
+                            $btn.html(originalText).prop('disabled', false);
+                        }
+                    },
+                    error: function(xhr) {
+                        console.error("MediTech Debug: AJAX POST Error:", xhr);
+                        const msg = xhr.responseText || 'Error de comunicación';
+                        if (typeof MediToast !== 'undefined') MediToast.error(msg);
+                        $btn.html(originalText).prop('disabled', false);
+                    }
+                });
+            });
+
+            $('#createProductoForm').on('submit', function (e) {
+                e.preventDefault();
+                const $form = $(this);
+                const $btn = $form.find('button[type="submit"]');
+                const originalText = $btn.html();
+
+                $btn.html('<i class="fas fa-spinner fa-spin me-2"></i>Guardando...').prop('disabled', true);
+
+                $.ajax({
+                    url: '@Url.Action("Create")',
+                    type: 'POST',
+                    data: $form.serialize(),
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    success: function (response) {
+                        if (response.success) {
+                            if (typeof MediToast !== 'undefined') {
+                                MediToast.success(response.message);
+                            }
+                            
+                            const modalElem = document.getElementById('createProductoModal');
+                            const modal = bootstrap.Modal.getInstance(modalElem);
+                            if (modal) modal.hide();
+
+                            // Recarga para actualizar las estadísticas y la tabla
+                            setTimeout(() => location.reload(), 1500);
+                        } else {
+                            let errorMsg = response.message || 'Error al guardar';
+                            if (response.errors && response.errors.length > 0) {
+                                errorMsg = '<ul class="text-start mb-0">' + response.errors.map(err => `<li>${err}</li>`).join('') + '</ul>';
+                            }
+
+                            if (typeof MediToast !== 'undefined') {
+                                MediToast.error(errorMsg);
+                            }
+                            $btn.html(originalText).prop('disabled', false);
+                        }
+                    },
+                    error: function (xhr) {
+                        console.error("AJAX Error:", xhr);
+                        if (typeof MediToast !== 'undefined') {
+                            MediToast.error('Error de comunicación con el servidor');
+                        }
+                        $btn.html(originalText).prop('disabled', false);
+                    }
+                });
+            });
+        });
+    </script>
+}
+
 <style>
     .text-gradient-primary {
         background: linear-gradient(135deg, #2D3E50 0%, #4A90E2 100%);
@@ -249,6 +717,32 @@
         color: #6c757d;
     }
 
-    .bg-light-faded { background-color: rgba(248, 249, 250, 0.7); }
-</style>
+    .btn-light-premium {
+        background: #f8f9fa;
+        color: #6c757d;
+        border-radius: 10px;
+        padding: 0.6rem 1.5rem;
+        border: 1px solid #eee;
+    }
 
+    .silver-label {
+        letter-spacing: 0.5px;
+        font-size: 0.72rem !important;
+    }
+
+    .bg-light-faded { background-color: rgba(248, 249, 250, 0.7); }
+
+    .modal-content {
+        animation: modalFadeIn 0.3s ease-out;
+    }
+
+    @@keyframes modalFadeIn {
+        from { opacity: 0; transform: translateY(-20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .form-control:focus {
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.05);
+        background-color: #fff !important;
+    }
+</style>

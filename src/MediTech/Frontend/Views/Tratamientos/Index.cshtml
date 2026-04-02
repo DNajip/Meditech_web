@@ -56,14 +56,6 @@
         font-weight: 700;
         color: #0F172A;
     }
-    .moneda-badge {
-        font-size: 0.7rem;
-        padding: 2px 6px;
-        background: #F1F5F9;
-        border-radius: 4px;
-        margin-left: 4px;
-        color: #64748B;
-    }
 
     .badge-active {
         background: #D1FAE5; color: #065F46;
@@ -94,32 +86,107 @@
     }
     .empty-state i { font-size: 3rem; margin-bottom: 12px; color: #CBD5E1; }
 
-    .toast-success {
-        position: fixed; top: 80px; right: 28px;
-        background: #10B981; color: white;
-        padding: 12px 20px; border-radius: 8px;
-        font-size: 0.85rem; font-weight: 500;
-        z-index: 9999; animation: slideIn 0.3s;
-        box-shadow: 0 4px 12px rgba(16,185,129,0.3);
+    /* Modal Styling */
+    .modal-content {
+        border-radius: 20px;
+        border: none;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
     }
-    @@keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
-</style>
+    .modal-header {
+        border-bottom: 1px solid #F1F5F9;
+        padding: 24px 32px;
+    }
+    .modal-title {
+        font-weight: 700;
+        color: #1E293B;
+    }
+    .modal-body {
+        padding: 32px;
+    }
+    .form-label {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .form-control, .form-select {
+        border-radius: 12px;
+        padding: 12px 16px;
+        border: 1px solid #E2E8F0;
+        font-size: 0.95rem;
+    }
+    .form-control:focus {
+        border-color: #3B82F6;
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+    }
 
-@if (TempData["SuccessMessage"] != null)
-{
-    <div class="toast-success" id="toast">
-        <i class="fas fa-check-circle me-1"></i> @TempData["SuccessMessage"]
-    </div>
-}
+    /* Pagination Styling */
+    .pagination-wrapper {
+        padding: 16px 24px;
+        background: #FFFFFF;
+        border-top: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+    }
+    .pagination-btn {
+        width: 38px;
+        height: 38px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        border: 1px solid #E2E8F0;
+        background: #FFFFFF;
+        color: #64748B;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.9rem;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .pagination-btn:hover:not(.disabled) {
+        border-color: #3B82F6;
+        color: #3B82F6;
+        background: #F8FAFC;
+        transform: translateY(-1px);
+    }
+    .pagination-btn.active {
+        background: #6366F1;
+        color: #FFFFFF;
+        border-color: #6366F1;
+        box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.3);
+    }
+    .pagination-btn.disabled {
+        background: #F8FAFC;
+        color: #CBD5E1;
+        border-color: #E2E8F0;
+        cursor: not-allowed;
+    }
+    .pagination-info {
+        font-size: 0.9rem;
+        color: #94A3B8;
+        margin-left: 8px;
+        display: flex;
+        align-items: center;
+    }
+    .pagination-info::before {
+        content: "•";
+        margin-right: 12px;
+        color: #E2E8F0;
+        font-size: 1.5rem;
+    }
+</style>
 
 <div class="page-header">
     <div>
         <h2><i class="fas fa-hand-holding-medical me-2" style="color:#10B981;"></i>Tratamientos</h2>
         <span class="subtitle">Catálogo de servicios y especialidades médicas</span>
     </div>
-    <a href="@Url.Action("Create")" class="btn btn-primary px-4" style="border-radius:10px; font-weight:600;">
+    <button type="button" class="btn btn-primary px-4 shadow-sm" style="border-radius:12px; font-weight:600;" data-bs-toggle="modal" data-bs-target="#createTratamientoModal">
         <i class="fas fa-plus me-1"></i> Nuevo Tratamiento
-    </a>
+    </button>
 </div>
 
 <div class="tratamientos-table">
@@ -158,13 +225,57 @@
                             </span>
                         </td>
                         <td>
-                            <a href="@Url.Action("Edit", new { id = item.IdTratamiento })" class="action-link text-warning" title="Editar"><i class="fas fa-edit"></i></a>
+                            <button type="button" class="btn btn-link action-link text-warning edit-btn p-0" 
+                                    data-id="@item.IdTratamiento" 
+                                    data-nombre="@item.NombreTratamiento" 
+                                    data-precio="@item.Precio" 
+                                    data-via="@item.ViaAdministracion" 
+                                    data-frec="@item.Frecuencia"
+                                    data-dosis="@item.Dosis"
+                                    data-duracion="@item.DuracionTratamiento"
+                                    data-estado="@item.IdEstado"
+                                    title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </button>
                             <a href="@Url.Action("Details", new { id = item.IdTratamiento })" class="action-link text-info" title="Ver Detalles"><i class="fas fa-info-circle"></i></a>
                         </td>
                     </tr>
                 }
             </tbody>
         </table>
+
+        <!-- Pagination Footer -->
+        <div class="pagination-wrapper">
+            @{
+                int currentPage = ViewBag.CurrentPage ?? 1;
+                int totalPages = ViewBag.TotalPages ?? 1;
+                int totalItems = ViewBag.TotalItems ?? 0;
+            }
+
+            <a href="@Url.Action("Index", new { page = currentPage - 1 })" 
+               class="pagination-btn @(currentPage <= 1 ? "disabled" : "")" 
+               onclick="@(currentPage <= 1 ? "return false;" : "")">
+                <i class="fas fa-chevron-left"></i>
+            </a>
+
+            @for (int i = 1; i <= totalPages; i++)
+            {
+                <a href="@Url.Action("Index", new { page = i })" 
+                   class="pagination-btn @(i == currentPage ? "active" : "")">
+                    @i
+                </a>
+            }
+
+            <a href="@Url.Action("Index", new { page = currentPage + 1 })" 
+               class="pagination-btn @(currentPage >= totalPages ? "disabled" : "")"
+               onclick="@(currentPage >= totalPages ? "return false;" : "")">
+                <i class="fas fa-chevron-right"></i>
+            </a>
+
+            <div class="pagination-info">
+                @totalItems tratamientos
+            </div>
+        </div>
     }
     else
     {
@@ -172,14 +283,264 @@
             <div><i class="fas fa-notes-medical"></i></div>
             <h5>Sin tratamientos registrados</h5>
             <p>Comienza agregando los servicios y especialidades que ofrece la clínica.</p>
-            <a href="@Url.Action("Create")" class="btn btn-outline-primary mt-3">Registrar Primer Tratamiento</a>
+            <button type="button" class="btn btn-outline-primary mt-3" data-bs-toggle="modal" data-bs-target="#createTratamientoModal">
+                Registrar Primer Tratamiento
+            </button>
         </div>
     }
 </div>
 
-@section Scripts {
-<script>
-    setTimeout(() => { var t = document.getElementById('toast'); if (t) t.style.opacity = '0'; setTimeout(() => { if(t) t.remove(); }, 500); }, 4000);
-</script>
-}
+<!-- Modal Registrar Tratamiento -->
+<div class="modal fade" id="createTratamientoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-plus-circle text-primary me-2"></i>Registrar Nuevo Tratamiento</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="createTratamientoForm">
+                @Html.AntiForgeryToken()
+                <div class="modal-body">
+                    <div class="row g-4">
+                        <div class="col-md-8">
+                            <label class="form-label">Nombre del Tratamiento</label>
+                            <input name="NombreTratamiento" type="text" class="form-control" placeholder="Ej: Limpieza Dental Profunda" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Precio</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted border-end-0" style="border-radius: 12px 0 0 12px;">@(ViewBag.MonedaBase?.Simbolo ?? "$")</span>
+                                <input name="Precio" type="number" step="0.01" class="form-control border-start-0" placeholder="0.00" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Vía de Administración</label>
+                            <input name="ViaAdministracion" type="text" class="form-control" placeholder="Ej: Oral, Tópica">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Dosis Sugerida</label>
+                            <input name="Dosis" type="text" class="form-control" placeholder="Ej: 500mg">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Frecuencia</label>
+                            <input name="Frecuencia" type="text" class="form-control" placeholder="Ej: Cada 8 horas">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Duración Estimada</label>
+                            <input name="DuracionTratamiento" type="text" class="form-control" placeholder="Ej: 7 días">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Estado Inicial</label>
+                            <select name="IdEstado" class="form-select">
+                                <option value="1">ACTIVO</option>
+                                <option value="2">INACTIVO</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pb-4 px-4">
+                    <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal" style="border-radius:12px;">Cancelar</button>
+                    <button type="submit" class="btn btn-primary px-5" style="border-radius:12px; font-weight:600;">
+                        <i class="fas fa-save me-2"></i>Guardar Tratamiento
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
+<!-- Modal Editar Tratamiento -->
+<div class="modal fade" id="editTratamientoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-edit text-warning me-2"></i>Editar Tratamiento</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editTratamientoForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="IdTratamiento" id="editId">
+                <div class="modal-body">
+                    <div class="row g-4">
+                        <div class="col-md-8">
+                            <label class="form-label">Nombre del Tratamiento</label>
+                            <input name="NombreTratamiento" id="editNombre" type="text" class="form-control" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Precio</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted border-end-0" style="border-radius: 12px 0 0 12px;">@(ViewBag.MonedaBase?.Simbolo ?? "$")</span>
+                                <input name="Precio" id="editPrecio" type="number" step="0.01" class="form-control border-start-0" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Vía de Administración</label>
+                            <input name="ViaAdministracion" id="editVia" type="text" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Dosis Sugerida</label>
+                            <input name="Dosis" id="editDosis" type="text" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Frecuencia</label>
+                            <input name="Frecuencia" id="editFrec" type="text" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Duración Estimada</label>
+                            <input name="DuracionTratamiento" id="editDuracion" type="text" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Estado del Tratamiento</label>
+                            <select name="IdEstado" id="editEstado" class="form-select">
+                                <option value="1">ACTIVO</option>
+                                <option value="2">INACTIVO</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pb-4 px-4">
+                    <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal" style="border-radius:12px;">Cancelar</button>
+                    <button type="submit" class="btn btn-warning px-5 text-white" style="border-radius:12px; font-weight:600;">
+                        <i class="fas fa-save me-2"></i>Actualizar Cambios
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            console.log("MediTech Treatments Module Initialized");
+
+            // CREACIÓN DE TRATAMIENTO (MODAL)
+            $('#createTratamientoForm').on('submit', function (e) {
+                e.preventDefault();
+                const $form = $(this);
+                const $btn = $form.find('button[type="submit"]');
+                const originalText = $btn.html();
+
+                $btn.html('<i class="fas fa-spinner fa-spin me-2"></i>Guardando...').prop('disabled', true);
+
+                $.ajax({
+                    url: '@Url.Action("Create")',
+                    type: 'POST',
+                    data: $form.serialize(),
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    success: function (response) {
+                        if (response.success) {
+                            if (typeof MediToast !== 'undefined') {
+                                MediToast.success(response.message);
+                            } else {
+                                alert(response.message);
+                            }
+                            
+                            const modalElem = document.getElementById('createTratamientoModal');
+                            const modal = bootstrap.Modal.getInstance(modalElem);
+                            if (modal) modal.hide();
+
+                            setTimeout(() => location.reload(), 1500);
+                        } else {
+                            let errorMsg = response.message || 'Error al guardar';
+                            if (response.errors && response.errors.length > 0) {
+                                errorMsg = '<ul class="text-start mb-0">' + response.errors.map(err => `<li>${err}</li>`).join('') + '</ul>';
+                            }
+
+                            if (typeof MediToast !== 'undefined') {
+                                MediToast.error(errorMsg);
+                            } else {
+                                alert(errorMsg.replace(/<[^>]*>?/gm, ''));
+                            }
+                            $btn.html(originalText).prop('disabled', false);
+                        }
+                    },
+                    error: function (xhr) {
+                        console.error("AJAX Error:", xhr);
+                        if (typeof MediToast !== 'undefined') {
+                            MediToast.error('Error de comunicación con el servidor');
+                        } else {
+                            alert('Error de comunicación con el servidor');
+                        }
+                        $btn.html(originalText).prop('disabled', false);
+                    }
+                });
+            });
+
+            // EDICIÓN DE TRATAMIENTO (MODAL)
+            $('.edit-btn').on('click', function () {
+                const data = $(this).data();
+                console.log("Preparing edit modal for ID:", data.id);
+
+                $('#editId').val(data.id);
+                $('#editNombre').val(data.nombre);
+                $('#editPrecio').val(data.precio);
+                $('#editVia').val(data.via);
+                $('#editDosis').val(data.dosis);
+                $('#editFrec').val(data.frec);
+                $('#editDuracion').val(data.duracion);
+                $('#editEstado').val(data.estado);
+
+                const editModalId = document.getElementById('editTratamientoModal');
+                let modal = bootstrap.Modal.getInstance(editModalId);
+                if (!modal) {
+                    modal = new bootstrap.Modal(editModalId);
+                }
+                modal.show();
+            });
+
+            $('#editTratamientoForm').on('submit', function (e) {
+                e.preventDefault();
+                const $form = $(this);
+                const $btn = $form.find('button[type="submit"]');
+                const originalText = $btn.html();
+                const id = $('#editId').val();
+
+                $btn.html('<i class="fas fa-spinner fa-spin me-2"></i>Actualizando...').prop('disabled', true);
+
+                $.ajax({
+                    url: '@Url.Action("Edit")/' + id,
+                    type: 'POST',
+                    data: $form.serialize(),
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    success: function (response) {
+                        if (response.success) {
+                            if (typeof MediToast !== 'undefined') {
+                                MediToast.success(response.message);
+                            } else {
+                                alert(response.message);
+                            }
+                            
+                            const modalElem = document.getElementById('editTratamientoModal');
+                            const modal = bootstrap.Modal.getInstance(modalElem);
+                            if (modal) modal.hide();
+
+                            setTimeout(() => location.reload(), 1500);
+                        } else {
+                            let errorMsg = response.message || 'Error al actualizar';
+                            if (response.errors && response.errors.length > 0) {
+                                errorMsg = '<ul class="text-start mb-0">' + response.errors.map(err => `<li>${err}</li>`).join('') + '</ul>';
+                            }
+
+                            if (typeof MediToast !== 'undefined') {
+                                MediToast.error(errorMsg);
+                            } else {
+                                alert(errorMsg.replace(/<[^>]*>?/gm, ''));
+                            }
+                            $btn.html(originalText).prop('disabled', false);
+                        }
+                    },
+                    error: function (xhr) {
+                        console.error("AJAX Error:", xhr);
+                        if (typeof MediToast !== 'undefined') {
+                            MediToast.error('Error al conectar con el servidor');
+                        } else {
+                            alert('Error al conectar con el servidor');
+                        }
+                        $btn.html(originalText).prop('disabled', false);
+                    }
+                });
+            });
+        });
+    </script>
+}

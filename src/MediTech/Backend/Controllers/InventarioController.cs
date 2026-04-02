@@ -136,12 +136,27 @@ namespace MediTech.Backend.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Nombre,Descripcion,Precio,Stock,StockMinimo,Activo")] Producto producto)
         {
+            bool isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest";
+
             if (ModelState.IsValid)
             {
                 _context.Add(producto);
                 await _context.SaveChangesAsync();
+
+                if (isAjax)
+                {
+                    return Json(new { success = true, message = "Producto registrado con éxito en el inventario." });
+                }
+
                 return RedirectToAction(nameof(Index));
             }
+
+            if (isAjax)
+            {
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+                return Json(new { success = false, message = "Error al registrar el producto.", errors });
+            }
+
             return View(producto);
         }
 
@@ -153,6 +168,20 @@ namespace MediTech.Backend.Controllers
             var producto = await _context.Productos.FindAsync(id);
             if (producto == null) return NotFound();
 
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                return Json(new { 
+                    idProducto = producto.IdProducto, 
+                    nombre = producto.Nombre, 
+                    descripcion = producto.Descripcion,
+                    precio = producto.Precio,
+                    stock = producto.Stock,
+                    stockMinimo = producto.StockMinimo,
+                    activo = producto.Activo,
+                    fechaCreacion = producto.FechaCreacion
+                });
+            }
+
             return View(producto);
         }
 
@@ -161,7 +190,14 @@ namespace MediTech.Backend.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("IdProducto,Nombre,Descripcion,Precio,Stock,StockMinimo,Activo,FechaCreacion")] Producto producto)
         {
-            if (id != producto.IdProducto) return NotFound();
+            if (id != producto.IdProducto)
+            {
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = false, message = "Error de validación: El ID del producto no coincide." });
+                }
+                return NotFound();
+            }
 
             if (ModelState.IsValid)
             {
@@ -169,6 +205,12 @@ namespace MediTech.Backend.Controllers
                 {
                     _context.Update(producto);
                     await _context.SaveChangesAsync();
+
+                    if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                    {
+                        return Json(new { success = true, message = "Producto actualizado con éxito." });
+                    }
+                    TempData["Success"] = "Producto actualizado con éxito.";
                 }
                 catch (DbUpdateConcurrencyException)
                 {
@@ -176,6 +218,12 @@ namespace MediTech.Backend.Controllers
                     else throw;
                 }
                 return RedirectToAction(nameof(Index));
+            }
+
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+                return Json(new { success = false, message = "Error al actualizar el producto.", errors });
             }
             return View(producto);
         }
@@ -186,6 +234,16 @@ namespace MediTech.Backend.Controllers
             if (id == null) return NotFound();
             var producto = await _context.Productos.FindAsync(id);
             if (producto == null) return NotFound();
+
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                return Json(new { 
+                    idProducto = producto.IdProducto, 
+                    nombre = producto.Nombre, 
+                    stock = producto.Stock 
+                });
+            }
+
             return View(producto);
         }
 
@@ -203,7 +261,12 @@ namespace MediTech.Backend.Controllers
                 var stockFinal = producto.Stock - cantidad;
                 if (stockFinal < 0)
                 {
-                    return BadRequest("el stock no puede ser negativo. El stock de salida es mayor al inventario actual");
+                    var msg = "El stock no puede ser negativo. El stock de salida es mayor al inventario actual.";
+                    if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                    {
+                        return Json(new { success = false, message = msg });
+                    }
+                    return BadRequest(msg);
                 }
             }
 
@@ -219,6 +282,12 @@ namespace MediTech.Backend.Controllers
             // El stock se actualiza via Trigger SQL en la BD
             await _context.SaveChangesAsync();
 
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                return Json(new { success = true, message = "Movimiento de inventario procesado con éxito." });
+            }
+
+            TempData["Success"] = "Movimiento de inventario procesado con éxito.";
             return RedirectToAction(nameof(Index));
         }
 

@@ -2,7 +2,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using MediTech.Backend.Models;namespace MediTech.Backend.Controllers;
+using MediTech.Backend.Models;
+namespace MediTech.Backend.Controllers;
 
 [Authorize]
 public class CitasController(MediTechContext context, ILogger<CitasController> logger) : Controller
@@ -654,6 +655,31 @@ public class CitasController(MediTechContext context, ILogger<CitasController> l
         }
 
         return Json(new { success = false });
+    }
+
+    // GET: Citas/GetPacienteCitas/5 — JSON for patient folder history
+    [HttpGet("Citas/GetPacienteCitas/{id}")]
+    public async Task<IActionResult> GetPacienteCitas(int id)
+    {
+        var citas = await _context.Citas
+            .Include(c => c.Tratamiento)
+            .Include(c => c.EstadoCita)
+            .Where(c => c.IdPaciente == id && c.IdEstado == 1) // Only active/enabled appointments
+            .OrderByDescending(c => c.Fecha)
+            .ThenByDescending(c => c.HoraInicio)
+            .ToListAsync();
+
+        var result = citas.Select(c => new
+        {
+            id = c.IdCita,
+            fecha = c.Fecha.ToString("dd/MM/yyyy"),
+            hora = DateTime.Today.Add(c.HoraInicio).ToString("hh:mm tt"),
+            tratamiento = c.Tratamiento?.NombreTratamiento ?? "Consulta General",
+            estado = c.EstadoCita?.DescEstadoCita ?? "Programada",
+            estadoId = c.IdEstadoCita
+        });
+
+        return Json(new { success = true, data = result });
     }
 
     // GET: Citas/GetRecepcionData/5 — JSON data for the triage modal

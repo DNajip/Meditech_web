@@ -292,6 +292,21 @@
     <script src="~/js/site.js" asp-append-version="true"></script>
     <script src="~/js/meditech-notifications.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
+
+    <script>
+        $(document).ready(function() {
+            // Bridge TempData messages to MediToast
+            const success = '@TempData["Success"]';
+            const error = '@TempData["Error"]';
+            const warning = '@TempData["Warning"]';
+            const info = '@TempData["Info"]';
+
+            if (success && typeof MediToast !== 'undefined') MediToast.success(success);
+            if (error && typeof MediToast !== 'undefined') MediToast.error(error);
+            if (warning && typeof MediToast !== 'undefined') MediToast.warning(warning);
+            if (info && typeof MediToast !== 'undefined') MediToast.info(info);
+        });
+    </script>
 </body>
 </html>
 
