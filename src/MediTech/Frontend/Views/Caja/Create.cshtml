@@ -204,23 +204,18 @@
     </div>
 </div>
 
-<style>
-    .text-gradient-primary { background: linear-gradient(135deg, #2D3E50 0%, #4A90E2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    .card-premium { border-radius: 15px; }
-    .btn-primary-premium { background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%); color: white; border: none; padding: 0.6rem 1.5rem; border-radius: 10px; }
-    .bg-light-faded { background-color: rgba(248, 249, 250, 0.7); }
-</style>
-
 @section Scripts {
 <script>
     let rowIndex = 0;
 
     document.getElementById('btnAddTratamiento').addEventListener('click', () => {
-        new bootstrap.Modal(document.getElementById('modalTratamiento')).show();
+        const modal = new bootstrap.Modal(document.getElementById('modalTratamiento'));
+        modal.show();
     });
 
     document.getElementById('btnAddProducto').addEventListener('click', () => {
-        new bootstrap.Modal(document.getElementById('modalProducto')).show();
+        const modal = new bootstrap.Modal(document.getElementById('modalProducto'));
+        modal.show();
     });
 
     document.getElementById('btnConfirmTratamiento').addEventListener('click', () => {
@@ -268,7 +263,6 @@
             <td><button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(this)"><i class="fas fa-trash"></i></button></td>
         `;
         tbody.appendChild(tr);
-        rowIndex++;
         recalculate();
     }
 
@@ -306,6 +300,54 @@
     }
 
     document.getElementById('inputDescuento').addEventListener('input', recalculate);
+
+    // AJAX Submission (Phase 2 #12)
+    document.getElementById('formCuenta').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const btn = document.getElementById('btnGuardar');
+        const originalHtml = btn.innerHTML;
+        
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...';
+
+        const formData = new FormData(this);
+        fetch(this.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(async res => {
+            const isJson = res.headers.get('content-type')?.includes('application/json');
+            const data = isJson ? await res.json() : null;
+
+            if (!res.ok) {
+                // Si la respuesta no es OK (400, 500, etc), lanzar error con mensaje detallado
+                const errorText = data?.message || await res.text() || "Error desconocido en el servidor";
+                throw new Error(errorText);
+            }
+            return data;
+        })
+        .then(data => {
+            if (data && data.success) {
+                MediToast.success(data.message);
+                setTimeout(() => location.href = '/Caja/Details/' + data.id, 1500);
+            } else {
+                MediToast.error(data?.message || "Error al procesar la solicitud");
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
+        })
+        .catch(err => {
+            console.error("Error al guardar cuenta:", err);
+            // Mostrar el mensaje real del error si es posible
+            const msg = err.message.length > 100 ? "Error interno del servidor (500)" : err.message;
+            MediToast.error(msg);
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+        });
+    });
 </script>
 }
 

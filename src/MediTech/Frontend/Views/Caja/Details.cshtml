@@ -5,7 +5,8 @@
     var monedas = ViewBag.Monedas as List<MediTech.Backend.Models.Moneda>;
     decimal totalPagado = ViewBag.TotalPagado;
     decimal saldoPendiente = ViewBag.SaldoPendiente;
-    bool isPagada = saldoPendiente <= 0 && (Model.TotalFinal ?? 0) > 0;
+    bool isCancelada = (Model.TotalFinal ?? 0) == 0;
+    bool isPagada = !isCancelada && saldoPendiente <= 0 && (Model.TotalFinal ?? 0) > 0;
     var nombrePaciente = Model.Paciente?.Persona != null
         ? $"{Model.Paciente.Persona.PrimerNombre} {Model.Paciente.Persona.PrimerApellido}"
         : "N/A";
@@ -13,13 +14,14 @@
 
 <div class="container-fluid py-4">
     <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="display-6 fw-bold text-gradient-primary mb-0">Cuenta #@Model.IdCuenta</h2>
-            <p class="text-muted">Detalle de cuenta y registro de pagos</p>
-        </div>
         <div class="d-flex gap-2">
-            @if (!isPagada)
+            @if (!isCancelada && !isPagada && totalPagado == 0 && (Model.TotalFinal ?? 0) > 0)
+            {
+                <button type="button" class="btn btn-outline-danger shadow-sm" id="btnAnularCuenta">
+                    <i class="fas fa-ban me-2"></i>Anular Cuenta
+                </button>
+            }
+            @if (!isCancelada && !isPagada)
             {
                 <button type="button" class="btn btn-success shadow-sm" data-bs-toggle="modal" data-bs-target="#registrarPagoModal">
                     <i class="fas fa-dollar-sign me-2"></i>Registrar Pago
@@ -33,8 +35,16 @@
 
     @if (TempData["Success"] != null)
     {
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <div class="alert alert-success alert-dismissible fade show shadow-sm border-0 mb-4" role="alert">
             <i class="fas fa-check-circle me-2"></i>@TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm border-0 mb-4" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>@TempData["Error"]
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     }
@@ -48,8 +58,8 @@
                         <div class="avatar-lg bg-soft-primary rounded-circle mx-auto d-flex align-items-center justify-content-center mb-3" style="width:70px;height:70px;">
                             <i class="fas fa-file-invoice-dollar text-primary fs-3"></i>
                         </div>
-                        <span class="badge @(isPagada ? "bg-success" : "bg-warning text-dark") rounded-pill fs-6 px-3 py-2">
-                            @(isPagada ? "✓ PAGADA" : "⏳ PENDIENTE")
+                        <span class="badge @(isCancelada ? "bg-soft-secondary text-secondary" : (isPagada ? "bg-success" : "bg-warning text-dark")) rounded-pill fs-6 px-3 py-2">
+                            @(isCancelada ? "✕ CANCELADA" : (isPagada ? "✓ PAGADA" : "⏳ PENDIENTE"))
                         </span>
                     </div>
 
@@ -205,56 +215,70 @@
 <!-- Modal Registrar Pago -->
 <div class="modal fade" id="registrarPagoModal" tabindex="-1">
     <div class="modal-dialog">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-success bg-opacity-10 border-0">
-                <h5 class="modal-title fw-bold"><i class="fas fa-dollar-sign text-success me-2"></i>Registrar Pago</h5>
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 1.2rem;">
+            <div class="modal-header bg-success bg-opacity-10 border-0 pt-4 px-4">
+                <h5 class="modal-title fw-bold text-success">
+                    <i class="fas fa-dollar-sign me-2"></i>Registrar Pago
+                </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form asp-action="RegistrarPago" method="post">
-                <div class="modal-body">
+            <form id="formRegistrarPago" asp-action="RegistrarPago" method="post">
+                <div class="modal-body p-4">
                     <input type="hidden" name="idCuenta" value="@Model.IdCuenta" />
-                    <div class="bg-light rounded-3 p-3 mb-3">
-                        <div class="d-flex justify-content-between">
-                            <span class="text-muted">Saldo Pendiente:</span>
-                            <span class="fw-bold fs-5 text-danger">@Model.MonedaBase?.Simbolo @saldoPendiente.ToString("N2")</span>
+                    <div class="bg-soft-danger rounded-4 p-4 mb-4 text-center border border-danger border-opacity-10">
+                        <span class="text-danger-emphasis small fw-bold text-uppercase d-block mb-1">Saldo a Liquidar</span>
+                        <h2 class="fw-bold text-danger mb-0 font-monospace">@Model.MonedaBase?.Simbolo @saldoPendiente.ToString("N2")</h2>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-secondary">Monto a Recibir <span class="text-danger">*</span></label>
+                        <div class="input-group input-group-lg">
+                            <span class="input-group-text bg-light border-0" id="simboloPago">@Model.MonedaBase?.Simbolo</span>
+                            <input type="number" name="monto" id="inputMontoPago" class="form-control bg-light border-0 fw-bold" step="0.01" min="0.01" value="@saldoPendiente" required>
                         </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Monto a Pagar <span class="text-danger">*</span></label>
-                        <input type="number" name="monto" class="form-control" step="0.01" min="0.01" max="@saldoPendiente" value="@saldoPendiente" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Moneda <span class="text-danger">*</span></label>
-                        <select name="idMoneda" class="form-select" id="selectMonedaPago" required>
-                            @if (monedas != null)
-                            {
-                                @foreach (var m in monedas)
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-secondary">Moneda <span class="text-danger">*</span></label>
+                            <select name="idMoneda" class="form-select border-0 bg-light" id="selectMonedaPago" required>
+                                @if (monedas != null)
                                 {
-                                    <option value="@m.IdMoneda" 
-                                            data-simbolo="@m.Simbolo"
-                                            data-base="@(m.IdMoneda == Model.IdMonedaBase ? "true" : "false")"
-                                            selected="@(m.IdMoneda == Model.IdMonedaBase)">
-                                        @m.Nombre (@m.Simbolo)
-                                    </option>
+                                    @foreach (var m in monedas)
+                                    {
+                                        <option value="@m.IdMoneda" 
+                                                data-simbolo="@m.Simbolo"
+                                                data-base="@(m.IdMoneda == Model.IdMonedaBase ? "true" : "false")"
+                                                selected="@(m.IdMoneda == Model.IdMonedaBase)">
+                                            @m.Codigo - @m.Nombre
+                                        </option>
+                                    }
                                 }
-                            }
-                        </select>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-secondary">Vía de Pago <span class="text-danger">*</span></label>
+                            <select name="metodoPago" class="form-select border-0 bg-light" required>
+                                <option value="EFECTIVO">💵 Efectivo</option>
+                                <option value="TARJETA">💳 Tarjeta</option>
+                                <option value="TRANSFERENCIA">🏦 Transferencia</option>
+                            </select>
+                        </div>
                     </div>
-                    <div id="previewConversion" class="alert alert-info py-2" style="display:none;">
-                        <small><i class="fas fa-calculator me-1"></i> Equivalente en Base: <span id="montoBaseCalculado">0.00</span> @Model.MonedaBase?.Codigo</small>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Método de Pago <span class="text-danger">*</span></label>
-                        <select name="metodoPago" class="form-select" required>
-                            <option value="EFECTIVO">💵 Efectivo</option>
-                            <option value="TARJETA">💳 Tarjeta</option>
-                            <option value="TRANSFERENCIA">🏦 Transferencia</option>
-                        </select>
+
+                    <div id="previewConversion" class="mt-4 p-3 bg-soft-primary rounded-3 border border-primary border-opacity-10" style="display:none;">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="fw-bold text-primary text-uppercase" style="font-size: 0.65rem;">Equivalente en Moneda Base</small>
+                            <span class="fw-bold text-primary fs-5" id="montoBaseCalculado">0.00</span>
+                        </div>
+                        <small class="text-muted" style="font-size: 0.7rem;">Usando tasa: <span id="tasaAplicadaPreview">1.00</span></small>
                     </div>
                 </div>
-                <div class="modal-footer border-0">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-success"><i class="fas fa-check me-2"></i>Confirmar Pago</button>
+                <div class="modal-footer border-0 p-4 pt-0">
+                    <button type="button" class="btn btn-light rounded-pill px-4 fw-bold text-muted" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="submit" class="btn btn-success rounded-pill px-5 fw-bold shadow-sm" id="btnSubmitPago">
+                        <i class="fas fa-check-circle me-2"></i>Confirmar Cobro
+                    </button>
                 </div>
             </form>
         </div>
@@ -280,25 +304,19 @@
 }
 
 
-<style>
-    .text-gradient-primary { background: linear-gradient(135deg, #2D3E50 0%, #4A90E2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    .card-premium { border-radius: 15px; }
-    .bg-soft-primary { background: rgba(13, 110, 253, 0.1); }
-    .bg-soft-warning { background: rgba(255, 193, 7, 0.1); }
-    .bg-soft-danger { background: rgba(220, 53, 69, 0.1); }
-    .bg-soft-info { background: rgba(13, 202, 240, 0.1); }
-    .bg-soft-success { background: rgba(25, 135, 84, 0.1); }
-    .bg-light-faded { background-color: rgba(248, 249, 250, 0.7); }
-</style>
+@Html.AntiForgeryToken()
 
 @section Scripts {
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const inputMonto = document.querySelector('input[name="monto"]');
+        const formPago = document.getElementById('formRegistrarPago');
+        const inputMonto = document.getElementById('inputMontoPago');
         const selectMoneda = document.getElementById('selectMonedaPago');
         const divPreview = document.getElementById('previewConversion');
         const spanMontoBase = document.getElementById('montoBaseCalculado');
-        const btnConfirmar = document.querySelector('#registrarPagoModal button[type="submit"]');
+        const spanTasaPreview = document.getElementById('tasaAplicadaPreview');
+        const spanSimboloPago = document.getElementById('simboloPago');
+        const btnSubmit = document.getElementById('btnSubmitPago');
         const meta = document.getElementById('currency-metadata');
 
         if (!meta || !inputMonto || !selectMoneda) return;
@@ -312,18 +330,19 @@
         function updatePreview() {
             const opt = selectMoneda.options[selectMoneda.selectedIndex];
             const idMonedaPago = parseInt(opt.value);
+            const simbolo = opt.dataset.simbolo;
             const monto = parseFloat(inputMonto.value) || 0;
+
+            spanSimboloPago.textContent = simbolo;
+            spanTasaPreview.textContent = tasa.toFixed(4);
 
             const isBase = (idMonedaPago === idMonedaBase);
             let equiv = monto;
 
-            if (isBase || monto === 0) {
+            if (isBase) {
                 divPreview.style.display = 'none';
-                equiv = monto;
             } else {
                 divPreview.style.display = 'block';
-                
-                // Lógica de conversión
                 if (idTasaOrigen === idMonedaPago && idTasaDestino === idMonedaBase) {
                     equiv = monto * tasa;
                 } else if (idTasaOrigen === idMonedaBase && idTasaDestino === idMonedaPago) {
@@ -331,40 +350,100 @@
                 } else {
                     equiv = monto * tasa; 
                 }
-                
-                spanMontoBase.textContent = equiv.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                spanMontoBase.textContent = equiv.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' Base';
             }
 
-            // Validación "No fiamos"
-            const montoInsuficiente = (monto > 0 && (equiv < saldoPendiente - 0.01));
-            
-            if (montoInsuficiente) {
+            // Validar monto insuficiente
+            if (monto > 0 && equiv < (saldoPendiente - 0.05)) { // 0.05 margen redondeo
                 inputMonto.classList.add('is-invalid');
-                btnConfirmar.setAttribute('disabled', 'disabled');
-                btnConfirmar.classList.add('disabled');
-                
-                let warning = document.getElementById('montoMinimoWarning');
-                if (!warning) {
-                    warning = document.createElement('div');
-                    warning.id = 'montoMinimoWarning';
-                    warning.className = 'text-danger small mt-1 fw-bold';
-                    inputMonto.parentNode.appendChild(warning);
+                btnSubmit.disabled = true;
+                if (!document.getElementById('insufficientWarning')) {
+                    const warn = document.createElement('div');
+                    warn.id = 'insufficientWarning';
+                    warn.className = 'invalid-feedback fw-bold';
+                    warn.textContent = 'El monto debe cubrir el saldo total.';
+                    inputMonto.parentNode.appendChild(warn);
                 }
-                warning.innerHTML = `<i class="fas fa-exclamation-triangle me-1"></i> El monto debe cubrir el saldo total (${saldoPendiente.toLocaleString('en-US', {minimumFractionDigits:2})} base).`;
             } else {
                 inputMonto.classList.remove('is-invalid');
-                btnConfirmar.removeAttribute('disabled');
-                btnConfirmar.classList.remove('disabled');
-                const warning = document.getElementById('montoMinimoWarning');
-                if (warning) warning.remove();
+                btnSubmit.disabled = false;
+                document.getElementById('insufficientWarning')?.remove();
             }
         }
 
         selectMoneda.addEventListener('change', updatePreview);
         inputMonto.addEventListener('input', updatePreview);
-        
-        // Ejecutar al abrir modal
-        document.getElementById('registrarPagoModal').addEventListener('shown.bs.modal', updatePreview);
+
+        // AJAX Submission
+        formPago.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const btn = e.submitter || document.querySelector('#formPago button[type="submit"]');
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Procesando...';
+
+            const formData = new FormData(formPago);
+            fetch(formPago.action, {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('registrarPagoModal')).hide();
+                    MediToast.success(data.message);
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    MediToast.error(data.message);
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                }
+            })
+            .catch(error => {
+                MediToast.error("Error al procesar el pago");
+                console.error(error);
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            });
+        });
+
+        // Anular Cuenta
+        const btnAnular = document.getElementById('btnAnularCuenta');
+        if (btnAnular) {
+            btnAnular.addEventListener('click', function() {
+                MediConfirm.show({
+                    title: '¿Anular Cuenta permanentemente?',
+                    message: 'Esta acción liberará los cargos y devolverá el stock de productos al almacén. No se puede deshacer.',
+                    variant: 'danger',
+                    confirmText: 'Sí, Anular',
+                    icon: 'fa-ban'
+                }).then(confirmed => {
+                    if (confirmed) {
+                        const csrfToken = document.querySelector('input[name="__RequestVerificationToken"]').value;
+                        const formData = new FormData();
+                        formData.append('id', @Model.IdCuenta);
+                        formData.append('__RequestVerificationToken', csrfToken);
+
+                        fetch('/Caja/AnularCuenta', {
+                            method: 'POST',
+                            body: formData
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.success) {
+                                MediToast.success(data.message);
+                                setTimeout(() => location.href = '/Caja/Index', 1500);
+                            } else {
+                                MediToast.error(data.message);
+                            }
+                        });
+                    }
+                });
+            });
+        }
+
+        updatePreview();
     });
 </script>
 }

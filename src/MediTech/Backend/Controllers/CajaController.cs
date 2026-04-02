@@ -18,7 +18,7 @@ public class CajaController : Controller
     }
 
     // GET: Caja
-    public async Task<IActionResult> Index(string? estado, DateTime? fecha, int page = 1)
+    public async Task<IActionResult> Index(string? estado, DateTime? fecha, string? buscar, int page = 1)
     {
         int pageSize = 10;
 
@@ -28,45 +28,63 @@ public class CajaController : Controller
             .Include(c => c.Pagos)
             .AsQueryable();
 
+        // Filtro por búsqueda de nombre
+        if (!string.IsNullOrEmpty(buscar))
+        {
+            query = query.Where(c => (c.Paciente!.Persona!.PrimerNombre + " " + c.Paciente.Persona.PrimerApellido).Contains(buscar) ||
+                                     c.IdCuenta.ToString() == buscar);
+        }
+
         // Filtro por fecha
         if (fecha.HasValue)
         {
             query = query.Where(c => c.FechaCreacion.Date == fecha.Value.Date);
         }
 
-        // Estadísticas globales
-        var allCuentas = await query.ToListAsync();
-        
+        // Estadísticas optimizadas (SQL)
         var hoy = DateTime.Today;
-        var cuentasHoy = allCuentas.Where(c => c.FechaCreacion.Date == hoy).ToList();
-        ViewBag.IngresosHoy = cuentasHoy.Sum(c => c.Pagos.Sum(p => p.Monto ?? 0));
-        ViewBag.CuentasHoy = cuentasHoy.Count;
-        ViewBag.CuentasPendientes = allCuentas.Count(c => c.Pagos.Sum(p => p.Monto ?? 0) < (c.TotalFinal ?? 0));
-        ViewBag.TotalRecaudado = allCuentas.Sum(c => c.Pagos.Sum(p => p.Monto ?? 0));
+        var config = await _context.ConfiguracionesMoneda.Include(c => c.MonedaBase).FirstOrDefaultAsync();
+        ViewBag.MonedaBase = config?.MonedaBase;
+
+        // Calculamos stats directamente en SQL
+        ViewBag.IngresosHoy = await _context.Pagos
+            .Where(p => p.FechaPago.Date == hoy)
+            .SumAsync(p => p.MontoBase ?? 0);
+
+        ViewBag.CuentasHoy = await _context.Cuentas
+            .CountAsync(c => c.FechaCreacion.Date == hoy);
+
+        ViewBag.CuentasPendientes = await _context.Cuentas
+            .CountAsync(c => c.Pagos.Sum(p => p.MontoBase ?? 0) < c.TotalFinal);
+
+        ViewBag.TotalRecaudado = await _context.Pagos
+            .SumAsync(p => p.MontoBase ?? 0);
 
         // Filtro por estado
         if (!string.IsNullOrEmpty(estado))
         {
             if (estado == "PENDIENTE")
-                allCuentas = allCuentas.Where(c => c.Pagos.Sum(p => p.Monto ?? 0) < (c.TotalFinal ?? 0) && (c.TotalFinal ?? 0) > 0).ToList();
+                query = query.Where(c => c.Pagos.Sum(p => p.MontoBase ?? 0) < c.TotalFinal && (c.TotalFinal ?? 0) > 0);
             else if (estado == "PAGADA")
-                allCuentas = allCuentas.Where(c => c.Pagos.Sum(p => p.Monto ?? 0) >= (c.TotalFinal ?? 0) && (c.TotalFinal ?? 0) > 0).ToList();
+                query = query.Where(c => c.Pagos.Sum(p => p.MontoBase ?? 0) >= c.TotalFinal && (c.TotalFinal ?? 0) > 0);
+            else if (estado == "CANCELADA")
+                query = query.Where(c => (c.TotalFinal ?? 0) == 0);
         }
 
-        var totalItems = allCuentas.Count;
-        var config = await _context.ConfiguracionesMoneda.Include(c => c.MonedaBase).FirstOrDefaultAsync();
-        ViewBag.MonedaBase = config?.MonedaBase;
-
-        var cuentas = allCuentas
+        var totalItems = await query.CountAsync();
+        
+        var cuentas = await query
             .OrderByDescending(c => c.FechaCreacion)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .ToList();
+            .ToListAsync();
 
         ViewBag.CurrentPage = page;
         ViewBag.TotalPages = (int)Math.Ceiling((double)totalItems / pageSize);
+        ViewBag.TotalItems = totalItems; // Para el indicador "Mostrando X de Z"
         ViewBag.EstadoFilter = estado;
         ViewBag.FechaFilter = fecha?.ToString("yyyy-MM-dd");
+        ViewBag.BuscarFilter = buscar;
 
         return View(cuentas);
     }
@@ -97,70 +115,99 @@ public class CajaController : Controller
         return View();
     }
 
-    // POST: Caja/Create
+    // ViewModel para creación de cuenta (Fix Binding Errors)
+    public class CreateCuentaViewModel
+    {
+        public int IdPaciente { get; set; }
+        public int? IdMonedaBase { get; set; }
+        public decimal Descuento { get; set; }
+        public string[] TipoItem { get; set; } = Array.Empty<string>();
+        public int[] IdReferencia { get; set; } = Array.Empty<int>();
+        public string[] DescripcionItem { get; set; } = Array.Empty<string>();
+        public int[] Cantidad { get; set; } = Array.Empty<int>();
+        public decimal[] PrecioUnitario { get; set; } = Array.Empty<decimal>();
+    }
+
+    // POST: Caja/Create (AJAX)
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(
-        int idPaciente,
-        int? idMonedaBase,
-        decimal descuento,
-        string[] tipoItem,
-        int[] idReferencia,
-        string[] descripcionItem,
-        int[] cantidad,
-        decimal[] precioUnitario)
+    public async Task<IActionResult> Create([FromForm] CreateCuentaViewModel model)
     {
-        if (tipoItem.Length == 0)
+        if (!ModelState.IsValid)
         {
-            TempData["Error"] = "Debe agregar al menos un ítem a la cuenta.";
-            return RedirectToAction(nameof(Create));
+            var errors = string.Join(" | ", ModelState.Values
+                .SelectMany(v => v.Errors)
+                .Select(e => e.ErrorMessage));
+            return Json(new { success = false, message = "Datos inválidos: " + errors });
         }
 
-        decimal totalBruto = 0;
-        var detalles = new List<CuentaDetalle>();
-
-        for (int i = 0; i < tipoItem.Length; i++)
+        try 
         {
-            var subtotal = precioUnitario[i] * cantidad[i];
-            totalBruto += subtotal;
-
-            detalles.Add(new CuentaDetalle
+            if (model.TipoItem == null || model.TipoItem.Length == 0)
             {
-                TipoItem = tipoItem[i],
-                IdReferencia = idReferencia[i],
-                Descripcion = descripcionItem[i],
-                Cantidad = cantidad[i],
-                PrecioUnitario = precioUnitario[i],
-                Subtotal = subtotal
-            });
+                return Json(new { success = false, message = "Debe agregar al menos un ítem a la cuenta." });
+            }
+
+            decimal totalBruto = 0;
+            var detalles = new List<CuentaDetalle>();
+
+            for (int i = 0; i < model.TipoItem.Length; i++)
+            {
+                var subtotal = model.PrecioUnitario[i] * model.Cantidad[i];
+                totalBruto += subtotal;
+
+                detalles.Add(new CuentaDetalle
+                {
+                    TipoItem = model.TipoItem[i],
+                    IdReferencia = model.IdReferencia[i],
+                    Descripcion = model.DescripcionItem[i],
+                    Cantidad = model.Cantidad[i],
+                    PrecioUnitario = model.PrecioUnitario[i],
+                    Subtotal = subtotal
+                });
+            }
+
+            var config = await _context.ConfiguracionesMoneda.FirstOrDefaultAsync();
+            if (config == null) return Json(new { success = false, message = "Configuración de moneda no encontrada." });
+
+            var cuenta = new Cuenta
+            {
+                IdPaciente = model.IdPaciente,
+                IdMonedaBase = config.IdMonedaBase,
+                TotalBruto = totalBruto,
+                Descuento = model.Descuento,
+                TotalFinal = totalBruto - model.Descuento,
+                FechaCreacion = DateTime.Now
+            };
+
+            _context.Cuentas.Add(cuenta);
+            await _context.SaveChangesAsync();
+
+            // Asignar IdCuenta y descontar stock
+            foreach (var d in detalles)
+            {
+                d.IdCuenta = cuenta.IdCuenta;
+                if (d.TipoItem == "PRODUCTO" && d.IdReferencia.HasValue)
+                {
+                    var producto = await _context.Productos.FindAsync(d.IdReferencia.Value);
+                    if (producto != null)
+                    {
+                        producto.Stock -= d.Cantidad ?? 0;
+                        if (producto.Stock < 0) producto.Stock = 0;
+                        _context.Productos.Update(producto);
+                    }
+                }
+            }
+            
+            _context.CuentaDetalles.AddRange(detalles);
+            await _context.SaveChangesAsync();
+
+            return Json(new { success = true, message = "Cuenta creada exitosamente.", id = cuenta.IdCuenta });
         }
-
-        var config = await _context.ConfiguracionesMoneda.FirstOrDefaultAsync();
-        if (config == null) throw new Exception("Configuración de moneda no encontrada.");
-
-        var cuenta = new Cuenta
+        catch (Exception ex)
         {
-            IdPaciente = idPaciente,
-            IdMonedaBase = config.IdMonedaBase,
-            TotalBruto = totalBruto,
-            Descuento = descuento,
-            TotalFinal = totalBruto - descuento,
-            FechaCreacion = DateTime.Now
-        };
-
-        _context.Cuentas.Add(cuenta);
-        await _context.SaveChangesAsync();
-
-        // Asignar IdCuenta a cada detalle y guardar
-        foreach (var d in detalles)
-        {
-            d.IdCuenta = cuenta.IdCuenta;
+            return Json(new { success = false, message = "Error interno: " + ex.Message });
         }
-        _context.CuentaDetalles.AddRange(detalles);
-        await _context.SaveChangesAsync();
-
-        TempData["Success"] = "Cuenta creada exitosamente.";
-        return RedirectToAction(nameof(Details), new { id = cuenta.IdCuenta });
     }
 
     // GET: Caja/Details/5
@@ -212,76 +259,109 @@ public class CajaController : Controller
         return View(cuenta);
     }
 
-    // POST: Caja/RegistrarPago
+    // POST: Caja/RegistrarPago (AJAX)
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> RegistrarPago(int idCuenta, decimal monto, int idMoneda, string metodoPago)
     {
-        var cuenta = await _context.Cuentas
-            .Include(c => c.Pagos)
-            .FirstOrDefaultAsync(c => c.IdCuenta == idCuenta);
+        try 
+        {
+            var cuenta = await _context.Cuentas
+                .Include(c => c.Pagos)
+                .FirstOrDefaultAsync(c => c.IdCuenta == idCuenta);
 
+            if (cuenta == null) return NotFound(new { success = false, message = "Cuenta no encontrada" });
+
+            // Obtener tasa de cambio con caché
+            if (!_cache.TryGetValue(TasaCacheKey, out decimal tasaCambio))
+            {
+                var activeTasa = await _context.TasasCambio.FirstOrDefaultAsync(t => t.Activo);
+                if (activeTasa == null)
+                {
+                    return Json(new { success = false, message = "No hay tasa de cambio activa definida." });
+                }
+                tasaCambio = activeTasa.Valor;
+                _cache.Set(TasaCacheKey, tasaCambio, TimeSpan.FromHours(1));
+            }
+
+            var config = await _context.ConfiguracionesMoneda.FirstOrDefaultAsync();
+            var currentTasa = await _context.TasasCambio.FirstOrDefaultAsync(t => t.Activo);
+
+            decimal montoBase = monto;
+            if (idMoneda != config?.IdMonedaBase && currentTasa != null)
+            {
+                if (currentTasa.IdMonedaOrigen == idMoneda && currentTasa.IdMonedaDestino == config?.IdMonedaBase)
+                    montoBase = monto * currentTasa.Valor;
+                else if (currentTasa.IdMonedaOrigen == config?.IdMonedaBase && currentTasa.IdMonedaDestino == idMoneda)
+                    montoBase = monto / currentTasa.Valor;
+            }
+
+            var pagosList = cuenta.Pagos ?? new List<Pago>();
+            var totalPagadoPrevio = pagosList.Sum(p => p.MontoBase ?? 0);
+            var saldoPendienteBase = (cuenta.TotalFinal ?? 0) - totalPagadoPrevio;
+
+            if (montoBase < saldoPendienteBase - 0.01m)
+            {
+                return Json(new { success = false, message = $"El monto ({montoBase:N2}) es insuficiente para el saldo ({saldoPendienteBase:N2})." });
+            }
+
+            var pago = new Pago
+            {
+                IdCuenta = idCuenta,
+                Monto = monto,
+                MontoBase = montoBase,
+                IdMoneda = idMoneda,
+                MetodoPago = metodoPago,
+                TasaCambioAplicada = currentTasa?.Valor ?? 1,
+                FechaPago = DateTime.Now
+            };
+
+            _context.Pagos.Add(pago);
+            await _context.SaveChangesAsync();
+
+            return Json(new { success = true, message = "Pago registrado exitosamente." });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "Error interno: " + ex.Message });
+        }
+    }
+
+    // POST: Caja/AnularCuenta (Phase 3 #8)
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AnularCuenta(int id)
+    {
+        var cuenta = await _context.Cuentas.Include(c => c.Pagos).FirstOrDefaultAsync(c => c.IdCuenta == id);
         if (cuenta == null) return NotFound();
 
-        // Obtener tasa de cambio con caché (Obligatorio para nuevos pagos)
-        if (!_cache.TryGetValue(TasaCacheKey, out decimal tasaCambio))
+        if (cuenta.Pagos.Any())
         {
-            var activeTasa = await _context.TasasCambio.FirstOrDefaultAsync(t => t.Activo);
-            if (activeTasa == null)
-            {
-                throw new Exception("No existe una tasa de cambio activa definida. No se puede proceder con el pago.");
-            }
-            tasaCambio = activeTasa.Valor;
-            _cache.Set(TasaCacheKey, tasaCambio, TimeSpan.FromHours(1));
+            return Json(new { success = false, message = "No se puede anular una cuenta que ya tiene pagos registrados." });
         }
 
-        var config = await _context.ConfiguracionesMoneda.FirstOrDefaultAsync();
-        if (config == null) throw new Exception("Configuración de moneda no encontrada.");
-
-        var currentTasa = await _context.TasasCambio.FirstOrDefaultAsync(t => t.Activo);
-        if (currentTasa == null) throw new Exception("No hay tasa de cambio activa.");
-
-        decimal montoBase = monto;
-        if (idMoneda != config.IdMonedaBase)
+        // Devolver stock si tenía productos (Phase 3 #8 + Reversión de #5)
+        var detalles = await _context.CuentaDetalles.Where(d => d.IdCuenta == id && d.TipoItem == "PRODUCTO").ToListAsync();
+        foreach (var det in detalles)
         {
-            // Si la moneda pagada es el Origen de la tasa y la Base es el Destino -> Multiplicar
-            if (currentTasa.IdMonedaOrigen == idMoneda && currentTasa.IdMonedaDestino == config.IdMonedaBase)
+            if (det.IdReferencia.HasValue)
             {
-                montoBase = monto * currentTasa.Valor;
-            }
-            // Si la moneda Base es el Origen y la pagada es el Destino -> Dividir
-            else if (currentTasa.IdMonedaOrigen == config.IdMonedaBase && currentTasa.IdMonedaDestino == idMoneda)
-            {
-                montoBase = monto / currentTasa.Valor;
+                var prod = await _context.Productos.FindAsync(det.IdReferencia.Value);
+                if (prod != null) prod.Stock += det.Cantidad ?? 0;
             }
         }
 
-        // Validación "No fiamos" - El pago debe cubrir el saldo total pendiente
-        var totalPagadoPrevio = cuenta.Pagos.Sum(p => p.MontoBase ?? 0);
-        var saldoPendienteBase = (cuenta.TotalFinal ?? 0) - totalPagadoPrevio;
-
-        if (montoBase < saldoPendienteBase - 0.01m)
-        {
-            TempData["Error"] = $"ERROR: El monto ingresado ({montoBase:N2} {config.MonedaBase?.Codigo}) es menor al saldo pendiente ({saldoPendienteBase:N2} {config.MonedaBase?.Codigo}). En este centro no se permite el fiado.";
-            return RedirectToAction("Details", new { id = idCuenta });
-        }
-
-        var pago = new Pago
-        {
-            IdCuenta = idCuenta,
-            Monto = monto,
-            MontoBase = montoBase,
-            IdMoneda = idMoneda,
-            MetodoPago = metodoPago,
-            TasaCambioAplicada = currentTasa.Valor,
-            FechaPago = DateTime.Now
-        };
-
-        _context.Pagos.Add(pago);
+        // "Anular" poniendo totales en 0 o eliminando detalles
+        cuenta.TotalBruto = 0;
+        cuenta.TotalFinal = 0;
+        cuenta.Descuento = 0;
+        
+        // Opcional: Podríamos tener un campo ESTADO, pero aquí lo manejamos por totales/detalles
+        _context.CuentaDetalles.RemoveRange(_context.CuentaDetalles.Where(d => d.IdCuenta == id));
+        _context.Cuentas.Update(cuenta);
         await _context.SaveChangesAsync();
 
-        TempData["Success"] = "Pago registrado exitosamente.";
-        return RedirectToAction(nameof(Details), new { id = idCuenta });
+        return Json(new { success = true, message = "Cuenta anulada correctamente y stock devuelto." });
     }
 }
 
