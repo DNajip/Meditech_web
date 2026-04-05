@@ -100,7 +100,15 @@ namespace MediTech.Backend.Models
                 m.ToTable(tb => tb.HasTrigger("TR_ACTUALIZAR_STOCK_MOVIMIENTO"));
             });
 
-            // Tasa Cambio: Unique Filtered Index (Only one active per pair)
+            // Monedas y Finanzas: Forzar precisión a 2 decimales para consistencia
+            foreach (var property in modelBuilder.Model.GetEntityTypes()
+                .SelectMany(t => t.GetProperties())
+                .Where(p => p.ClrType == typeof(decimal) || p.ClrType == typeof(decimal?)))
+            {
+                property.SetPrecision(18);
+                property.SetScale(2);
+            }
+
             modelBuilder.Entity<TasaCambio>()
                 .HasIndex(t => new { t.IdMonedaOrigen, t.IdMonedaDestino })
                 .HasDatabaseName("UX_TASA_ACTIVA")

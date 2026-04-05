@@ -15,21 +15,21 @@
 <div class="container-fluid py-4">
     <!-- Header -->
         <div class="d-flex gap-2">
+            <a asp-action="Index" class="btn btn-outline-secondary shadow-sm" id="btnVolver">
+                <i class="fas fa-arrow-left me-2"></i>Volver
+            </a>
+            @if (!isCancelada && !isPagada)
+            {
+                <button type="button" class="btn btn-success shadow-sm" data-bs-toggle="modal" data-bs-target="#registrarPagoModal" id="btnRegistrarPago">
+                    <i class="fas fa-dollar-sign me-2"></i>Registrar Pago
+                </button>
+            }
             @if (!isCancelada && !isPagada && totalPagado == 0 && (Model.TotalFinal ?? 0) > 0)
             {
                 <button type="button" class="btn btn-outline-danger shadow-sm" id="btnAnularCuenta">
                     <i class="fas fa-ban me-2"></i>Anular Cuenta
                 </button>
             }
-            @if (!isCancelada && !isPagada)
-            {
-                <button type="button" class="btn btn-success shadow-sm" data-bs-toggle="modal" data-bs-target="#registrarPagoModal">
-                    <i class="fas fa-dollar-sign me-2"></i>Registrar Pago
-                </button>
-            }
-            <a asp-action="Index" class="btn btn-outline-secondary shadow-sm">
-                <i class="fas fa-arrow-left me-2"></i>Volver
-            </a>
         </div>
     </div>
 
@@ -172,9 +172,10 @@
                                     <tr>
                                         <th># Pago</th>
                                         <th>Método</th>
-                                        <th class="text-end">Monto</th>
+                                        <th class="text-end">Monto Neto</th>
+                                        <th class="text-end text-primary small">Recibido</th>
+                                        <th class="text-end text-success small">Vuelto</th>
                                         <th>Moneda</th>
-                                        <th>Tasa</th>
                                         <th>Fecha</th>
                                     </tr>
                                 </thead>
@@ -189,8 +190,9 @@
                                                 </span>
                                             </td>
                                             <td class="text-end fw-bold text-success">@pago.Moneda?.Simbolo @pago.Monto?.ToString("N2")</td>
+                                            <td class="text-end text-primary small">@(pago.MontoRecibido > 0 ? pago.Moneda?.Simbolo + " " + pago.MontoRecibido?.ToString("N2") : "-")</td>
+                                            <td class="text-end text-success small">@(pago.Vuelto > 0 ? Model.MonedaBase?.Simbolo + " " + pago.Vuelto?.ToString("N2") : "-")</td>
                                             <td>@pago.Moneda?.Nombre</td>
-                                            <td class="text-muted small">@pago.TasaCambioAplicada</td>
                                             <td class="text-muted small">@pago.FechaPago.ToString("dd/MM/yyyy HH:mm")</td>
                                         </tr>
                                     }
@@ -225,40 +227,46 @@
             <form id="formRegistrarPago" asp-action="RegistrarPago" method="post">
                 <div class="modal-body p-4">
                     <input type="hidden" name="idCuenta" value="@Model.IdCuenta" />
-                    <div class="bg-soft-danger rounded-4 p-4 mb-4 text-center border border-danger border-opacity-10">
-                        <span class="text-danger-emphasis small fw-bold text-uppercase d-block mb-1">Saldo a Liquidar</span>
+                    <input type="hidden" name="idMoneda" id="hiddenIdMoneda" value="@Model.IdMonedaBase" />
+                    <input type="hidden" name="monto" id="hiddenMontoPagar" value="@saldoPendiente" />
+
+                    <!-- Header Saldo -->
+                    <div class="bg-soft-danger rounded-4 p-3 mb-4 text-center border border-danger border-opacity-10">
+                        <span class="text-danger-emphasis small fw-bold text-uppercase d-block mb-1">Saldo Pendiente</span>
                         <h2 class="fw-bold text-danger mb-0 font-monospace">@Model.MonedaBase?.Simbolo @saldoPendiente.ToString("N2")</h2>
                     </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label fw-bold small text-secondary">Monto a Recibir <span class="text-danger">*</span></label>
-                        <div class="input-group input-group-lg">
-                            <span class="input-group-text bg-light border-0" id="simboloPago">@Model.MonedaBase?.Simbolo</span>
-                            <input type="number" name="monto" id="inputMontoPago" class="form-control bg-light border-0 fw-bold" step="0.01" min="0.01" value="@saldoPendiente" required>
+
+                    <!-- Selector de Moneda (Iconos) -->
+                    <div class="text-center mb-4">
+                        <label class="form-label fw-bold small text-secondary d-block mb-2">Moneda del Pago</label>
+                        <div class="btn-group w-100 shadow-sm" role="group">
+                            @if (monedas != null)
+                            {
+                                foreach (var m in monedas)
+                                {
+                                    <input type="radio" class="btn-check" name="currency_toggle" id="btn_cur_@m.IdMoneda" 
+                                           value="@m.IdMoneda" data-simbolo="@m.Simbolo" data-codigo="@m.Codigo"
+                                           data-base="@(m.IdMoneda == Model.IdMonedaBase ? "true" : "false")"
+                                           @(m.IdMoneda == Model.IdMonedaBase ? "checked" : "")>
+                                    <label class="btn btn-outline-primary py-2 fw-bold" for="btn_cur_@m.IdMoneda">
+                                        <i class="fas @(m.Codigo == "NIO" ? "fa-money-bill-alt" : "fa-dollar-sign") me-2"></i>@m.Codigo
+                                    </label>
+                                }
+                            }
                         </div>
                     </div>
-
+                    
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label class="form-label fw-bold small text-secondary">Moneda <span class="text-danger">*</span></label>
-                            <select name="idMoneda" class="form-select border-0 bg-light" id="selectMonedaPago" required>
-                                @if (monedas != null)
-                                {
-                                    @foreach (var m in monedas)
-                                    {
-                                        <option value="@m.IdMoneda" 
-                                                data-simbolo="@m.Simbolo"
-                                                data-base="@(m.IdMoneda == Model.IdMonedaBase ? "true" : "false")"
-                                                selected="@(m.IdMoneda == Model.IdMonedaBase)">
-                                            @m.Codigo - @m.Nombre
-                                        </option>
-                                    }
-                                }
-                            </select>
+                            <label class="form-label fw-bold small text-secondary">Monto a Pagar (<span class="cur-code-label">@Model.MonedaBase?.Codigo</span>)</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-0"><span class="cur-sym-label">@Model.MonedaBase?.Simbolo</span></span>
+                                <input type="text" id="displayMontoPagar" class="form-control bg-light border-0 fw-bold" readonly>
+                            </div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold small text-secondary">Vía de Pago <span class="text-danger">*</span></label>
-                            <select name="metodoPago" class="form-select border-0 bg-light" required>
+                            <select name="metodoPago" id="selectMetodoPago" class="form-select border-0 bg-light fw-semibold" required>
                                 <option value="EFECTIVO">💵 Efectivo</option>
                                 <option value="TARJETA">💳 Tarjeta</option>
                                 <option value="TRANSFERENCIA">🏦 Transferencia</option>
@@ -266,12 +274,24 @@
                         </div>
                     </div>
 
-                    <div id="previewConversion" class="mt-4 p-3 bg-soft-primary rounded-3 border border-primary border-opacity-10" style="display:none;">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <small class="fw-bold text-primary text-uppercase" style="font-size: 0.65rem;">Equivalente en Moneda Base</small>
-                            <span class="fw-bold text-primary fs-5" id="montoBaseCalculado">0.00</span>
+                    <!-- Sección Efectivo (Recibido y Vuelto) -->
+                    <div id="sectionEfectivo" class="mt-4">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-secondary">Monto Recibido (<span class="cur-code-label">@Model.MonedaBase?.Codigo</span>)</label>
+                            <div class="input-group input-group-lg shadow-sm rounded-3 overflow-hidden">
+                                <span class="input-group-text border-0 bg-soft-primary text-primary"><span class="cur-sym-label">@Model.MonedaBase?.Simbolo</span></span>
+                                <input type="number" id="inputMontoRecibido" class="form-control border-0 bg-light fw-bold" step="0.01" placeholder="0.00">
+                            </div>
                         </div>
-                        <small class="text-muted" style="font-size: 0.7rem;">Usando tasa: <span id="tasaAplicadaPreview">1.00</span></small>
+
+                        <div id="displayVuelto" class="p-3 bg-soft-success rounded-4 border border-success border-opacity-10 text-center" style="display:none;">
+                            <span class="text-success-emphasis small fw-bold text-uppercase d-block mb-1">Vuelto a Entregar (@Model.MonedaBase?.Codigo)</span>
+                            <h3 class="fw-bold text-success mb-0 font-monospace">@Model.MonedaBase?.Simbolo <span id="vueltoValor">0.00</span></h3>
+                        </div>
+                    </div>
+
+                    <div id="pagoInsuficiente" class="alert alert-danger mt-3 py-2 px-3 small border-0 shadow-sm" style="display:none;">
+                        <i class="fas fa-exclamation-circle me-1"></i> El monto recibido no cubre el total.
                     </div>
                 </div>
                 <div class="modal-footer border-0 p-4 pt-0">
@@ -309,81 +329,147 @@
 @section Scripts {
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Elementos UI
         const formPago = document.getElementById('formRegistrarPago');
-        const inputMonto = document.getElementById('inputMontoPago');
-        const selectMoneda = document.getElementById('selectMonedaPago');
-        const divPreview = document.getElementById('previewConversion');
-        const spanMontoBase = document.getElementById('montoBaseCalculado');
-        const spanTasaPreview = document.getElementById('tasaAplicadaPreview');
-        const spanSimboloPago = document.getElementById('simboloPago');
+        const radioMonedas = document.querySelectorAll('input[name="currency_toggle"]');
+        const inputRecibido = document.getElementById('inputMontoRecibido');
+        const selectMetodo = document.getElementById('selectMetodoPago');
+        const displayPagar = document.getElementById('displayMontoPagar');
+        const displayVuelto = document.getElementById('displayVuelto');
+        const vueltoValor = document.getElementById('vueltoValor');
+        const sectionEfectivo = document.getElementById('sectionEfectivo');
+        const alertInsuficiente = document.getElementById('pagoInsuficiente');
         const btnSubmit = document.getElementById('btnSubmitPago');
+        
+        // Elementos Hidden (Data)
+        const hiddenIdMoneda = document.getElementById('hiddenIdMoneda');
+        const hiddenMontoPagar = document.getElementById('hiddenMontoPagar');
         const meta = document.getElementById('currency-metadata');
+        
+        // Etiquetas dinámicas
+        const codeLabels = document.querySelectorAll('.cur-code-label');
+        const symLabels = document.querySelectorAll('.cur-sym-label');
 
-        if (!meta || !inputMonto || !selectMoneda) return;
+        if (!meta) return;
 
+        // Datos del servidor
         const idMonedaBase = parseInt(meta.dataset.baseId) || 0;
-        const saldoPendiente = parseFloat(meta.dataset.saldo.replace(',', '.')) || 0;
+        const saldoPendienteBase = parseFloat(meta.dataset.saldo.replace(',', '.')) || 0;
         const tasa = parseFloat(meta.dataset.tasa.replace(',', '.')) || 1;
         const idTasaOrigen = parseInt(meta.dataset.tasaOrigen) || 0;
         const idTasaDestino = parseInt(meta.dataset.tasaDestino) || 0;
+        const simboloBase = "@Model.MonedaBase?.Simbolo";
+        const codigoBase = "@Model.MonedaBase?.Codigo";
 
-        function updatePreview() {
-            const opt = selectMoneda.options[selectMoneda.selectedIndex];
-            const idMonedaPago = parseInt(opt.value);
-            const simbolo = opt.dataset.simbolo;
-            const monto = parseFloat(inputMonto.value) || 0;
+        function updateCalculations() {
+            // 1. Obtener moneda seleccionada
+            const selectedRadio = document.querySelector('input[name="currency_toggle"]:checked');
+            if (!selectedRadio) return;
 
-            spanSimboloPago.textContent = simbolo;
-            spanTasaPreview.textContent = tasa.toFixed(4);
+            const idMonedaPago = parseInt(selectedRadio.value);
+            const simboloPago = selectedRadio.dataset.simbolo;
+            const codigoPago = selectedRadio.dataset.codigo;
+            const isBase = selectedRadio.dataset.base === "true";
 
-            const isBase = (idMonedaPago === idMonedaBase);
-            let equiv = monto;
-
-            if (isBase) {
-                divPreview.style.display = 'none';
-            } else {
-                divPreview.style.display = 'block';
-                if (idTasaOrigen === idMonedaPago && idTasaDestino === idMonedaBase) {
-                    equiv = monto * tasa;
-                } else if (idTasaOrigen === idMonedaBase && idTasaDestino === idMonedaPago) {
-                    equiv = monto / tasa;
+            // 2. Calcular cuánto se debe pagar en la moneda seleccionada
+            let montoPagarEnDivisa = saldoPendienteBase;
+            
+            // Lógica basada en Códigos (Infalible)
+            if (!isBase) {
+                if (codigoBase === "NIO" && codigoPago === "USD") {
+                    // NIO -> USD: Dividir entre tasa (180 / 36.60 = 4.92)
+                    montoPagarEnDivisa = saldoPendienteBase / tasa;
+                } else if (codigoBase === "USD" && codigoPago === "NIO") {
+                    // USD -> NIO: Multiplicar por tasa (10 * 36.60 = 366)
+                    montoPagarEnDivisa = saldoPendienteBase * tasa;
                 } else {
-                    equiv = monto * tasa; 
+                    // Fallback genérico basado en valor de la tasa
+                    if (tasa > 1) {
+                        // Asumimos tasa tipo USD->NIO (ej. 36.60)
+                        // Para llegar a la moneda de "valor mayor" (USD), dividimos.
+                        montoPagarEnDivisa = saldoPendienteBase / tasa;
+                    } else {
+                        montoPagarEnDivisa = saldoPendienteBase * tasa;
+                    }
                 }
-                spanMontoBase.textContent = equiv.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' Base';
             }
 
-            // Validar monto insuficiente
-            if (monto > 0 && equiv < (saldoPendiente - 0.05)) { // 0.05 margen redondeo
-                inputMonto.classList.add('is-invalid');
-                btnSubmit.disabled = true;
-                if (!document.getElementById('insufficientWarning')) {
-                    const warn = document.createElement('div');
-                    warn.id = 'insufficientWarning';
-                    warn.className = 'invalid-feedback fw-bold';
-                    warn.textContent = 'El monto debe cubrir el saldo total.';
-                    inputMonto.parentNode.appendChild(warn);
+            // Actualizar inputs hidden para el servidor
+            hiddenIdMoneda.value = idMonedaPago;
+            hiddenMontoPagar.value = montoPagarEnDivisa.toFixed(4);
+
+            // Actualizar etiquetas UI
+            displayPagar.value = montoPagarEnDivisa.toFixed(2);
+            codeLabels.forEach(l => l.textContent = codigoPago);
+            symLabels.forEach(s => s.textContent = simboloPago);
+
+            console.log(`[CONVERSION] Base: ${codigoBase} (${saldoPendienteBase}), Pago: ${codigoPago} (${montoPagarEnDivisa}), Tasa: ${tasa}`);
+
+            // 3. Manejar Vía de Pago y Vuelto
+            const metodo = selectMetodo.value;
+            if (metodo === "EFECTIVO") {
+                sectionEfectivo.style.display = 'block';
+                const recibido = parseFloat(inputRecibido.value) || 0;
+                
+                // El vuelto SIEMPRE se calcula en moneda BASE
+                // Convertimos el "Recibido" a moneda base primero
+                let recibidoEnBase = recibido;
+                if (!isBase) {
+                    if (codigoBase === "NIO" && codigoPago === "USD") {
+                        // Recibido en USD, Base en NIO: Multiplicar por tasa (20 USD * 36.60 = 732 NIO)
+                        recibidoEnBase = recibido * tasa;
+                    } else if (codigoBase === "USD" && codigoPago === "NIO") {
+                        // Recibido en NIO, Base en USD: Dividir entre tasa (366 NIO / 36.60 = 10 USD)
+                        recibidoEnBase = recibido / tasa;
+                    } else {
+                         if (tasa > 1) recibidoEnBase = recibido * tasa;
+                         else recibidoEnBase = recibido / tasa;
+                    }
+                }
+
+                const vueltoEnBase = recibidoEnBase - saldoPendienteBase;
+                console.log(`[VUELTO] Recibido: ${recibido} (${recibidoEnBase} Base), Vuelto: ${vueltoEnBase}`);
+
+                if (recibido > 0 && recibidoEnBase < (saldoPendienteBase - 0.009)) { // Margen mínimo
+                    alertInsuficiente.style.display = 'block';
+                    displayVuelto.style.display = 'none';
+                    btnSubmit.disabled = true;
+                } else {
+                    alertInsuficiente.style.display = 'none';
+                    if (recibido > 0) {
+                        displayVuelto.style.display = 'block';
+                        vueltoValor.textContent = vueltoEnBase.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    } else {
+                        displayVuelto.style.display = 'none';
+                    }
+                    btnSubmit.disabled = false;
                 }
             } else {
-                inputMonto.classList.remove('is-invalid');
+                sectionEfectivo.style.display = 'none';
+                alertInsuficiente.style.display = 'none';
                 btnSubmit.disabled = false;
-                document.getElementById('insufficientWarning')?.remove();
             }
         }
 
-        selectMoneda.addEventListener('change', updatePreview);
-        inputMonto.addEventListener('input', updatePreview);
+        // Listeners
+        radioMonedas.forEach(r => r.addEventListener('change', updateCalculations));
+        inputRecibido.addEventListener('input', updateCalculations);
+        selectMetodo.addEventListener('change', updateCalculations);
 
         // AJAX Submission
         formPago.addEventListener('submit', function(e) {
             e.preventDefault();
             
-            const btn = e.submitter || document.querySelector('#formPago button[type="submit"]');
+            const btn = document.getElementById('btnSubmitPago');
             const originalHtml = btn.innerHTML;
             btn.disabled = true;
             btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Procesando...';
 
             const formData = new FormData(formPago);
+            
+            // Añadir manualmente el monto recibido ya que no tiene "name" en el input
+            formData.append('montoRecibido', inputRecibido.value || 0);
+
             fetch(formPago.action, {
                 method: 'POST',
                 body: formData
@@ -391,7 +477,8 @@
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    bootstrap.Modal.getInstance(document.getElementById('registrarPagoModal')).hide();
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('registrarPagoModal'));
+                    modal.hide();
                     MediToast.success(data.message);
                     setTimeout(() => location.reload(), 1500);
                 } else {
@@ -402,7 +489,6 @@
             })
             .catch(error => {
                 MediToast.error("Error al procesar el pago");
-                console.error(error);
                 btn.disabled = false;
                 btn.innerHTML = originalHtml;
             });
@@ -414,7 +500,7 @@
             btnAnular.addEventListener('click', function() {
                 MediConfirm.show({
                     title: '¿Anular Cuenta permanentemente?',
-                    message: 'Esta acción liberará los cargos y devolverá el stock de productos al almacén. No se puede deshacer.',
+                    message: 'Esta acción liberará los cargos y devolverá el stock de productos al almacén.',
                     variant: 'danger',
                     confirmText: 'Sí, Anular',
                     icon: 'fa-ban'
@@ -422,7 +508,7 @@
                     if (confirmed) {
                         const csrfToken = document.querySelector('input[name="__RequestVerificationToken"]').value;
                         const formData = new FormData();
-                        formData.append('id', @Model.IdCuenta);
+                        formData.append('id', "@Model.IdCuenta");
                         formData.append('__RequestVerificationToken', csrfToken);
 
                         fetch('/Caja/AnularCuenta', {
@@ -443,7 +529,7 @@
             });
         }
 
-        updatePreview();
+        updateCalculations();
     });
 </script>
 }

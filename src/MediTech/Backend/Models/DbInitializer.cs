@@ -248,11 +248,16 @@ namespace MediTech.Backend.Models
                     CREATE TABLE ADM.CONFIGURACION_MONEDA(
                         ID_CONFIGURACION INT IDENTITY CONSTRAINT PK_CONFIG_MONEDA PRIMARY KEY,
                         ID_MONEDA_BASE INT NOT NULL,
-                        TASA_CAMBIO DECIMAL(12,4) NOT NULL,
+                        TASA_CAMBIO DECIMAL(12,2) NOT NULL,
                         FECHA_ACTUALIZACION DATETIME2 DEFAULT SYSDATETIME(),
                         USUARIO_MODIFICACION VARCHAR(80),
                         FOREIGN KEY(ID_MONEDA_BASE) REFERENCES CAT.MONEDAS(ID_MONEDA)
                     );
+                END
+                ELSE
+                BEGIN
+                    -- Asegurar precisión de 2 decimales si ya existe
+                    ALTER TABLE ADM.CONFIGURACION_MONEDA ALTER COLUMN TASA_CAMBIO DECIMAL(12,2) NOT NULL;
                 END
             ");
 
@@ -264,7 +269,7 @@ namespace MediTech.Backend.Models
                         ID_TASA INT IDENTITY CONSTRAINT PK_TASA_CAMBIO PRIMARY KEY,
                         ID_MONEDA_ORIGEN INT NOT NULL,
                         ID_MONEDA_DESTINO INT NOT NULL,
-                        VALOR DECIMAL(18,6) NOT NULL,
+                        VALOR DECIMAL(18,2) NOT NULL,
                         FECHA DATETIME2 DEFAULT SYSDATETIME(),
                         ACTIVO BIT DEFAULT 1,
                         USUARIO_MODIFICACION VARCHAR(80),
@@ -273,6 +278,11 @@ namespace MediTech.Backend.Models
                     );
                     
                     EXEC('CREATE UNIQUE INDEX UX_TASA_ACTIVA ON ADM.TASA_CAMBIO(ID_MONEDA_ORIGEN, ID_MONEDA_DESTINO) WHERE ACTIVO = 1');
+                END
+                ELSE
+                BEGIN
+                    -- Asegurar precisión de 2 decimales si ya existe
+                    ALTER TABLE ADM.TASA_CAMBIO ALTER COLUMN VALOR DECIMAL(18,2) NOT NULL;
                 END
             ");
 
@@ -497,12 +507,16 @@ namespace MediTech.Backend.Models
                 END
             ");
 
-            // 4.2 Add MONTO_BASE to PAGOS
+            // 4.2 Add MONTO_BASE, MONTO_RECIBIDO, VUELTO to PAGOS
             context.Database.ExecuteSqlRaw(@"
                 IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'[CAJA].[PAGOS]') AND name = 'MONTO_BASE')
-                BEGIN
                     ALTER TABLE [CAJA].[PAGOS] ADD [MONTO_BASE] DECIMAL(12,2) NULL;
-                END
+
+                IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'[CAJA].[PAGOS]') AND name = 'MONTO_RECIBIDO')
+                    ALTER TABLE [CAJA].[PAGOS] ADD [MONTO_RECIBIDO] DECIMAL(12,2) NULL;
+
+                IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'[CAJA].[PAGOS]') AND name = 'VUELTO')
+                    ALTER TABLE [CAJA].[PAGOS] ADD [VUELTO] DECIMAL(12,2) NULL;
             ");
 
             // Seed Monedas if empty
@@ -526,7 +540,7 @@ namespace MediTech.Backend.Models
                     {
                         IdMonedaOrigen = usd.IdMoneda,
                         IdMonedaDestino = nio.IdMoneda,
-                        Valor = 36.621500m,
+                        Valor = 36.60m,
                         Fecha = DateTime.Now,
                         Activo = true,
                         UsuarioModificacion = "SISTEMA"
@@ -544,7 +558,7 @@ namespace MediTech.Backend.Models
                     context.ConfiguracionesMoneda.Add(new ConfiguracionMoneda
                     {
                         IdMonedaBase = usd.IdMoneda,
-                        TasaCambio = 36.6215m, // Mantener por compatibilidad legacy hasta que se limpie
+                        TasaCambio = 36.60m, // Mantener por compatibilidad legacy hasta que se limpie
                         FechaActualizacion = DateTime.Now,
                         UsuarioModificacion = "SISTEMA"
                     });
