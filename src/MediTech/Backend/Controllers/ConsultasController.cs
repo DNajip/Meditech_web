@@ -5,6 +5,7 @@ using MediTech.Backend.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Caching.Memory;
 using System.Security.Claims;
+using System.Linq;
 
 namespace MediTech.Backend.Controllers
 {
@@ -512,6 +513,54 @@ namespace MediTech.Backend.Controllers
                 })
                 .ToListAsync();
             return Json(productos);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetHistorialPaciente(int id)
+        {
+            try
+            {
+                var rawConsultas = await _context.Consultas
+                    .Include(c => c.Estado)
+                    .Include(c => c.Medico!)
+                        .ThenInclude(m => m.Persona)
+                    .Include(c => c.SignosVitales)
+                    .Include(c => c.ConsultaDetalles)
+                    .Where(c => c.Cita!.IdPaciente == id && c.Estado!.DescEstado == "FINALIZADA")
+                    .OrderByDescending(c => c.FechaConsulta)
+                    .ToListAsync();
+
+                var consultas = rawConsultas.Select(c => new {
+                    idConsulta = c.IdConsulta,
+                    fecha = c.FechaConsulta.ToString("dd/MM/yyyy"),
+                    hora = c.FechaConsulta.ToString("hh:mm tt"),
+                    medico = c.Medico != null && c.Medico.Persona != null ? $"{c.Medico.Persona.PrimerNombre} {c.Medico.Persona.PrimerApellido}" : "Médico —",
+                    diagnostico = c.DiagnosticoPrincipal ?? "Sin diagnóstico",
+                    observaciones = c.Observaciones ?? "Cerrada",
+                    signos = c.SignosVitales != null ? new {
+                        pa = c.SignosVitales.PresionArterial ?? "--/--",
+                        temp = c.SignosVitales.Temperatura != null ? c.SignosVitales.Temperatura.Value.ToString("0.0") : "--",
+                        fc = c.SignosVitales.FrecuenciaCardiaca?.ToString() ?? "--",
+                        sat = c.SignosVitales.SaturacionOxigeno?.ToString() ?? "--",
+                        peso = c.SignosVitales.Peso?.ToString("0.00") ?? "--",
+                        talla = c.SignosVitales.Altura?.ToString("0.00") ?? "--",
+                        bmi = c.SignosVitales.BMI != null ? c.SignosVitales.BMI.Value.ToString("0.0") : "--.-"
+                    } : null,
+                    items = c.ConsultaDetalles.Select(d => new {
+                        descripcion = d.Descripcion,
+                        tipo = d.TipoItem,
+                        cant = d.Cantidad,
+                        precio = d.PrecioUnitario?.ToString("N2") ?? "0.00",
+                        subtotal = d.Subtotal?.ToString("N2") ?? "0.00"
+                    })
+                });
+
+                return Json(new { success = true, data = consultas });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error al obtener historial: " + ex.Message });
+            }
         }
 
         private bool ConsultaExists(int id)

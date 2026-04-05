@@ -48,6 +48,7 @@ namespace MediTech.Backend.Models
 
         public virtual SignosVitales? SignosVitales { get; set; }
         public virtual ICollection<Diagnostico> Diagnosticos { get; set; } = new List<Diagnostico>();
+        public virtual ICollection<ConsultaDetalle> ConsultaDetalles { get; set; } = new List<ConsultaDetalle>();
     }
 }
 
