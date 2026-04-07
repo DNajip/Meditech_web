@@ -39,20 +39,29 @@
         font-weight: 700;
         color: #1e293b;
     }
+    @@media (max-width: 575.98px) {
+        .medical-record-paper .p-5 { padding: 1.5rem !important; }
+        .medical-record-paper h3 { font-size: 1.5rem; }
+        .vital-sign-pill { min-width: 80px; padding: 8px; }
+        .pill-value { font-size: 0.9rem; }
+    }
 </style>
 
 <div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4 noprint">
-        <h2 class="fw-bold mb-0 text-dark">Detalle de Atención</h2>
-        <div class="d-flex gap-2">
-            <button onclick="window.print()" class="btn btn-light shadow-sm" style="border-radius: 10px;">
-                <i class="fas fa-print me-1"></i> Imprimir
-            </button>
-            <a href="@Url.Action("Index")" class="btn btn-primary" style="border-radius: 10px;">
-                <i class="fas fa-arrow-left me-1"></i> Volver al Listado
-            </a>
-        </div>
+<div class="page-header page-header-premium mb-4 noprint">
+    <div>
+        <h2 class="display-6 fw-bold text-gradient-primary mb-0">Detalle de Atención</h2>
+        <p class="text-muted d-none d-sm-block">Expediente clínico del paciente</p>
     </div>
+    <div class="d-flex gap-2">
+        <button onclick="window.print()" class="btn btn-outline-secondary shadow-sm px-3" style="border-radius:12px;">
+            <i class="fas fa-print"></i>
+        </button>
+        <a href="@Url.Action("Index")" class="btn btn-primary-premium shadow-sm px-4">
+            <i class="fas fa-arrow-left me-1"></i> <span class="d-none d-sm-inline">Volver</span>
+        </a>
+    </div>
+</div>
 
     <div class="medical-record-paper">
         <div class="header-band"></div>

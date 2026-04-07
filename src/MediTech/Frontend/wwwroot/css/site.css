@@ -33,6 +33,7 @@ body {
 .text-gradient-primary {
     background: linear-gradient(135deg, #2D3E50 0%, #4A90E2 100%);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
@@ -77,4 +78,55 @@ body {
 
 .btn-primary-premium:hover {
     background: linear-gradient(135deg, #357ABD 0%, #2D3E50 100%);
+}
+
+/* Responsive Table Premium */
+.table-responsive-premium {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 5px;
+}
+
+.table-responsive-premium::-webkit-scrollbar {
+    height: 6px;
+}
+
+.table-responsive-premium::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.table-responsive-premium::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+}
+
+.table-responsive-premium::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Responsive Layout Refinement */
+@media (max-width: 768px) {
+    .page-header-premium {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 15px;
+    }
+    
+    .page-header-premium .btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    /* Modal Optimizations */
+    .modal-header { padding: 1rem !important; }
+    .modal-header .icon-shape { width: 40px !important; height: 40px !important; font-size: 1rem !important; }
+    .modal-body { padding: 1.25rem !important; }
+    
+    /* Row Premium: Force stack on mobile but allow 2-cols on tablets if preferred */
+    .row-premium > .col-md-6 { width: 100% !important; }
+}
+
+@media (min-width: 768px) and (max-width: 1199.98px) {
+    .row-premium > .col-lg-6 { width: 50% !important; }
 }

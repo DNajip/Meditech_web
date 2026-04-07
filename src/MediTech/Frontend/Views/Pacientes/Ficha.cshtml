@@ -590,128 +590,7 @@
     .close-modal:hover { background: rgba(255,255,255,0.2); transform: scale(1.1); }
     .close-modal:hover { background: rgba(255,255,255,0.2); transform: scale(1.1); }
 
-    /* DASHBOARD RESUMEN PREMIUM */
-    .dashboard-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 20px;
-    }
-    
-    .dash-card {
-        background: white;
-        border-radius: 16px;
-        border: 1px solid #E2E8F0;
-        padding: 20px;
-        transition: transform 0.2s, box-shadow 0.2s;
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-    }
-    
-    .dash-card:hover { 
-        transform: translateY(-4px); 
-        box-shadow: 0 12px 20px -8px rgba(0,0,0,0.1); 
-    }
-    
-    .dash-card-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 16px;
-    }
-    
-    .dash-card-title {
-        font-weight: 700;
-        font-size: 0.95rem;
-        color: #1E293B;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-    
-    .dash-card-body { flex: 1; }
-    
-    .dash-card-footer {
-        margin-top: 16px;
-        padding-top: 12px;
-        border-top: 1px solid #F1F5F9;
-        display: flex;
-        justify-content: flex-end;
-    }
-    
-    /* Variantes de Alertas */
-    .alert-item {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 10px 14px;
-        border-radius: 10px;
-        margin-bottom: 8px;
-        font-size: 0.85rem;
-        font-weight: 600;
-    }
-    .alert-danger-soft { background: #FEF2F2; color: #991B1B; border: 1px solid #FEE2E2; }
-    .alert-warning-soft { background: #FFFBEB; color: #92400E; border: 1px solid #FEF3C7; }
-    .alert-success-soft { background: #F0FDF4; color: #166534; border: 1px solid #DCFCE7; }
-    
-    /* Signos Vitales Dashboard */
-    .vitals-mini-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 12px;
-    }
-    .vital-mini-item {
-        background: #F8FAFC;
-        padding: 12px;
-        border-radius: 12px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-    }
-    .vital-mini-icon {
-        width: 32px; height: 32px;
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 6px;
-        font-size: 0.9rem;
-    }
-    .vital-mini-val { font-weight: 700; font-size: 0.95rem; color: #1E293B; }
-    .vital-mini-label { font-size: 0.7rem; color: #64748B; text-transform: uppercase; font-weight: 600; }
-    
-    /* Foto Preview */
-    .dash-photo-preview {
-        display: flex;
-        gap: 10px;
-        margin-top: 8px;
-    }
-    .dash-photo-img {
-        width: 100%;
-        height: 80px;
-        object-fit: cover;
-        border-radius: 8px;
-        border: 1px solid #E2E8F0;
-        cursor: pointer;
-    }
-    .dash-photo-img:hover { opacity: 0.8; }
-    
-    .btn-link-premium {
-        font-size: 0.8rem;
-        font-weight: 600;
-        color: #3B82F6;
-        text-decoration: none;
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        transition: gap 0.2s;
-    }
-    .btn-link-premium:hover { gap: 8px; color: #1D4ED8; }
 
-    @@media (max-width: 768px) {
-        .dashboard-grid { grid-template-columns: 1fr; }
-    }
 </style>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -790,8 +669,7 @@
 
         <!-- Tabs Navigation -->
         <div class="nav-tabs-ficha">
-            <a href="javascript:void(0)" onclick="switchTab('resumen')" id="tab-resumen" class="nav-tab @(ViewBag.Modo != "consulta" ? "active" : "")">Resumen</a>
-            <a href="javascript:void(0)" onclick="switchTab('citas')" id="tab-citas" class="nav-tab">Citas</a>
+            <a href="javascript:void(0)" onclick="switchTab('citas')" id="tab-citas" class="nav-tab @(ViewBag.Modo != "consulta" ? "active" : "")">Citas</a>
             <a href="javascript:void(0)" onclick="switchTab('consulta')" id="tab-consulta" class="nav-tab @(ViewBag.Modo == "consulta" ? "active" : "")">@(ViewBag.Modo == "consulta" ? "Consulta Activa" : "Consultas")</a>
             <a href="javascript:void(0)" onclick="switchTab('examenes')" id="tab-examenes" class="nav-tab">Exámenes</a>
             <a href="javascript:void(0)" onclick="switchTab('historial')" id="tab-historial" class="nav-tab">Historial</a>
@@ -803,75 +681,7 @@
         </div>
 
         <!-- PANELS -->
-        <div id="panel-resumen" class="tab-panel-content @(ViewBag.Modo == "consulta" ? "d-none" : "")">
-            <div id="resumenLoading" class="text-center py-5">
-                <div class="spinner-border text-primary"></div>
-                <p class="text-muted mt-2">Cargando información del paciente...</p>
-            </div>
-
-            <div id="resumenContent" class="dashboard-grid d-none">
-                <!-- 1. Alertas Críticas -->
-                <div class="dash-card">
-                    <div class="dash-card-header">
-                        <span class="dash-card-title"><i class="fas fa-exclamation-triangle text-danger"></i> Alertas de Salud</span>
-                    </div>
-                    <div class="dash-card-body" id="resumenAlertas">
-                        <!-- Dynamically filled -->
-                    </div>
-                    <div class="dash-card-footer">
-                        <a href="javascript:void(0)" onclick="switchTab('historial')" class="btn-link-premium">Ver Historial <i class="fas fa-chevron-right"></i></a>
-                    </div>
-                </div>
-
-                <!-- 2. Signos Vitales -->
-                <div class="dash-card">
-                    <div class="dash-card-header">
-                        <span class="dash-card-title"><i class="fas fa-heartbeat text-primary"></i> Últimos Signos Vitales</span>
-                        <span class="badge bg-light text-muted" id="resumenVitalsFecha" style="font-size: 0.7rem;">--/--/--</span>
-                    </div>
-                    <div class="dash-card-body">
-                        <div class="vitals-mini-grid" id="resumenVitalsBody">
-                            <!-- Dynamically filled -->
-                        </div>
-                    </div>
-                    <div class="dash-card-footer">
-                        <a href="javascript:void(0)" onclick="switchTab('consulta')" class="btn-link-premium">Ver Consultas <i class="fas fa-chevron-right"></i></a>
-                    </div>
-                </div>
-
-                <!-- 3. Línea de Tiempo -->
-                <div class="dash-card">
-                    <div class="dash-card-header">
-                        <span class="dash-card-title"><i class="fas fa-calendar-alt text-info"></i> Próximos Pasos</span>
-                    </div>
-                    <div class="dash-card-body">
-                        <div id="resumenTimeline">
-                            <!-- Dynamically filled -->
-                        </div>
-                    </div>
-                    <div class="dash-card-footer">
-                        <a href="javascript:void(0)" onclick="switchTab('citas')" class="btn-link-premium">Ver Agenda <i class="fas fa-chevron-right"></i></a>
-                    </div>
-                </div>
-
-                <!-- 4. Galería Reciente -->
-                <div class="dash-card">
-                    <div class="dash-card-header">
-                        <span class="dash-card-title"><i class="fas fa-images text-success"></i> Fotos Clínicas Recientes</span>
-                    </div>
-                    <div class="dash-card-body">
-                        <div class="dash-photo-preview" id="resumenFotos">
-                            <!-- Dynamically filled -->
-                        </div>
-                    </div>
-                    <div class="dash-card-footer">
-                        <a href="javascript:void(0)" onclick="switchTab('galeria')" class="btn-link-premium">Ir a Galería <i class="fas fa-chevron-right"></i></a>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div id="panel-citas" class="tab-panel-content d-none">
+        <div id="panel-citas" class="tab-panel-content @(ViewBag.Modo == "consulta" ? "d-none" : "")">
             <div class="content-card">
                 <div class="card-header">
                     <h6 class="card-title"><i class="fas fa-calendar-alt" style="color: #6366F1;"></i> Historial de Citas</h6>
@@ -1493,8 +1303,9 @@
 
     // Load Global Currency Configuration on load
     document.addEventListener('DOMContentLoaded', async () => {
-        // Initial load of summary
-        cargarResumen();
+        if ('@ViewBag.Modo' !== 'consulta') {
+            loadCitasPaciente();
+        }
 
         try {
             const resC = await fetch('/Consultas/GetMonedaConfig');
@@ -1509,121 +1320,7 @@
     });
 
 
-    // DASHBOARD RESUMEN LOGIC
-    async function cargarResumen() {
-        const loading = document.getElementById('resumenLoading');
-        const content = document.getElementById('resumenContent');
-        if (!loading || !content) return;
-
-        loading.classList.remove('d-none');
-        content.classList.add('d-none');
-
-        try {
-            const response = await fetch(`/Pacientes/GetResumen/${pacienteId}`);
-            const result = await response.json();
-            if (result.success) {
-                renderResumen(result);
-                loading.classList.add('d-none');
-                content.classList.remove('d-none');
-            } else {
-                loading.innerHTML = `<div class="text-danger py-4"><i class="fas fa-exclamation-circle me-2"></i> ${result.message}</div>`;
-            }
-        } catch (e) {
-            console.error('Error loading summary:', e);
-            loading.innerHTML = '<div class="text-danger py-4"><i class="fas fa-exclamation-circle me-2"></i>Error al conectar con el servidor.</div>';
-        }
-    }
-
-    function renderResumen(data) {
-        // 1. Alertas
-        const divAlertas = document.getElementById('resumenAlertas');
-        if (data.alertas) {
-            let alertsHtml = '';
-            if (data.alertas.alergias) alertsHtml += `<div class="alert-item alert-danger-soft"><i class="fas fa-hand-dots"></i> Alergias: ${data.alertas.alergiasDetalle || 'Consultar historial'}</div>`;
-            if (data.alertas.diabetes) alertsHtml += `<div class="alert-item alert-warning-soft"><i class="fas fa-syring"></i> Diabetes Mellitus</div>`;
-            if (data.alertas.hipertension) alertsHtml += `<div class="alert-item alert-warning-soft"><i class="fas fa-heartbeat"></i> Hipertensión Arterial</div>`;
-            if (data.alertas.tomaMedicamento) alertsHtml += `<div class="alert-item alert-success-soft"><i class="fas fa-pills"></i> En tratamiento médico</div>`;
-            if (data.alertas.embarazada) alertsHtml += `<div class="alert-item alert-warning-soft"><i class="fas fa-baby"></i> Paciente Gestante</div>`;
-            
-            divAlertas.innerHTML = alertsHtml || '<div class="text-muted small py-3 text-center">No hay alertas críticas registradas.</div>';
-        } else {
-            divAlertas.innerHTML = '<div class="text-muted small py-3 text-center"><i class="fas fa-info-circle me-1"></i> Sin historial clínico registrado.</div>';
-        }
-
-        // 2. Signos Vitales
-        const divVitalsBody = document.getElementById('resumenVitalsBody');
-        const spanFechaVitals = document.getElementById('resumenVitalsFecha');
-        if (data.ultimaConsulta && data.ultimaConsulta.signos) {
-            const s = data.ultimaConsulta.signos;
-            spanFechaVitals.textContent = data.ultimaConsulta.fecha;
-            divVitalsBody.innerHTML = `
-                <div class="vital-mini-item">
-                    <div class="vital-mini-icon" style="background:#FEE2E2; color:#DC2626;"><i class="fas fa-heartbeat"></i></div>
-                    <div class="vital-mini-val">${s.fc || '--'}</div>
-                    <div class="vital-mini-label">LPM</div>
-                </div>
-                <div class="vital-mini-item">
-                    <div class="vital-mini-icon" style="background:#DBEAFE; color:#2563EB;"><i class="fas fa-tachometer-alt"></i></div>
-                    <div class="vital-mini-val">${s.pa || '--/--'}</div>
-                    <div class="vital-mini-label">P.A.</div>
-                </div>
-                <div class="vital-mini-item">
-                    <div class="vital-mini-icon" style="background:#FEF3C7; color:#D97706;"><i class="fas fa-thermometer-half"></i></div>
-                    <div class="vital-mini-val">${s.temp ? s.temp.toFixed(1) : '--'}°</div>
-                    <div class="vital-mini-label">Temp</div>
-                </div>
-                <div class="vital-mini-item">
-                    <div class="vital-mini-icon" style="background:#D1FAE5; color:#059669;"><i class="fas fa-user"></i></div>
-                    <div class="vital-mini-val">${s.bmi ? s.bmi.toFixed(1) : '--.-'}</div>
-                    <div class="vital-mini-label">IMC</div>
-                </div>
-            `;
-        } else {
-            divVitalsBody.innerHTML = '<div class="col-12 py-3 text-center text-muted small">No hay signos vitales recientes.</div>';
-            spanFechaVitals.textContent = '--/--/--';
-        }
-
-        // 3. Timeline
-        const divTimeline = document.getElementById('resumenTimeline');
-        let timelineHtml = '';
-        
-        if (data.proximaCita) {
-            timelineHtml += `
-                <div class="p-3 mb-3" style="background:#EFF6FF; border-radius:12px; border:1px solid #DBEAFE;">
-                    <div class="small fw-bold text-primary text-uppercase mb-1"><i class="fas fa-calendar-check me-1"></i> Próxima Cita</div>
-                    <div class="fw-bold text-dark">${data.proximaCita.fecha} - ${data.proximaCita.hora}</div>
-                    <div class="small text-muted">${data.proximaCita.tratamiento || 'Consulta General'}</div>
-                </div>
-            `;
-        }
-        
-        if (data.ultimaConsulta) {
-            timelineHtml += `
-                <div class="p-3" style="background:#F8FAFC; border-radius:12px; border:1px solid #E2E8F0;">
-                    <div class="small fw-bold text-secondary text-uppercase mb-1"><i class="fas fa-history me-1"></i> Última Consulta</div>
-                    <div class="fw-bold text-dark">${data.ultimaConsulta.fecha}</div>
-                    <div class="small text-muted text-truncate">${data.ultimaConsulta.diagnostico || data.ultimaConsulta.motivo}</div>
-                </div>
-            `;
-        } else if (!data.proximaCita) {
-            timelineHtml = '<div class="text-center py-4 text-muted small">No hay actividad reciente programada.</div>';
-        }
-        divTimeline.innerHTML = timelineHtml;
-
-        // 4. Fotos
-        const divFotos = document.getElementById('resumenFotos');
-        if (data.fotos && data.fotos.length > 0) {
-            divFotos.innerHTML = data.fotos.map(f => `
-                <div style="flex:1;">
-                    <img src="/Galeria/GetFotoContent/${f.idFoto}" class="dash-photo-img" onclick="verFotoFull(${f.idFoto})" title="${f.titulo || 'Foto clínica'}">
-                    <div style="font-size:0.65rem;" class="text-center text-muted mt-1">${f.fechaRes}</div>
-                </div>
-            `).join('');
-        } else {
-            divFotos.innerHTML = '<div class="text-center w-100 py-3 text-muted small"><i class="fas fa-camera-retro mb-1 d-block opacity-25"></i>Sin fotos registradas.</div>';
-        }
-    }
-
+    // DASHBOARD LOGIC REMOVED
 
     function switchTab(tabName) {
         console.log('Switching to tab:', tabName);
@@ -1639,7 +1336,6 @@
 
         // Special loads wrapped in try-catch to ensure navigation never blocks
         try {
-            if (tabName === 'resumen') cargarResumen();
             if (tabName === 'historial' && !historialData) cargarHistorial();
             if (tabName === 'galeria' && !galeriaLoaded) cargarGaleria();
             if (tabName === 'documentos' && !documentosLoaded) cargarDocumentos();

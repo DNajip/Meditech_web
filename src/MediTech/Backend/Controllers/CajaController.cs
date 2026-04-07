@@ -2,10 +2,12 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MediTech.Backend.Models;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.AspNetCore.Authorization;
 using System.Linq;
 
 namespace MediTech.Backend.Controllers;
 
+[Authorize]
 public class CajaController : Controller
 {
     private readonly MediTechContext _context;

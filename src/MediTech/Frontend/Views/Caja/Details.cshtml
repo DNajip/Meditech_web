@@ -12,26 +12,29 @@
         : "N/A";
 }
 
-<div class="container-fluid py-4">
-    <!-- Header -->
-        <div class="d-flex gap-2">
-            <a asp-action="Index" class="btn btn-outline-secondary shadow-sm" id="btnVolver">
-                <i class="fas fa-arrow-left me-2"></i>Volver
-            </a>
-            @if (!isCancelada && !isPagada)
-            {
-                <button type="button" class="btn btn-success shadow-sm" data-bs-toggle="modal" data-bs-target="#registrarPagoModal" id="btnRegistrarPago">
-                    <i class="fas fa-dollar-sign me-2"></i>Registrar Pago
-                </button>
-            }
-            @if (!isCancelada && !isPagada && totalPagado == 0 && (Model.TotalFinal ?? 0) > 0)
-            {
-                <button type="button" class="btn btn-outline-danger shadow-sm" id="btnAnularCuenta">
-                    <i class="fas fa-ban me-2"></i>Anular Cuenta
-                </button>
-            }
-        </div>
+<div class="page-header page-header-premium mb-4">
+    <div>
+        <h2 class="display-6 fw-bold text-gradient-primary mb-0">Detalle de Cuenta #@Model.IdCuenta</h2>
+        <p class="text-muted d-none d-sm-block">Gestión de cobros, pagos y estados de cuenta</p>
     </div>
+    <div class="d-flex flex-wrap gap-2 justify-content-start justify-content-sm-end">
+        <a asp-action="Index" class="btn btn-outline-secondary shadow-sm px-3" id="btnVolver" style="border-radius:12px;">
+            <i class="fas fa-arrow-left me-1"></i> <span class="d-none d-sm-inline">Volver</span>
+        </a>
+        @if (!isCancelada && !isPagada)
+        {
+            <button type="button" class="btn btn-success shadow-sm px-4" data-bs-toggle="modal" data-bs-target="#registrarPagoModal" id="btnRegistrarPago" style="border-radius:12px;">
+                <i class="fas fa-dollar-sign me-1"></i> <span class="d-none d-sm-inline">Registrar Pago</span><span class="d-sm-none">Pagar</span>
+            </button>
+        }
+        @if (!isCancelada && !isPagada && totalPagado == 0 && (Model.TotalFinal ?? 0) > 0)
+        {
+            <button type="button" class="btn btn-outline-danger shadow-sm px-3" id="btnAnularCuenta" style="border-radius:12px;">
+                <i class="fas fa-ban"></i>
+            </button>
+        }
+    </div>
+</div>
 
     @if (TempData["Success"] != null)
     {
@@ -51,7 +54,7 @@
 
     <div class="row g-4">
         <!-- Info Card -->
-        <div class="col-md-4">
+        <div class="col-lg-4 col-sm-12">
             <div class="card card-premium border-0 shadow-sm h-100">
                 <div class="card-body p-4">
                     <div class="text-center mb-4">
@@ -111,14 +114,14 @@
         </div>
 
         <!-- Items & Payments -->
-        <div class="col-md-8">
+        <div class="col-lg-8 col-sm-12">
             <!-- Items de la Cuenta -->
             <div class="card card-premium border-0 shadow-sm mb-4">
                 <div class="card-header bg-white border-0 pt-4 px-4">
                     <h5 class="fw-bold mb-0"><i class="fas fa-list text-primary me-2"></i>Ítems de la Cuenta</h5>
                 </div>
-                <div class="card-body px-4">
-                    <div class="table-responsive">
+                <div class="card-body px-0 px-md-4">
+                    <div class="table-responsive-premium">
                         <table class="table align-middle mb-0">
                             <thead class="bg-light-faded">
                                 <tr>
@@ -156,7 +159,7 @@
                     <h5 class="fw-bold mb-0"><i class="fas fa-money-bill-wave text-success me-2"></i>Historial de Pagos</h5>
                     <span class="badge bg-primary rounded-pill">@Model.Pagos.Count pagos</span>
                 </div>
-                <div class="card-body px-4">
+                <div class="card-body px-0 px-md-4">
                     @if (!Model.Pagos.Any())
                     {
                         <div class="text-center py-4 text-muted">
@@ -166,7 +169,7 @@
                     }
                     else
                     {
-                        <div class="table-responsive">
+                        <div class="table-responsive-premium">
                             <table class="table align-middle mb-0">
                                 <thead class="bg-light-faded">
                                     <tr>

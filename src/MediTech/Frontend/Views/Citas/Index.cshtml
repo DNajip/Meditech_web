@@ -9,32 +9,32 @@
 
     <!-- Calendar Card Container -->
     <div class="card border-0 shadow-sm" style="border-radius: 16px;">
-        <div class="card-header bg-white border-bottom-0 pt-4 pb-0 px-4 d-flex justify-content-between align-items-center">
+        <div class="card-header bg-white border-bottom-0 pt-4 pb-0 px-4 d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
 
             <!-- Left Controls: Prev, Next, Today -->
-            <div class="d-flex gap-2 align-items-center">
+            <div class="d-flex gap-2 align-items-center order-2 order-md-1">
                 <button class="btn btn-light border bg-white px-3 py-1 fw-semibold custom-cal-nav" id="btnPrevMonth">
                     <i class="fas fa-chevron-left"></i>
                 </button>
                 <button class="btn btn-light border bg-white px-3 py-1 fw-semibold custom-cal-nav" id="btnNextMonth">
                     <i class="fas fa-chevron-right"></i>
                 </button>
-                <button class="btn btn-light border bg-white px-4 py-1 fw-semibold custom-cal-nav" id="btnToday">
+                <button class="btn btn-light border bg-white px-3 px-md-4 py-1 fw-semibold custom-cal-nav" id="btnToday">
                     Hoy
                 </button>
             </div>
 
             <!-- Center Title -->
-            <div class="text-center">
-                <small class="text-uppercase fw-bold text-muted mb-1 d-block" style="letter-spacing: 1px; font-size:1.20rem;">Agenda Médica</small>
+            <div class="text-center order-1 order-md-2">
+                <small class="text-uppercase fw-bold text-muted mb-1 d-block" style="letter-spacing: 1px; font-size:0.85rem;">Agenda Médica</small>
                 <h5 class="mb-0 fw-bold text-dark" id="calendarTitle"></h5>
             </div>
 
             <!-- Right Controls: View Switcher -->
-            <div class="btn-group" role="group">
-                <button type="button" class="btn btn-view bg-white text-secondary border" id="btnViewMonth">Mes</button>
-                <button type="button" class="btn btn-view bg-white text-secondary border" id="btnViewWeek">Semana</button>
-                <button type="button" class="btn btn-view bg-white text-secondary border" id="btnViewDay">Día</button>
+            <div class="btn-group order-3" role="group">
+                <button type="button" class="btn btn-view btn-sm bg-white text-secondary border px-3" id="btnViewMonth">Mes</button>
+                <button type="button" class="btn btn-view btn-sm bg-white text-secondary border px-3" id="btnViewWeek">Sem</button>
+                <button type="button" class="btn btn-view btn-sm bg-white text-secondary border px-3" id="btnViewDay">Día</button>
             </div>
 
         </div>
@@ -466,7 +466,23 @@
         .event-canceled .custom-event-time {
             color: #9CA3AF !important;
         }
-    </style>
+        /* Mobile Refinements for FullCalendar */
+    @@media (max-width: 575.98px) {
+        #calendar {
+            font-size: 0.75rem; /* Smaller font for small screens */
+        }
+        .fc-event-title {
+            font-size: 0.7rem;
+            white-space: normal !important;
+        }
+        .card-header {
+            padding: 20px 15px !important;
+        }
+        #calendarTitle {
+            font-size: 1.1rem;
+        }
+    }
+</style>
 }
 
 @section Scripts {

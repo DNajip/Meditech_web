@@ -152,6 +152,10 @@
     .badge-waiting { background: #FEF3C7; color: #92400E; }
     .badge-scheduled { background: #DBEAFE; color: #1E40AF; }
 
+    @@media (max-width: 575.98px) {
+        .greeting h2 { font-size: 1.3rem; }
+        .stat-card .stat-value { font-size: 1.5rem; }
+    }
 
 </style>
 
@@ -163,7 +167,7 @@
 
 <!-- Stat Cards -->
 <div class="row g-3 mb-4">
-    <div class="col-lg-3 col-md-6">
+    <div class="col-sm-6 col-lg-3">
         <a href="/Pacientes" style="text-decoration:none;">
         <div class="stat-card">
             <div class="d-flex justify-content-between align-items-start">
@@ -174,7 +178,7 @@
         </div>
         </a>
     </div>
-    <div class="col-lg-3 col-md-6">
+    <div class="col-sm-6 col-lg-3">
         <div class="stat-card">
             <div class="d-flex justify-content-between align-items-start">
                 <div class="icon-box icon-green"><i class="fas fa-dollar-sign"></i></div>
@@ -183,7 +187,7 @@
             <div class="stat-label">Ingresos Estimados</div>
         </div>
     </div>
-    <div class="col-lg-3 col-md-6">
+    <div class="col-sm-6 col-lg-3">
         <a href="/Pacientes" style="text-decoration:none;">
         <div class="stat-card">
             <div class="d-flex justify-content-between align-items-start">
@@ -194,7 +198,7 @@
         </div>
         </a>
     </div>
-    <div class="col-lg-3 col-md-6">
+    <div class="col-sm-6 col-lg-3">
         <div class="stat-card">
             <div class="d-flex justify-content-between align-items-start">
                 <div class="icon-box icon-amber"><i class="fas fa-clock"></i></div>

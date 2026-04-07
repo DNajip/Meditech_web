@@ -172,19 +172,62 @@
         }
 
         /* ===== RESPONSIVE ===== */
-        @@media (max-width: 768px) {
-            .sidebar { transform: translateX(-100%); }
-            .sidebar.open { transform: translateX(0); }
-            .topbar { left: 0; }
-            .main-content { margin-left: 0; }
+        @@media (max-width: 991.98px) {
+            .sidebar { 
+                transform: translateX(-100%); 
+                box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            }
+            .sidebar.show { 
+                transform: translateX(0); 
+            }
+            .topbar { 
+                left: 0 !important; 
+                padding: 0 15px; 
+            }
+            .main-content { 
+                margin-left: 0 !important; 
+                padding: 16px 12px; /* Reducido para maximizar espacio en móvil */
+            }
+            
+            /* Sidebar Overlay */
+            .sidebar-overlay {
+                position: fixed;
+                top: 0; left: 0;
+                width: 100%; height: 100%;
+                background: rgba(0,0,0,0.4);
+                backdrop-filter: blur(2px);
+                z-index: 998;
+                display: none;
+                opacity: 0;
+                transition: opacity 0.3s;
+            }
+            .sidebar-overlay.show {
+                display: block;
+                opacity: 1;
+            }
+
+            .topbar-search { display: none; } /* Hide search in mobile topbar to save space */
+            
+            .topbar .badge { 
+                font-size: 0.65rem; 
+                padding: 4px 8px;
+            }
+            .topbar .d-flex.gap-3 { gap: 0.5rem !important; }
         }
     </style>
 </head>
 <body>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
     <!-- SIDEBAR -->
-    <aside class="sidebar">
-        <div class="sidebar-brand">
-            <img src="~/images/logo.png" alt="MediTech" />
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-2">
+                <img src="~/images/logo.png" alt="MediTech" />
+                <span class="d-lg-none">MediTech</span>
+            </div>
+            <button type="button" class="btn text-secondary d-lg-none p-3" id="sidebarClose" aria-label="Cerrar menú">
+                <i class="fas fa-times fs-4"></i>
+            </button>
         </div>
 
         <div class="sidebar-section-label">Principal</div>
@@ -240,6 +283,9 @@
     <!-- TOPBAR -->
     <div class="topbar">
         <div class="d-flex align-items-center gap-3">
+             <button type="button" class="btn btn-light btn-sm d-lg-none" id="sidebarToggle">
+                <i class="fas fa-bars"></i>
+             </button>
              @{
                  var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
                  var isAccounting = currentController == "Caja" || 

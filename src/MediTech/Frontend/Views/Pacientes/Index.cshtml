@@ -4,22 +4,6 @@
 }
 
 <style>
-    .page-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 24px;
-    }
-    .page-header h2 {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: #1E293B;
-        margin: 0;
-    }
-    .page-header .subtitle {
-        font-size: 0.85rem;
-        color: #64748B;
-    }
 
     .search-bar {
         display: flex;
@@ -171,35 +155,39 @@
     </div>
 }
 
-<div class="page-header">
+<div class="page-header page-header-premium">
     <div>
         <h2><i class="fas fa-user-injured me-2" style="color:#3B82F6;"></i>Pacientes</h2>
-        <span class="subtitle">Gestión de pacientes registrados <strong class="ms-2">(@ViewBag.TotalItems total)</strong></span>
+        <span class="subtitle">Gestión de pacientes registrados <strong class="ms-2 d-none d-sm-inline">(@ViewBag.TotalItems total)</strong></span>
     </div>
-    <a href="@Url.Action("Create")" class="btn btn-primary" style="border-radius:8px;">
+    <a href="@Url.Action("Create")" class="btn btn-primary px-4" style="border-radius:12px; font-weight:600;">
         <i class="fas fa-plus me-1"></i> Nuevo Paciente
     </a>
 </div>
 
 <form method="get" class="mb-4">
-    <div class="input-group" style="max-width: 100%; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+    <div class="input-group" style="box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
         <input type="text" name="search" value="@ViewBag.Search" class="form-control border-end-0" 
-               placeholder="Buscar por nombre, identificación o teléfono..." 
-               style="border-radius: 10px 0 0 10px; padding: 12px 20px; font-size: 0.9rem;">
-        <button type="submit" class="btn btn-outline-primary border-start-0 bg-white" 
-                style="border-radius: 0 10px 10px 0; border-color: #E2E8F0; color: #3B82F6; padding: 0 20px;">
+               placeholder="Buscar nombre o identificación..." 
+               style="border-radius: 12px 0 0 12px; padding: 12px 20px; font-size: 0.9rem;">
+        <button type="submit" class="btn btn-white border-start-0 border-end-0 bg-white text-primary" 
+                style="border-color: #E2E8F0; padding: 0 15px;">
             <i class="fas fa-search"></i>
         </button>
         @if (!string.IsNullOrEmpty(ViewBag.Search as string))
         {
-            <a href="@Url.Action("Index")" class="btn btn-link text-muted ms-2 align-self-center text-decoration-none">
-                <i class="fas fa-times me-1"></i> Limpiar
+            <a href="@Url.Action("Index")" class="btn btn-white border-start-0 bg-white text-muted d-flex align-items-center" style="border-radius: 0 12px 12px 0; border-left: 1px solid #eee;">
+                <i class="fas fa-times"></i>
             </a>
+        }
+        else
+        {
+             <div class="input-group-text bg-white border-start-0" style="border-radius: 0 12px 12px 0; border-color: #E2E8F0;"></div>
         }
     </div>
 </form>
 
-<div class="patients-table">
+<div class="patients-table table-responsive-premium">
     @if (Model.Any())
     {
         <table>

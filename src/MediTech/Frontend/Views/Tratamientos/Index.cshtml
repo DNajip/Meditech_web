@@ -270,32 +270,32 @@
 </style>
 
 
-<div class="page-header fade-in-premium">
+<div class="page-header page-header-premium fade-in-premium">
     <div>
         <h2><i class="fas fa-hand-holding-medical me-2" style="color:var(--trat-primary);"></i>Lista de Tratamientos</h2>
         <div class="subtitle">
             <i class="fas fa-circle-check text-success small"></i> 
-            Catálogo activo de servicios y especialidades médicas
+            Catálogo activo de servicios e especialidades médicas
         </div>
     </div>
     <button type="button" class="btn btn-primary px-4 py-2 shadow-sm border-0 d-flex align-items-center gap-2" style="border-radius:12px; font-weight:700; background: var(--trat-secondary);" data-bs-toggle="modal" data-bs-target="#createTratamientoModal">
-        <i class="fas fa-plus-circle"></i> Nuevo Tratamiento
+        <i class="fas fa-plus-circle"></i> <span>Nuevo Tratamiento</span>
     </button>
 </div>
 
-<div class="control-bar fade-in-premium">
-    <div class="search-wrapper">
+<div class="control-bar fade-in-premium flex-column flex-md-row align-items-stretch align-items-md-center">
+    <div class="search-wrapper mb-3 mb-md-0">
         <i class="fas fa-search"></i>
-        <input type="text" id="tratamientoSearch" placeholder="Buscar por nombre o ID de tratamiento..." onkeyup="filterTratamientos()">
+        <input type="text" id="tratamientoSearch" placeholder="Buscar tratamiento..." onkeyup="filterTratamientos()">
     </div>
-    <div class="d-flex gap-2">
-        <button class="btn btn-outline-secondary btn-sm rounded-pill px-3" onclick="filterByStatus(1)"><i class="fas fa-check-circle me-1"></i> Activos</button>
-        <button class="btn btn-outline-secondary btn-sm rounded-pill px-3" onclick="filterByStatus(2)"><i class="fas fa-times-circle me-1"></i> Inactivos</button>
+    <div class="d-flex gap-2 justify-content-between justify-content-md-end">
+        <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 flex-fill flex-md-grow-0" onclick="filterByStatus(1)"><i class="fas fa-check-circle"></i> <span class="d-none d-sm-inline">Activos</span></button>
+        <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 flex-fill flex-md-grow-0" onclick="filterByStatus(2)"><i class="fas fa-times-circle"></i> <span class="d-none d-sm-inline">Inactivos</span></button>
         <button class="btn btn-light btn-sm rounded-pill px-3" onclick="location.reload()"><i class="fas fa-sync-alt"></i></button>
     </div>
 </div>
 
-<div class="tratamientos-table-wrapper fade-in-premium">
+<div class="tratamientos-table-wrapper table-responsive-premium fade-in-premium">
     @if (Model.Any())
     {
         <table class="premium-table">
