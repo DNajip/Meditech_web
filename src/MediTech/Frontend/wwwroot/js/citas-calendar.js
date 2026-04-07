@@ -550,6 +550,8 @@ document.addEventListener('DOMContentLoaded', function () {
                                              <a href="/Pacientes/Ficha/${data.pacienteId}" class="btn text-white fw-semibold py-2" style="background-color: #4F46E5; border-radius: 8px;"><i class="bi bi-folder2-open"></i></a>`;
             } else if (data.estadoId === 2) { 
                 btnGroupActions.innerHTML = `<button type="button" class="btn text-white w-100 fw-semibold py-2 shadow-sm" style="background-color: #4F46E5; border-radius: 8px;" onclick="iniciarConsultaJS(${data.id})"><i class="bi bi-stethoscope me-1"></i> Iniciar Consulta</button>`;
+            } else if (data.estadoId === 3) {
+                btnGroupActions.innerHTML = `<span class="badge bg-success w-100 p-3 fs-6 rounded-3"><i class="bi bi-check-circle me-1"></i> Cita Realizada</span>`;
             } else {
                 btnGroupActions.innerHTML = `<span class="badge bg-danger w-100 p-3 fs-6 rounded-3">Cita Cancelada</span>`;
             }
@@ -775,11 +777,18 @@ document.addEventListener('DOMContentLoaded', function () {
         .then(r => r.json())
         .then(data => {
             if (data.success) {
-                const idCita = document.getElementById('convertIdCita').value;
+                document.getElementById('formConvertir').reset();
                 calendar.refetchEvents();
                 bootstrap.Modal.getInstance(document.getElementById('modalConvertir')).hide();
-                // Redirigir al flujo de consulta según requerimiento
-                window.location.href = `/Consultas/Recepcion/${idCita}`;
+                
+                if (typeof MediToast !== 'undefined') {
+                    MediToast.success('Conversión finalizada');
+                }
+                
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-check-circle me-1"></i> Finalizar Conversión';
+                
+                if (window.loadTodayAgenda) window.loadTodayAgenda();
             } else {
                 MediToast.error(data.message);
                 btn.disabled = false;

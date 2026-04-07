@@ -76,7 +76,7 @@ namespace MediTech.Backend.Controllers
 
             // Datos paginados para la tabla
             var productos = allProducts
-                .OrderBy(p => p.Nombre)
+                .OrderByDescending(p => p.IdProducto)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToList();
