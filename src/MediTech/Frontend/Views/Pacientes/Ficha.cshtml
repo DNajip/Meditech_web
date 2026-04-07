@@ -973,6 +973,11 @@
                             <i class="fas fa-save me-1"></i> Guardar Imagen
                         </button>
                     </div>
+                    <div class="text-center mt-3">
+                        <button type="button" class="btn btn-primary btn-sm px-4 shadow-sm" onclick="abrirCamara()" style="border-radius: 8px;">
+                            <i class="fas fa-camera me-1"></i> Tomar foto con cámara
+                        </button>
+                    </div>
                     <input type="file" id="fileInput" class="d-none" accept="image/*" onchange="handleFileSelect(event)">
                 </div>
 
@@ -1279,6 +1284,32 @@
                 <div id="modalCaption" class="modal-caption"></div>
             </div>
         </div>
+        <!-- CAMERA MODAL -->
+        <div class="modal fade" id="modalCamara" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
+                    <div class="modal-header bg-dark text-white border-0">
+                        <h5 class="modal-title fw-bold"><i class="fas fa-camera me-2"></i>Capturar Fotografía</h5>
+                        <button type="button" class="btn-close btn-close-white" onclick="cerrarCamara()" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-0 bg-black text-center position-relative">
+                        <video id="videoCamara" autoplay playsinline style="width: 100%; max-height: 70vh; object-fit: cover;"></video>
+                        <canvas id="canvasCamara" class="d-none"></canvas>
+                        
+                        <!-- Overlay controls -->
+                        <div class="position-absolute bottom-0 w-100 p-3 bg-dark bg-opacity-50 d-flex justify-content-center align-items-center gap-4">
+                            <button type="button" class="btn btn-secondary rounded-circle" onclick="cambiarCamara()" style="width: 50px; height: 50px;" title="Rotar cámara">
+                                <i class="fas fa-sync-alt fs-5"></i>
+                            </button>
+                            <button type="button" class="btn btn-light rounded-circle shadow" onclick="capturarFoto()" style="width: 70px; height: 70px; border: 5px solid #CBD5E1;" title="Capturar">
+                                <i class="fas fa-camera fs-3 text-dark"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>
 
@@ -1580,6 +1611,78 @@
         } finally {
             btn.innerHTML = originalText;
             btn.disabled = false;
+        }
+    }
+
+    // ============ CAMERA MODULE ============
+    let videoStream = null;
+    let cameraModalInstance = null;
+    let currentFacingMode = "environment"; // Priorizar cámara trasera
+
+    function abrirCamara() {
+        cameraModalInstance = new bootstrap.Modal(document.getElementById('modalCamara'));
+        cameraModalInstance.show();
+        iniciarVideo(currentFacingMode);
+        
+        // Listen to hidden to make sure we stop tracks if closed via backdrop
+        document.getElementById('modalCamara').addEventListener('hidden.bs.modal', cerrarCamaraTrackSolo);
+    }
+
+    async function iniciarVideo(facingMode) {
+        const video = document.getElementById('videoCamara');
+        if (videoStream) {
+            videoStream.getTracks().forEach(track => track.stop());
+        }
+
+        try {
+            const constraints = {
+                video: { facingMode: facingMode }
+            };
+            videoStream = await navigator.mediaDevices.getUserMedia(constraints);
+            video.srcObject = videoStream;
+        } catch (error) {
+            console.error("Error al acceder a la cámara:", error);
+            cerrarCamara();
+            MediToast.error("No se pudo acceder a la cámara. Asegure los permisos y de estar usando conexión HTTPS.");
+        }
+    }
+
+    function cambiarCamara() {
+        currentFacingMode = currentFacingMode === "environment" ? "user" : "environment";
+        iniciarVideo(currentFacingMode);
+    }
+
+    function capturarFoto() {
+        const video = document.getElementById('videoCamara');
+        const canvas = document.getElementById('canvasCamara');
+        
+        if (!videoStream || !videoStream.active) return;
+
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        canvas.toBlob(blob => {
+            if (!blob) return;
+            const file = new File([blob], "captura_" + Date.now() + ".jpg", { type: "image/jpeg" });
+            prepareFile(file); // Reusar función existente para la previsualización
+            cerrarCamara();
+            MediToast.success("Foto capturada. Puedes añadir un título y guardarla.");
+        }, 'image/jpeg', 0.85); 
+    }
+
+    function cerrarCamaraTrackSolo() {
+        if (videoStream) {
+            videoStream.getTracks().forEach(track => track.stop());
+            videoStream = null;
+        }
+    }
+
+    function cerrarCamara() {
+        cerrarCamaraTrackSolo();
+        if (cameraModalInstance) {
+            cameraModalInstance.hide();
         }
     }
 
