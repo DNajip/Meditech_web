@@ -307,6 +307,7 @@
             if (info && typeof MediToast !== 'undefined') MediToast.info(info);
         });
     </script>
+    @await RenderSectionAsync("Modals", required: false)
 </body>
 </html>
 

@@ -563,6 +563,31 @@ namespace MediTech.Backend.Controllers
             }
         }
 
+        [HttpGet]
+        public async Task<IActionResult> GetMonedaConfig()
+        {
+            try
+            {
+                var config = await _context.ConfiguracionesMoneda
+                    .Include(c => c.MonedaBase)
+                    .FirstOrDefaultAsync();
+
+                if (config == null || config.MonedaBase == null)
+                    return Json(new { success = false, message = "Configuración de moneda no encontrada." });
+
+                return Json(new { 
+                    success = true, 
+                    id = config.IdMonedaBase, 
+                    simbolo = config.MonedaBase.Simbolo ?? "$",
+                    codigo = config.MonedaBase.Codigo
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
         private bool ConsultaExists(int id)
         {
             return _context.Consultas.Any(e => e.IdConsulta == id);

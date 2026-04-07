@@ -27,7 +27,7 @@ public class TratamientosController : Controller
 
         var tratamientos = await _context.Tratamientos
             .Include(t => t.Estado)
-            .OrderBy(t => t.NombreTratamiento)
+            .OrderByDescending(t => t.IdTratamiento)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
@@ -60,7 +60,7 @@ public class TratamientosController : Controller
         var config = await _context.ConfiguracionesMoneda.Include(c => c.MonedaBase).FirstOrDefaultAsync();
         ViewBag.MonedaBase = config?.MonedaBase;
 
-        return View(tratamiento);
+        return PartialView("_DetailsPartial", tratamiento);
     }
 
     public async Task<IActionResult> Create()

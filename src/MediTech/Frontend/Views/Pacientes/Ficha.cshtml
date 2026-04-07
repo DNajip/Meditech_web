@@ -588,6 +588,130 @@
         transition: 0.2s;
     }
     .close-modal:hover { background: rgba(255,255,255,0.2); transform: scale(1.1); }
+    .close-modal:hover { background: rgba(255,255,255,0.2); transform: scale(1.1); }
+
+    /* DASHBOARD RESUMEN PREMIUM */
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+    }
+    
+    .dash-card {
+        background: white;
+        border-radius: 16px;
+        border: 1px solid #E2E8F0;
+        padding: 20px;
+        transition: transform 0.2s, box-shadow 0.2s;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+    
+    .dash-card:hover { 
+        transform: translateY(-4px); 
+        box-shadow: 0 12px 20px -8px rgba(0,0,0,0.1); 
+    }
+    
+    .dash-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+    }
+    
+    .dash-card-title {
+        font-weight: 700;
+        font-size: 0.95rem;
+        color: #1E293B;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .dash-card-body { flex: 1; }
+    
+    .dash-card-footer {
+        margin-top: 16px;
+        padding-top: 12px;
+        border-top: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: flex-end;
+    }
+    
+    /* Variantes de Alertas */
+    .alert-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 14px;
+        border-radius: 10px;
+        margin-bottom: 8px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+    .alert-danger-soft { background: #FEF2F2; color: #991B1B; border: 1px solid #FEE2E2; }
+    .alert-warning-soft { background: #FFFBEB; color: #92400E; border: 1px solid #FEF3C7; }
+    .alert-success-soft { background: #F0FDF4; color: #166534; border: 1px solid #DCFCE7; }
+    
+    /* Signos Vitales Dashboard */
+    .vitals-mini-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+    .vital-mini-item {
+        background: #F8FAFC;
+        padding: 12px;
+        border-radius: 12px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    .vital-mini-icon {
+        width: 32px; height: 32px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 6px;
+        font-size: 0.9rem;
+    }
+    .vital-mini-val { font-weight: 700; font-size: 0.95rem; color: #1E293B; }
+    .vital-mini-label { font-size: 0.7rem; color: #64748B; text-transform: uppercase; font-weight: 600; }
+    
+    /* Foto Preview */
+    .dash-photo-preview {
+        display: flex;
+        gap: 10px;
+        margin-top: 8px;
+    }
+    .dash-photo-img {
+        width: 100%;
+        height: 80px;
+        object-fit: cover;
+        border-radius: 8px;
+        border: 1px solid #E2E8F0;
+        cursor: pointer;
+    }
+    .dash-photo-img:hover { opacity: 0.8; }
+    
+    .btn-link-premium {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #3B82F6;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        transition: gap 0.2s;
+    }
+    .btn-link-premium:hover { gap: 8px; color: #1D4ED8; }
+
+    @@media (max-width: 768px) {
+        .dashboard-grid { grid-template-columns: 1fr; }
+    }
 </style>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -680,27 +804,69 @@
 
         <!-- PANELS -->
         <div id="panel-resumen" class="tab-panel-content @(ViewBag.Modo == "consulta" ? "d-none" : "")">
-            <!-- Historial de Citas Placeholder -->
-            <div class="content-card">
-                <div class="card-header">
-                    <h6 class="card-title"><i class="fas fa-calendar-check" style="color:#3B82F6;"></i> Próximas Citas</h6>
-                    <button class="btn-ficha-action">Agendar Nueva</button>
-                </div>
-                <div class="placeholder-content">
-                    <i class="fas fa-calendar-day"></i>
-                    <p class="mb-0">No hay citas programadas para este paciente.</p>
-                </div>
+            <div id="resumenLoading" class="text-center py-5">
+                <div class="spinner-border text-primary"></div>
+                <p class="text-muted mt-2">Cargando información del paciente...</p>
             </div>
 
-            <!-- Consultas Médicas Placeholder -->
-            <div class="content-card">
-                <div class="card-header">
-                    <h6 class="card-title"><i class="fas fa-stethoscope" style="color:#10B981;"></i> Consultas Recientes</h6>
-                    <button class="btn-ficha-action">Nueva Consulta</button>
+            <div id="resumenContent" class="dashboard-grid d-none">
+                <!-- 1. Alertas Críticas -->
+                <div class="dash-card">
+                    <div class="dash-card-header">
+                        <span class="dash-card-title"><i class="fas fa-exclamation-triangle text-danger"></i> Alertas de Salud</span>
+                    </div>
+                    <div class="dash-card-body" id="resumenAlertas">
+                        <!-- Dynamically filled -->
+                    </div>
+                    <div class="dash-card-footer">
+                        <a href="javascript:void(0)" onclick="switchTab('historial')" class="btn-link-premium">Ver Historial <i class="fas fa-chevron-right"></i></a>
+                    </div>
                 </div>
-                <div class="placeholder-content">
-                    <i class="fas fa-notes-medical"></i>
-                    <p class="mb-0">Aún no se han registrado consultas médicas.</p>
+
+                <!-- 2. Signos Vitales -->
+                <div class="dash-card">
+                    <div class="dash-card-header">
+                        <span class="dash-card-title"><i class="fas fa-heartbeat text-primary"></i> Últimos Signos Vitales</span>
+                        <span class="badge bg-light text-muted" id="resumenVitalsFecha" style="font-size: 0.7rem;">--/--/--</span>
+                    </div>
+                    <div class="dash-card-body">
+                        <div class="vitals-mini-grid" id="resumenVitalsBody">
+                            <!-- Dynamically filled -->
+                        </div>
+                    </div>
+                    <div class="dash-card-footer">
+                        <a href="javascript:void(0)" onclick="switchTab('consulta')" class="btn-link-premium">Ver Consultas <i class="fas fa-chevron-right"></i></a>
+                    </div>
+                </div>
+
+                <!-- 3. Línea de Tiempo -->
+                <div class="dash-card">
+                    <div class="dash-card-header">
+                        <span class="dash-card-title"><i class="fas fa-calendar-alt text-info"></i> Próximos Pasos</span>
+                    </div>
+                    <div class="dash-card-body">
+                        <div id="resumenTimeline">
+                            <!-- Dynamically filled -->
+                        </div>
+                    </div>
+                    <div class="dash-card-footer">
+                        <a href="javascript:void(0)" onclick="switchTab('citas')" class="btn-link-premium">Ver Agenda <i class="fas fa-chevron-right"></i></a>
+                    </div>
+                </div>
+
+                <!-- 4. Galería Reciente -->
+                <div class="dash-card">
+                    <div class="dash-card-header">
+                        <span class="dash-card-title"><i class="fas fa-images text-success"></i> Fotos Clínicas Recientes</span>
+                    </div>
+                    <div class="dash-card-body">
+                        <div class="dash-photo-preview" id="resumenFotos">
+                            <!-- Dynamically filled -->
+                        </div>
+                    </div>
+                    <div class="dash-card-footer">
+                        <a href="javascript:void(0)" onclick="switchTab('galeria')" class="btn-link-premium">Ir a Galería <i class="fas fa-chevron-right"></i></a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1056,50 +1222,49 @@
         </div>
 
         <div id="panel-finanzas" class="tab-panel-content d-none">
-            <div class="content-card">
-                <div class="card-header">
-                    <h6 class="card-title"><i class="fas fa-hand-holding-usd" style="color:#EF4444;"></i> Historial de Pagos</h6>
-                    <button class="btn-ficha-action">Ver Estado de Cuenta</button>
+            <!-- Resumen de Finanzas -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <div class="content-card mb-0 shadow-sm" style="border-left: 5px solid #10B981;">
+                        <div class="p-3">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded-circle bg-success-subtle p-3 text-success"><i class="fas fa-file-invoice-dollar fs-4"></i></div>
+                                <div>
+                                    <div class="text-muted small text-uppercase fw-bold">Total Facturado Histórico</div>
+                                    <h4 class="fw-bold mb-0" id="finanzasTotalFacturado">$0.00</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="placeholder-content" style="padding: 30px;">
-                    <i class="fas fa-receipt"></i>
-                    <p class="mb-0">El paciente no tiene saldos pendientes ni historial de pagos.</p>
+                <div class="col-md-6">
+                    <div class="content-card mb-0 shadow-sm" id="cardCargosPendientes" style="border-left: 5px solid #64748B;">
+                        <div class="p-3">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded-circle bg-secondary-subtle p-3 text-secondary" id="iconCargosPendientes"><i class="fas fa-clock fs-4"></i></div>
+                                <div>
+                                    <div class="text-muted small text-uppercase fw-bold">Cargos por Liquidar</div>
+                                    <h4 class="fw-bold mb-0" id="finanzasSaldoPendiente">$0.00</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
+
+            <!-- Historial de Facturación -->
             <div class="content-card">
-                <div class="card-header"><h6 class="card-title"><i class="fas fa-wallet"></i> Estado de Cuenta</h6></div>
-                <div class="placeholder-content"><i class="fas fa-hand-holding-usd"></i><p>Módulo de finanzas detallado en desarrollo.</p></div>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="card-title m-0"><i class="fas fa-history text-primary"></i> Historial de Facturación</h6>
+                </div>
+                <div id="finanzasContainer">
+                    <div class="text-center py-5 text-muted">
+                        <div class="spinner-border spinner-border-sm me-2"></div> Cargando historial financiero...
+                    </div>
+                </div>
             </div>
         </div>
 
-        <div id="common-footer-panels" class="tab-panel-content @(ViewBag.Modo == "consulta" ? "d-none" : "")">
-            <div class="row">
-                <div class="col-md-6">
-                    <!-- Fotos Clínicas -->
-                    <div class="content-card h-100">
-                        <div class="card-header">
-                            <h6 class="card-title"><i class="fas fa-camera" style="color:#8B5CF6;"></i> Fotos Clínicas</h6>
-                        </div>
-                        <div class="placeholder-content" style="padding: 24px;">
-                            <i class="fas fa-images"></i>
-                            <p class="small mb-0">Sin imágenes cargadas.</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <!-- Consentimientos -->
-                    <div class="content-card h-100">
-                        <div class="card-header">
-                            <h6 class="card-title"><i class="fas fa-file-signature" style="color:#F59E0B;"></i> Consentimientos</h6>
-                        </div>
-                        <div class="placeholder-content" style="padding: 24px;">
-                            <i class="fas fa-pen-nib"></i>
-                            <p class="small mb-0">Pendientes de firma.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
 
         <!-- MODAL CIERRE DE CONSULTA -->
         <div class="modal fade" id="modalCierreConsulta" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
@@ -1136,7 +1301,7 @@
                                     </select>
                                 </div>
                                 <div class="col-md-2">
-                                    <label class="form-label small fw-bold text-muted">Precio ($)</label>
+                                    <label class="form-label small fw-bold text-muted">Precio (<span class="simbolo-moneda">$</span>)</label>
                                     <input type="number" id="precioCierreTratamiento" class="form-control" step="0.01" readonly style="background-color: #f1f5f9;">
                                 </div>
                                 <div class="col-md-3">
@@ -1160,7 +1325,7 @@
                                     </select>
                                 </div>
                                 <div class="col-md-2">
-                                    <label class="form-label small fw-bold text-muted">Precio ($)</label>
+                                    <label class="form-label small fw-bold text-muted">Precio (<span class="simbolo-moneda">$</span>)</label>
                                     <input type="number" id="precioCierreProducto" class="form-control" step="0.01" readonly style="background-color: #f1f5f9;">
                                 </div>
                                 <div class="col-md-2">
@@ -1182,9 +1347,9 @@
                             <div class="col-md-5">
                                 <div class="total-box shadow-sm">
                                     <h6 class="fw-bold mb-3 text-center"><i class="fas fa-file-invoice-dollar me-2" style="color:#1e40af;"></i>Resumen de la Cuenta</h6>
-                                    <div class="total-row"><span>Subtotal Tratamientos:</span> <span>$<span id="resCierreTrat">0.00</span></span></div>
-                                    <div class="total-row"><span>Subtotal Productos:</span> <span>$<span id="resCierreProd">0.00</span></span></div>
-                                    <div class="total-row total-final"><span>TOTAL FINAL:</span> <span>$<span id="resCierreTotal">0.00</span></span></div>
+                                    <div class="total-row"><span>Subtotal Tratamientos:</span> <span><span class="simbolo-moneda">$</span><span id="resCierreTrat">0.00</span></span></div>
+                                    <div class="total-row"><span>Subtotal Productos:</span> <span><span class="simbolo-moneda">$</span><span id="resCierreProd">0.00</span></span></div>
+                                    <div class="total-row total-final"><span>TOTAL FINAL:</span> <span><span class="simbolo-moneda">$</span><span id="resCierreTotal">0.00</span></span></div>
                                 </div>
                             </div>
                         </div>
@@ -1277,6 +1442,24 @@
             </div>
         </div>
 
+        <!-- MODAL DETALLE DE FACTURA -->
+        <div class="modal fade" id="modalDetalleFactura" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content" style="border-radius: 16px; border: none; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
+                    <div class="modal-header border-0 pb-0">
+                        <h5 class="modal-title fw-bold"><i class="fas fa-file-invoice-dollar text-primary me-2"></i>Detalle de Transacción</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-4" id="detailFacturaBody">
+                        <!-- Se llena vía JS -->
+                    </div>
+                    <div class="modal-footer border-0">
+                        <button type="button" class="btn btn-light fw-bold" data-bs-dismiss="modal" style="border-radius: 8px;">Cerrar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- PHOTO MODAL -->
 
         <div id="photoModal" class="photo-modal" onclick="closePhotoModal()">
@@ -1295,11 +1478,151 @@
     const pacienteId = parseInt('@Model.IdPaciente');
     let fullCitasData = [];
     let currentCitasPage = 1;
-    const citasPageSize = 5;
+    const citasPageSize = 6;
+    let currentConsultasPage = 1;
+    const consultasPageSize = 6;
     let examenesLoaded = false;
     let citasLoaded = false;
     let consultasHistoryLoaded = false;
+    let galeriaLoaded = false;
+    let documentosLoaded = false;
+    let finanzasLoaded = false;
     let allConsultas = [];
+    let modalCurrencySymbol = '$';
+    let modalCurrencyId = 1;
+
+    // Load Global Currency Configuration on load
+    document.addEventListener('DOMContentLoaded', async () => {
+        // Initial load of summary
+        cargarResumen();
+
+        try {
+            const resC = await fetch('/Consultas/GetMonedaConfig');
+            const config = await resC.json();
+            if (config.success) {
+                modalCurrencySymbol = config.simbolo;
+                modalCurrencyId = config.id;
+                // Update all static labels
+                document.querySelectorAll('.simbolo-moneda').forEach(el => el.textContent = modalCurrencySymbol);
+            }
+        } catch(e) { console.error('Error preload currency', e); }
+    });
+
+
+    // DASHBOARD RESUMEN LOGIC
+    async function cargarResumen() {
+        const loading = document.getElementById('resumenLoading');
+        const content = document.getElementById('resumenContent');
+        if (!loading || !content) return;
+
+        loading.classList.remove('d-none');
+        content.classList.add('d-none');
+
+        try {
+            const response = await fetch(`/Pacientes/GetResumen/${pacienteId}`);
+            const result = await response.json();
+            if (result.success) {
+                renderResumen(result);
+                loading.classList.add('d-none');
+                content.classList.remove('d-none');
+            } else {
+                loading.innerHTML = `<div class="text-danger py-4"><i class="fas fa-exclamation-circle me-2"></i> ${result.message}</div>`;
+            }
+        } catch (e) {
+            console.error('Error loading summary:', e);
+            loading.innerHTML = '<div class="text-danger py-4"><i class="fas fa-exclamation-circle me-2"></i>Error al conectar con el servidor.</div>';
+        }
+    }
+
+    function renderResumen(data) {
+        // 1. Alertas
+        const divAlertas = document.getElementById('resumenAlertas');
+        if (data.alertas) {
+            let alertsHtml = '';
+            if (data.alertas.alergias) alertsHtml += `<div class="alert-item alert-danger-soft"><i class="fas fa-hand-dots"></i> Alergias: ${data.alertas.alergiasDetalle || 'Consultar historial'}</div>`;
+            if (data.alertas.diabetes) alertsHtml += `<div class="alert-item alert-warning-soft"><i class="fas fa-syring"></i> Diabetes Mellitus</div>`;
+            if (data.alertas.hipertension) alertsHtml += `<div class="alert-item alert-warning-soft"><i class="fas fa-heartbeat"></i> Hipertensión Arterial</div>`;
+            if (data.alertas.tomaMedicamento) alertsHtml += `<div class="alert-item alert-success-soft"><i class="fas fa-pills"></i> En tratamiento médico</div>`;
+            if (data.alertas.embarazada) alertsHtml += `<div class="alert-item alert-warning-soft"><i class="fas fa-baby"></i> Paciente Gestante</div>`;
+            
+            divAlertas.innerHTML = alertsHtml || '<div class="text-muted small py-3 text-center">No hay alertas críticas registradas.</div>';
+        } else {
+            divAlertas.innerHTML = '<div class="text-muted small py-3 text-center"><i class="fas fa-info-circle me-1"></i> Sin historial clínico registrado.</div>';
+        }
+
+        // 2. Signos Vitales
+        const divVitalsBody = document.getElementById('resumenVitalsBody');
+        const spanFechaVitals = document.getElementById('resumenVitalsFecha');
+        if (data.ultimaConsulta && data.ultimaConsulta.signos) {
+            const s = data.ultimaConsulta.signos;
+            spanFechaVitals.textContent = data.ultimaConsulta.fecha;
+            divVitalsBody.innerHTML = `
+                <div class="vital-mini-item">
+                    <div class="vital-mini-icon" style="background:#FEE2E2; color:#DC2626;"><i class="fas fa-heartbeat"></i></div>
+                    <div class="vital-mini-val">${s.fc || '--'}</div>
+                    <div class="vital-mini-label">LPM</div>
+                </div>
+                <div class="vital-mini-item">
+                    <div class="vital-mini-icon" style="background:#DBEAFE; color:#2563EB;"><i class="fas fa-tachometer-alt"></i></div>
+                    <div class="vital-mini-val">${s.pa || '--/--'}</div>
+                    <div class="vital-mini-label">P.A.</div>
+                </div>
+                <div class="vital-mini-item">
+                    <div class="vital-mini-icon" style="background:#FEF3C7; color:#D97706;"><i class="fas fa-thermometer-half"></i></div>
+                    <div class="vital-mini-val">${s.temp ? s.temp.toFixed(1) : '--'}°</div>
+                    <div class="vital-mini-label">Temp</div>
+                </div>
+                <div class="vital-mini-item">
+                    <div class="vital-mini-icon" style="background:#D1FAE5; color:#059669;"><i class="fas fa-user"></i></div>
+                    <div class="vital-mini-val">${s.bmi ? s.bmi.toFixed(1) : '--.-'}</div>
+                    <div class="vital-mini-label">IMC</div>
+                </div>
+            `;
+        } else {
+            divVitalsBody.innerHTML = '<div class="col-12 py-3 text-center text-muted small">No hay signos vitales recientes.</div>';
+            spanFechaVitals.textContent = '--/--/--';
+        }
+
+        // 3. Timeline
+        const divTimeline = document.getElementById('resumenTimeline');
+        let timelineHtml = '';
+        
+        if (data.proximaCita) {
+            timelineHtml += `
+                <div class="p-3 mb-3" style="background:#EFF6FF; border-radius:12px; border:1px solid #DBEAFE;">
+                    <div class="small fw-bold text-primary text-uppercase mb-1"><i class="fas fa-calendar-check me-1"></i> Próxima Cita</div>
+                    <div class="fw-bold text-dark">${data.proximaCita.fecha} - ${data.proximaCita.hora}</div>
+                    <div class="small text-muted">${data.proximaCita.tratamiento || 'Consulta General'}</div>
+                </div>
+            `;
+        }
+        
+        if (data.ultimaConsulta) {
+            timelineHtml += `
+                <div class="p-3" style="background:#F8FAFC; border-radius:12px; border:1px solid #E2E8F0;">
+                    <div class="small fw-bold text-secondary text-uppercase mb-1"><i class="fas fa-history me-1"></i> Última Consulta</div>
+                    <div class="fw-bold text-dark">${data.ultimaConsulta.fecha}</div>
+                    <div class="small text-muted text-truncate">${data.ultimaConsulta.diagnostico || data.ultimaConsulta.motivo}</div>
+                </div>
+            `;
+        } else if (!data.proximaCita) {
+            timelineHtml = '<div class="text-center py-4 text-muted small">No hay actividad reciente programada.</div>';
+        }
+        divTimeline.innerHTML = timelineHtml;
+
+        // 4. Fotos
+        const divFotos = document.getElementById('resumenFotos');
+        if (data.fotos && data.fotos.length > 0) {
+            divFotos.innerHTML = data.fotos.map(f => `
+                <div style="flex:1;">
+                    <img src="/Galeria/GetFotoContent/${f.idFoto}" class="dash-photo-img" onclick="verFotoFull(${f.idFoto})" title="${f.titulo || 'Foto clínica'}">
+                    <div style="font-size:0.65rem;" class="text-center text-muted mt-1">${f.fechaRes}</div>
+                </div>
+            `).join('');
+        } else {
+            divFotos.innerHTML = '<div class="text-center w-100 py-3 text-muted small"><i class="fas fa-camera-retro mb-1 d-block opacity-25"></i>Sin fotos registradas.</div>';
+        }
+    }
 
 
     function switchTab(tabName) {
@@ -1314,18 +1637,9 @@
         const activePanel = document.getElementById('panel-' + tabName);
         if (activePanel) activePanel.classList.remove('d-none');
 
-        // Also handle the common footer visibility (only for resumen/consulta)
-        const commonFooter = document.getElementById('common-footer-panels');
-        if (commonFooter) {
-            if (tabName === 'resumen') {
-                commonFooter.classList.remove('d-none');
-            } else {
-                commonFooter.classList.add('d-none');
-            }
-        }
-
         // Special loads wrapped in try-catch to ensure navigation never blocks
         try {
+            if (tabName === 'resumen') cargarResumen();
             if (tabName === 'historial' && !historialData) cargarHistorial();
             if (tabName === 'galeria' && !galeriaLoaded) cargarGaleria();
             if (tabName === 'documentos' && !documentosLoaded) cargarDocumentos();
@@ -1338,6 +1652,7 @@
             } else if (tabName === 'citas') {
                 renderCitasHistory(currentCitasPage);
             }
+            if (tabName === 'finanzas' && !finanzasLoaded) cargarFinanzas();
         } catch (e) {
             console.warn('Error loading tab data:', tabName, e);
         }
@@ -1645,8 +1960,8 @@
         if (page < 1 || page > totalPages) return;
         currentPage = page;
         renderPage();
-        // Scroll to top of gallery
-        document.getElementById('galeriaGrid')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        // Scroll to top of gallery panel
+        document.getElementById('panel-galeria')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     async function eliminarFoto(id) {
@@ -1865,7 +2180,7 @@
         if (page < 1 || page > totalPages) return;
         currentDocPage = page;
         renderDocsPage();
-        document.getElementById('documentosList')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        document.getElementById('panel-documentos')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     function descargarDocumento(id) {
@@ -1915,6 +2230,10 @@
             const result = await response.json();
             if (result.success) {
                 renderExamenes(result);
+                // Si es un cambio de página (pagina > 1 o si ya se había cargado antes), hacer scroll
+                if (pagina > 1 || examenesLoaded) {
+                    document.getElementById('panel-examenes')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
             }
         } catch (e) {
             console.error(e);
@@ -2160,7 +2479,7 @@
             modalCierreObj = new bootstrap.Modal(document.getElementById('modalCierreConsulta'));
         }
         
-        // Load catalogs if not loaded
+        // Load catalogs and currency config if not loaded
         if (catTratamientos.length === 0) {
             try { 
                 const resT = await fetch('/Consultas/GetCatTratamientos');
@@ -2172,7 +2491,17 @@
                 catProductos = await resP.json(); 
                 const selP = document.getElementById('selCierreProducto');
                 catProductos.forEach(p => selP.add(new Option(`${p.nombre} (Stock: ${p.stock})`, p.id)));
-            } catch(e) { console.error('Error loading catalogs', e); }
+
+                // Load Currency Configuration
+                const resC = await fetch('/Consultas/GetMonedaConfig');
+                const config = await resC.json();
+                if (config.success) {
+                    modalCurrencySymbol = config.simbolo;
+                    modalCurrencyId = config.id;
+                    // Update HTML labels with new symbol
+                    document.querySelectorAll('.simbolo-moneda').forEach(el => el.textContent = modalCurrencySymbol);
+                }
+            } catch(e) { console.error('Error loading closure data', e); }
         }
         
         modalCierreObj.show();
@@ -2256,7 +2585,7 @@
             if (item.tipoItem === 'TRATAMIENTO') {
                 tbTrat.innerHTML += `<tr>
                     <td>${item.descripcion}</td>
-                    <td class="text-end">$${item.precioUnitario.toFixed(2)}</td>
+                    <td class="text-end">${modalCurrencySymbol}${item.precioUnitario.toFixed(2)}</td>
                     <td class="text-center"><button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="eliminarItemCierre(${item.id})"><i class="fas fa-trash-alt"></i></button></td>
                 </tr>`;
                 subTrat += item.subtotal;
@@ -2264,8 +2593,8 @@
                 tbProd.innerHTML += `<tr>
                     <td>${item.descripcion}</td>
                     <td class="text-center">${item.cantidad}</td>
-                    <td class="text-end">$${item.precioUnitario.toFixed(2)}</td>
-                    <td class="text-end fw-bold">$${item.subtotal.toFixed(2)}</td>
+                    <td class="text-end">${modalCurrencySymbol}${item.precioUnitario.toFixed(2)}</td>
+                    <td class="text-end fw-bold">${modalCurrencySymbol}${item.subtotal.toFixed(2)}</td>
                     <td class="text-center"><button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="eliminarItemCierre(${item.id})"><i class="fas fa-trash-alt"></i></button></td>
                 </tr>`;
                 subProd += item.subtotal;
@@ -2440,45 +2769,44 @@
 
         // Previous button
         pagesHtml += `
-            <div class="page-item ${currentCitasPage === 1 ? 'disabled' : ''}">
-                <a href="javascript:void(0)" class="page-link ${currentCitasPage === 1 ? 'disabled' : ''}" 
-                   onclick="${currentCitasPage > 1 ? `changeCitasPage(${currentCitasPage - 1})` : ''}">
-                    <i class="fas fa-chevron-left"></i>
+            <li class="page-item ${currentCitasPage === 1 ? 'disabled' : ''}">
+                <a class="page-link" href="javascript:void(0)" onclick="${currentCitasPage > 1 ? `changeCitasPage(${currentCitasPage - 1})` : ''}" title="Anterior">
+                    <i class="fas fa-chevron-left" style="font-size: 0.8rem;"></i>
                 </a>
-            </div>`;
+            </li>`;
 
-        // Page numbers (simple version, for many pages we might need elipsis)
+        // Page numbers
         for (let i = 1; i <= totalPages; i++) {
             pagesHtml += `
-                <div class="page-item ${i === currentCitasPage ? 'active' : ''}">
-                    <a href="javascript:void(0)" class="page-link" onclick="changeCitasPage(${i})">${i}</a>
-                </div>`;
+                <li class="page-item ${i === currentCitasPage ? 'active' : ''}">
+                    <a class="page-link" href="javascript:void(0)" onclick="changeCitasPage(${i})">${i}</a>
+                </li>`;
         }
 
         // Next button
         pagesHtml += `
-            <div class="page-item ${currentCitasPage === totalPages ? 'disabled' : ''}">
-                <a href="javascript:void(0)" class="page-link ${currentCitasPage === totalPages ? 'disabled' : ''}" 
-                   onclick="${currentCitasPage < totalPages ? `changeCitasPage(${currentCitasPage + 1})` : ''}">
-                    <i class="fas fa-chevron-right"></i>
+            <li class="page-item ${currentCitasPage === totalPages ? 'disabled' : ''}">
+                <a class="page-link" href="javascript:void(0)" onclick="${currentCitasPage < totalPages ? `changeCitasPage(${currentCitasPage + 1})` : ''}" title="Siguiente">
+                    <i class="fas fa-chevron-right" style="font-size: 0.8rem;"></i>
                 </a>
-            </div>`;
+            </li>`;
 
         return `
-            <div class="citas-pagination px-4 pb-3">
-                <div class="pagination-controls">
-                    ${pagesHtml}
-                </div>
-                <div class="total-info text-center">
-                    • ${totalItems} ${totalItems === 1 ? 'cita' : 'citas'}
-                </div>
+            <div class="d-flex justify-content-center align-items-center mt-3 pb-3">
+                <nav>
+                    <ul class="examen-pagination">
+                        ${pagesHtml}
+                        <li class="total-count">
+                            • ${totalItems} ${totalItems === 1 ? 'cita' : 'citas'}
+                        </li>
+                    </ul>
+                </nav>
             </div>`;
     }
 
     function changeCitasPage(page) {
         renderCitasHistory(page);
-        // Optional: scroll to top of card? 
-        document.getElementById('citasContainer').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        document.getElementById('panel-citas').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     function getStatusBadgeClass(estadoId) {
@@ -2511,7 +2839,7 @@
         }
     }
 
-    function renderConsultasTable() {
+    function renderConsultasTable(page = 1) {
         const container = document.getElementById('consultasHistoryContainer');
         if (allConsultas.length === 0) {
             container.innerHTML = `
@@ -2521,6 +2849,11 @@
                 </div>`;
             return;
         }
+
+        currentConsultasPage = page;
+        const start = (page - 1) * consultasPageSize;
+        const end = start + consultasPageSize;
+        const pageItems = allConsultas.slice(start, end);
 
         let html = `
             <div class="table-responsive">
@@ -2534,7 +2867,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        ${allConsultas.map(c => `
+                        ${pageItems.map(c => `
                             <tr>
                                 <td>
                                     <div class="fw-bold">${c.fecha}</div>
@@ -2563,7 +2896,59 @@
                     </tbody>
                 </table>
             </div>`;
+
+        // Paginación de Consultas
+        if (allConsultas.length > consultasPageSize) {
+            html += renderConsultasPagination(allConsultas.length);
+        }
+
         container.innerHTML = html;
+    }
+
+    function renderConsultasPagination(totalItems) {
+        const totalPages = Math.ceil(totalItems / consultasPageSize);
+        let pagesHtml = '';
+
+        // Anterior
+        pagesHtml += `
+            <li class="page-item ${currentConsultasPage === 1 ? 'disabled' : ''}">
+                <a class="page-link" href="javascript:void(0)" onclick="${currentConsultasPage > 1 ? `changeConsultasPage(${currentConsultasPage - 1})` : ''}" title="Anterior">
+                    <i class="fas fa-chevron-left" style="font-size: 0.8rem;"></i>
+                </a>
+            </li>`;
+
+        // Números
+        for (let i = 1; i <= totalPages; i++) {
+            pagesHtml += `
+                <li class="page-item ${i === currentConsultasPage ? 'active' : ''}">
+                    <a class="page-link" href="javascript:void(0)" onclick="changeConsultasPage(${i})">${i}</a>
+                </li>`;
+        }
+
+        // Siguiente
+        pagesHtml += `
+            <li class="page-item ${currentConsultasPage === totalPages ? 'disabled' : ''}">
+                <a class="page-link" href="javascript:void(0)" onclick="${currentConsultasPage < totalPages ? `changeConsultasPage(${currentConsultasPage + 1})` : ''}" title="Siguiente">
+                    <i class="fas fa-chevron-right" style="font-size: 0.8rem;"></i>
+                </a>
+            </li>`;
+
+        return `
+            <div class="d-flex justify-content-center align-items-center mt-3 pb-3">
+                <nav>
+                    <ul class="examen-pagination">
+                        ${pagesHtml}
+                        <li class="total-count">
+                            • ${totalItems} ${totalItems === 1 ? 'atención' : 'atenciones'}
+                        </li>
+                    </ul>
+                </nav>
+            </div>`;
+    }
+
+    function changeConsultasPage(page) {
+        renderConsultasTable(page);
+        document.getElementById('panel-consulta').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     function verDetalleConsulta(id) {
@@ -2593,8 +2978,8 @@
                                     <tr>
                                         <td><span class="badge ${i.tipo === 'PRODUCTO' ? 'bg-info-subtle text-info' : 'bg-primary-subtle text-primary'} me-1" style="font-size:0.6rem;">${i.tipo}</span> ${i.descripcion}</td>
                                         <td class="text-center">${i.cant}</td>
-                                        <td class="text-end">$${i.precio}</td>
-                                        <td class="text-end fw-bold">$${i.subtotal}</td>
+                                        <td class="text-end">${modalCurrencySymbol}${i.precio}</td>
+                                        <td class="text-end fw-bold">${modalCurrencySymbol}${i.subtotal}</td>
                                     </tr>
                                 `).join('')}
                             </tbody>
@@ -2639,6 +3024,163 @@
                 </div>
             </div>
             ${itemsHtml}
+        `;
+
+        modal.show();
+    }
+
+    // ============ FINANZAS LOGIC ============
+    let allFinanzas = [];
+    
+    async function cargarFinanzas() {
+        const container = document.getElementById('finanzasContainer');
+        if (!container) return;
+
+        try {
+            const response = await fetch(`/Caja/GetFinanzasPaciente/${pacienteId}`);
+            const result = await response.json();
+            if (result.success) {
+                allFinanzas = result.cuentas;
+                
+                // Actualizar KPIs
+                document.getElementById('finanzasTotalFacturado').innerText = `${modalCurrencySymbol}${result.resumen.totalFacturado.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+                const saldo = result.resumen.saldoPendiente;
+                document.getElementById('finanzasSaldoPendiente').innerText = `${modalCurrencySymbol}${saldo.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+                
+                // Color dinámico según saldo
+                const card = document.getElementById('cardCargosPendientes');
+                const icon = document.getElementById('iconCargosPendientes');
+                if (saldo > 0.05) {
+                    card.style.borderLeftColor = '#EF4444';
+                    icon.classList.replace('bg-secondary-subtle', 'bg-danger-subtle');
+                    icon.classList.replace('text-secondary', 'text-danger');
+                } else {
+                    card.style.borderLeftColor = '#10B981';
+                    icon.classList.replace('bg-danger-subtle', 'bg-success-subtle');
+                    icon.classList.replace('text-danger', 'text-success');
+                    icon.innerHTML = '<i class="fas fa-check-circle fs-4"></i>';
+                }
+
+                renderFinanzasTable();
+                finanzasLoaded = true;
+            }
+        } catch (e) {
+            console.error(e);
+            container.innerHTML = '<div class="text-center py-4 text-danger">Error al cargar datos financieros.</div>';
+        }
+    }
+
+    function renderFinanzasTable() {
+        const container = document.getElementById('finanzasContainer');
+        if (allFinanzas.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-5 text-muted">
+                    <i class="fas fa-receipt fs-2 d-block mb-3 opacity-25"></i>
+                    <p class="mb-0">No hay movimientos financieros registrados.</p>
+                </div>`;
+            return;
+        }
+
+        let html = `
+            <div class="table-responsive">
+                <table class="table table-hover align-middle" style="font-size: 0.9rem;">
+                    <thead class="table-light">
+                        <tr style="font-size: 0.8rem; color: #64748B;">
+                            <th>FECHA</th>
+                            <th>ID CUENTA</th>
+                            <th>CONCEPTOS</th>
+                            <th class="text-end">TOTAL</th>
+                            <th class="text-center">ESTADO</th>
+                            <th class="text-center" style="width: 80px;">DETALLE</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${allFinanzas.map(c => `
+                            <tr>
+                                <td>${c.fecha}</td>
+                                <td class="fw-bold text-primary">#${c.idCuenta}</td>
+                                <td>
+                                    <div class="d-flex flex-wrap gap-1">
+                                        ${[...new Set(c.detalles.map(d => d.tipo))].map(t => `
+                                            <span class="badge ${t === 'PRODUCTO' ? 'bg-info-subtle text-info' : 'bg-primary-subtle text-primary'}" style="font-size: 0.65rem;">
+                                                ${t === 'PRODUCTO' ? 'Inventario' : 'Tratamiento'}
+                                            </span>
+                                        `).join('')}
+                                    </div>
+                                </td>
+                                <td class="text-end fw-bold text-dark">${c.simbolo}${c.totalFinal.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                                <td class="text-center">
+                                    <span class="badge ${c.estado === 'PAGADA' ? 'bg-success text-white' : 'bg-warning text-dark'}" style="border-radius: 20px; padding: 5px 12px; font-size: 0.7rem; font-weight: bold;">
+                                        <i class="fas ${c.estado === 'PAGADA' ? 'fa-check' : 'fa-clock'} me-1"></i> ${c.estado}
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <button class="btn btn-sm btn-outline-secondary border-0" onclick="verDetalleFactura(${c.idCuenta})" title="Ver detalles del cobro">
+                                        <i class="fas fa-search-plus"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>`;
+        container.innerHTML = html;
+    }
+
+    function verDetalleFactura(id) {
+        const cuenta = allFinanzas.find(c => c.idCuenta === id);
+        if (!cuenta) return;
+
+        const modal = new bootstrap.Modal(document.getElementById('modalDetalleFactura'));
+        const body = document.getElementById('detailFacturaBody');
+
+        body.innerHTML = `
+            <div class="mb-4 text-center">
+                <div class="text-muted small text-uppercase fw-bold">Referencia de Cuenta</div>
+                <h3 class="fw-bold text-primary mb-1">#${cuenta.idCuenta}</h3>
+                <div class="badge bg-light text-dark border">${cuenta.fecha}</div>
+            </div>
+            
+            <div class="p-3 bg-light rounded-3 mb-4">
+                <h6 class="fw-bold text-dark small text-uppercase mb-3"><i class="fas fa-list-ul me-2"></i>Ítems Facturados</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm table-borderless mb-0">
+                        <thead>
+                            <tr class="text-muted small border-bottom">
+                                <th>Descripción</th>
+                                <th class="text-center">Cant.</th>
+                                <th class="text-end">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${cuenta.detalles.map(d => `
+                                <tr>
+                                    <td class="small pt-2">
+                                        <span class="badge ${d.tipo === 'PRODUCTO' ? 'bg-info-subtle text-info' : 'bg-primary-subtle text-primary'} me-1" style="font-size:0.6rem;">${d.tipo}</span>
+                                        ${d.descripcion}
+                                    </td>
+                                    <td class="text-center small pt-2">${d.cant}</td>
+                                    <td class="text-end small pt-2 fw-bold">${cuenta.simbolo}${d.subtotal.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                        <tfoot>
+                            <tr class="border-top">
+                                <td colspan="2" class="pt-3 fw-bold text-dark">TOTAL PAGADO</td>
+                                <td class="pt-3 text-end fw-bold text-primary" style="font-size: 1.1rem;">${cuenta.simbolo}${cuenta.totalFinal.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="alert ${cuenta.estado === 'PAGADA' ? 'alert-success' : 'alert-warning'} border-0 shadow-xs flex-grow-1 mb-0 py-3 d-flex align-items-center">
+                <i class="fas ${cuenta.estado === 'PAGADA' ? 'fa-check-circle' : 'fa-exclamation-triangle'} fs-4 me-3"></i>
+                <div>
+                    <div class="fw-bold">Estado del Cobro: ${cuenta.estado}</div>
+                    <div class="small opacity-75">Transacción procesada vía módulo de Caja.</div>
+                </div>
+            </div>
         `;
 
         modal.show();

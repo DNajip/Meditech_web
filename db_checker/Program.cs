@@ -1,7 +1,7 @@
 using System;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
-using MediTech.Models;
+using MediTech.Backend.Models;
 
 var options = new DbContextOptionsBuilder<MediTechContext>()
     .UseSqlServer("Server=(localdb)\\MSSQLLocalDB;Database=MediTech;Trusted_Connection=True;TrustServerCertificate=True")

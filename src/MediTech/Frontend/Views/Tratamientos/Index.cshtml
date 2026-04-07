@@ -4,344 +4,476 @@
 }
 
 <style>
+    :root {
+        --trat-primary: #10B981;
+        --trat-secondary: #6366F1;
+        --trat-danger: #EF4444;
+        --trat-warning: #F59E0B;
+        --trat-info: #3B82F6;
+        --trat-bg-card: #FFFFFF;
+        --trat-text-main: #1E293B;
+        --trat-text-muted: #64748B;
+        --trat-border: #E2E8F0;
+        --radius-premium: 16px;
+    }
+
+    /* Animations */
+    @@keyframes fadeInPremium {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .fade-in-premium {
+        animation: fadeInPremium 0.4s ease-out forwards;
+    }
+
+    /* Page Header */
     .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        margin-bottom: 30px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid var(--trat-border);
+    }
+    .page-header h2 {
+        font-size: 1.75rem;
+        font-weight: 800;
+        color: var(--trat-text-main);
+        margin: 0;
+        letter-spacing: -0.025em;
+    }
+    .page-header .subtitle {
+        font-size: 0.9rem;
+        color: var(--trat-text-muted);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    /* Control Bar */
+    .control-bar {
+        background: white;
+        padding: 16px 24px;
+        border-radius: var(--radius-premium);
+        border: 1px solid var(--trat-border);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
         display: flex;
         justify-content: space-between;
         align-items: center;
         margin-bottom: 24px;
+        gap: 16px;
     }
-    .page-header h2 {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: #1E293B;
-        margin: 0;
+    .search-wrapper {
+        position: relative;
+        flex: 1;
+        max-width: 400px;
     }
-    .page-header .subtitle {
-        font-size: 0.85rem;
-        color: #64748B;
+    .search-wrapper i {
+        position: absolute;
+        left: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--trat-text-muted);
     }
-
-    .tratamientos-table {
-        background: #FFFFFF;
-        border-radius: 14px;
-        border: 1px solid #E2E8F0;
-        overflow: hidden;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-    }
-    .tratamientos-table table {
+    .search-wrapper input {
         width: 100%;
-        border-collapse: collapse;
-    }
-    .tratamientos-table th {
+        padding: 10px 16px 10px 44px;
+        border-radius: 12px;
+        border: 1px solid var(--trat-border);
+        font-size: 0.9rem;
+        transition: all 0.2s;
         background: #F8FAFC;
-        padding: 12px 16px;
-        font-size: 0.78rem;
-        font-weight: 600;
-        color: #64748B;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        text-align: left;
-        border-bottom: 1px solid #E2E8F0;
     }
-    .tratamientos-table td {
-        padding: 14px 16px;
-        font-size: 0.88rem;
-        color: #334155;
-        border-bottom: 1px solid #F1F5F9;
+    .search-wrapper input:focus {
+        background: white;
+        border-color: var(--trat-info);
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        outline: none;
     }
-    .tratamientos-table tr:hover td { background: #F8FAFC; }
-    .tratamientos-table tr:last-child td { border-bottom: none; }
 
-    .price-cell {
+    /* Premium Table */
+    .tratamientos-table-wrapper {
+        background: var(--trat-bg-card);
+        border-radius: var(--radius-premium);
+        border: 1px solid var(--trat-border);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04);
+        overflow: hidden;
+    }
+    .premium-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+    .premium-table th {
+        background: #F8FAFC;
+        padding: 16px 24px;
+        font-size: 0.75rem;
         font-weight: 700;
+        color: var(--trat-text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border-bottom: 1px solid var(--trat-border);
+    }
+    .premium-table td {
+        padding: 20px 24px;
+        font-size: 0.92rem;
+        color: var(--trat-text-main);
+        vertical-align: middle;
+        border-bottom: 1px solid #F1F5F9;
+        transition: background 0.2s;
+    }
+    .premium-table tr:hover td { background: #FCFDFF; }
+    .premium-table tr:last-child td { border-bottom: none; }
+
+    /* Cells Styling */
+    .trat-info-cell {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .trat-icon-box {
+        width: 42px; height: 42px;
+        border-radius: 12px;
+        background: #ECFDF5;
+        color: #10B981;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+    }
+    .trat-name { font-weight: 700; margin-bottom: 2px; }
+    .trat-id { font-size: 0.75rem; color: var(--trat-text-muted); font-family: monospace; }
+    
+    .price-tag {
+        font-weight: 800;
         color: #0F172A;
-    }
-
-    .badge-active {
-        background: #D1FAE5; color: #065F46;
-        font-size: 0.72rem; padding: 3px 10px;
-        border-radius: 20px; font-weight: 600;
-    }
-    .badge-inactive {
-        background: #FEE2E2; color: #991B1B;
-        font-size: 0.72rem; padding: 3px 10px;
-        border-radius: 20px; font-weight: 600;
-    }
-
-    .action-link {
-        color: #3B82F6;
-        text-decoration: none;
-        font-weight: 500;
         font-size: 1rem;
-        margin-right: 12px;
-        transition: transform 0.2s;
+        background: #F1F5F9;
+        padding: 4px 10px;
+        border-radius: 8px;
         display: inline-block;
     }
-    .action-link:hover { transform: scale(1.1); }
 
-    .empty-state {
-        text-align: center;
-        padding: 60px 20px;
-        color: #94A3B8;
-    }
-    .empty-state i { font-size: 3rem; margin-bottom: 12px; color: #CBD5E1; }
-
-    /* Modal Styling */
-    .modal-content {
-        border-radius: 20px;
-        border: none;
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-    }
-    .modal-header {
-        border-bottom: 1px solid #F1F5F9;
-        padding: 24px 32px;
-    }
-    .modal-title {
-        font-weight: 700;
-        color: #1E293B;
-    }
-    .modal-body {
-        padding: 32px;
-    }
-    .form-label {
+    .detail-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
         font-size: 0.8rem;
-        font-weight: 600;
+        color: var(--trat-text-muted);
+        margin-bottom: 2px;
+    }
+    .detail-item i { width: 14px; color: var(--trat-secondary); opacity: 0.7; }
+
+    /* Status Badges */
+    .status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 12px;
+        border-radius: 30px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+    }
+    .status-active { background: #D1FAE5; color: #065F46; border: 1px solid #A7F3D0; }
+    .status-inactive { background: #FEE2E2; color: #991B1B; border: 1px solid #FECACA; }
+    .dot { width: 6px; height: 6px; border-radius: 50%; }
+    .status-active .dot { background: #10B981; box-shadow: 0 0 8px #10B981; }
+    .status-inactive .dot { background: #EF4444; }
+
+    /* Action Buttons */
+    .action-group { display: flex; gap: 8px; }
+    .btn-action {
+        width: 36px; height: 36px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 1px solid transparent;
+        cursor: pointer;
+        padding: 0;
+        background: transparent;
+    }
+    .btn-action-edit { color: var(--trat-warning); background: #FFFBEB; border-color: #FEF3C7; }
+    .btn-action-edit:hover { background: #FDE68A; color: #92400E; transform: translateY(-2px); }
+    .btn-action-info { color: var(--trat-info); background: #EFF6FF; border-color: #DBEAFE; }
+    .btn-action-info:hover { background: #BFDBFE; color: #1E40AF; transform: translateY(-2px); }
+
+    /* Modals Design */
+    .modal-content-premium {
+        border-radius: 24px;
+        border: none;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.2);
+    }
+    .modal-header-premium {
+        padding: 30px 40px;
+        border-bottom: 1px solid #F1F5F9;
+    }
+    .modal-body-premium { padding: 40px; }
+    .premium-label {
+        font-size: 0.72rem;
+        font-weight: 700;
         color: #64748B;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
+        letter-spacing: 0.05em;
+        margin-bottom: 8px;
+        display: block;
     }
-    .form-control, .form-select {
-        border-radius: 12px;
-        padding: 12px 16px;
+    .premium-input {
+        border-radius: 14px;
         border: 1px solid #E2E8F0;
+        padding: 12px 18px;
         font-size: 0.95rem;
+        transition: all 0.2s;
+        background: #F8FAFC;
     }
-    .form-control:focus {
-        border-color: #3B82F6;
-        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+    .premium-input:focus {
+        background: white;
+        border-color: var(--trat-secondary);
+        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
     }
 
-    /* Pagination Styling */
-    .pagination-wrapper {
-        padding: 16px 24px;
-        background: #FFFFFF;
+    /* Pagination */
+    .premium-pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 6px;
+        padding: 20px;
+        background: #F8FAFC;
         border-top: 1px solid #F1F5F9;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 8px;
     }
-    .pagination-btn {
-        width: 38px;
-        height: 38px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+    .pag-btn {
+        min-width: 40px; height: 40px;
         border-radius: 12px;
-        border: 1px solid #E2E8F0;
-        background: #FFFFFF;
-        color: #64748B;
-        text-decoration: none;
-        font-weight: 600;
-        font-size: 0.9rem;
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .pagination-btn:hover:not(.disabled) {
-        border-color: #3B82F6;
-        color: #3B82F6;
-        background: #F8FAFC;
-        transform: translateY(-1px);
-    }
-    .pagination-btn.active {
-        background: #6366F1;
-        color: #FFFFFF;
-        border-color: #6366F1;
-        box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.3);
-    }
-    .pagination-btn.disabled {
-        background: #F8FAFC;
-        color: #CBD5E1;
-        border-color: #E2E8F0;
-        cursor: not-allowed;
-    }
-    .pagination-info {
-        font-size: 0.9rem;
-        color: #94A3B8;
-        margin-left: 8px;
         display: flex;
         align-items: center;
+        justify-content: center;
+        background: white;
+        border: 1px solid #E2E8F0;
+        color: #64748B;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.2s;
     }
-    .pagination-info::before {
-        content: "•";
-        margin-right: 12px;
-        color: #E2E8F0;
-        font-size: 1.5rem;
+    .pag-btn:hover:not(.disabled) { border-color: var(--trat-secondary); color: var(--trat-secondary); transform: translateY(-1px); }
+    .pag-btn.active { background: var(--trat-secondary); border-color: var(--trat-secondary); color: white; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); }
+    .pag-btn.disabled { 
+        opacity: 0.5; 
+        cursor: not-allowed; 
+        pointer-events: none;
     }
 </style>
 
-<div class="page-header">
+
+<div class="page-header fade-in-premium">
     <div>
-        <h2><i class="fas fa-hand-holding-medical me-2" style="color:#10B981;"></i>Tratamientos</h2>
-        <span class="subtitle">Catálogo de servicios y especialidades médicas</span>
+        <h2><i class="fas fa-hand-holding-medical me-2" style="color:var(--trat-primary);"></i>Lista de Tratamientos</h2>
+        <div class="subtitle">
+            <i class="fas fa-circle-check text-success small"></i> 
+            Catálogo activo de servicios y especialidades médicas
+        </div>
     </div>
-    <button type="button" class="btn btn-primary px-4 shadow-sm" style="border-radius:12px; font-weight:600;" data-bs-toggle="modal" data-bs-target="#createTratamientoModal">
-        <i class="fas fa-plus me-1"></i> Nuevo Tratamiento
+    <button type="button" class="btn btn-primary px-4 py-2 shadow-sm border-0 d-flex align-items-center gap-2" style="border-radius:12px; font-weight:700; background: var(--trat-secondary);" data-bs-toggle="modal" data-bs-target="#createTratamientoModal">
+        <i class="fas fa-plus-circle"></i> Nuevo Tratamiento
     </button>
 </div>
 
-<div class="tratamientos-table">
+<div class="control-bar fade-in-premium">
+    <div class="search-wrapper">
+        <i class="fas fa-search"></i>
+        <input type="text" id="tratamientoSearch" placeholder="Buscar por nombre o ID de tratamiento..." onkeyup="filterTratamientos()">
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary btn-sm rounded-pill px-3" onclick="filterByStatus(1)"><i class="fas fa-check-circle me-1"></i> Activos</button>
+        <button class="btn btn-outline-secondary btn-sm rounded-pill px-3" onclick="filterByStatus(2)"><i class="fas fa-times-circle me-1"></i> Inactivos</button>
+        <button class="btn btn-light btn-sm rounded-pill px-3" onclick="location.reload()"><i class="fas fa-sync-alt"></i></button>
+    </div>
+</div>
+
+<div class="tratamientos-table-wrapper fade-in-premium">
     @if (Model.Any())
     {
-        <table>
+        <table class="premium-table">
             <thead>
                 <tr>
                     <th>Tratamiento</th>
-                    <th>Precio</th>
+                    <th>Inversión / Precio</th>
                     <th>Detalles Clínicos</th>
                     <th>Estado</th>
-                    <th>Acciones</th>
+                    <th class="text-center">Acciones</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="tratamientosTableBody">
                 @foreach (var item in Model)
                 {
-                    <tr>
+                    <tr class="trat-row" data-status="@item.IdEstado" data-name="@item.NombreTratamiento.ToLower()">
                         <td>
-                            <div class="fw-bold">@item.NombreTratamiento</div>
-                            <small class="text-secondary">#@item.IdTratamiento</small>
-                        </td>
-                        <td class="price-cell">
-                             @(ViewBag.MonedaBase?.Simbolo ?? "") @item.Precio?.ToString("N2")
-                        </td>
-                        <td>
-                            <div style="font-size: 0.75rem;">
-                                <div><i class="fas fa-vial me-1"></i> <strong>Vía:</strong> @(item.ViaAdministracion ?? "N/A")</div>
-                                <div><i class="fas fa-clock me-1"></i> <strong>Frec:</strong> @(item.Frecuencia ?? "N/A")</div>
+                            <div class="trat-info-cell">
+                                <div class="trat-icon-box">
+                                    <i class="fas fa-notes-medical"></i>
+                                </div>
+                                <div>
+                                    <div class="trat-name">@item.NombreTratamiento</div>
+                                    <div class="trat-id">ID: #@item.IdTratamiento</div>
+                                </div>
                             </div>
                         </td>
                         <td>
-                            <span class="@(item.IdEstado == 1 ? "badge-active" : "badge-inactive")">
-                                @(item.Estado?.DescEstado ?? (item.IdEstado == 1 ? "Activo" : "Inactivo"))
-                            </span>
+                            <div class="price-tag">
+                                <span class="text-muted small fw-normal">@(ViewBag.MonedaBase?.Simbolo ?? "$")</span> 
+                                @item.Precio?.ToString("N2")
+                            </div>
                         </td>
                         <td>
-                            <button type="button" class="btn btn-link action-link text-warning edit-btn p-0" 
-                                    data-id="@item.IdTratamiento" 
-                                    data-nombre="@item.NombreTratamiento" 
-                                    data-precio="@item.Precio" 
-                                    data-via="@item.ViaAdministracion" 
-                                    data-frec="@item.Frecuencia"
-                                    data-dosis="@item.Dosis"
-                                    data-duracion="@item.DuracionTratamiento"
-                                    data-estado="@item.IdEstado"
-                                    title="Editar">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <a href="@Url.Action("Details", new { id = item.IdTratamiento })" class="action-link text-info" title="Ver Detalles"><i class="fas fa-info-circle"></i></a>
+                            <div class="detail-item">
+                                <i class="fas fa-syringe"></i> 
+                                <span>Vía: <strong>@(item.ViaAdministracion ?? "No definida")</strong></span>
+                            </div>
+                            <div class="detail-item">
+                                <i class="fas fa-hourglass-half"></i> 
+                                <span>Frec: <strong>@(item.Frecuencia ?? "N/A")</strong></span>
+                            </div>
+                        </td>
+                        <td>
+                            @if (item.IdEstado == 1)
+                            {
+                                <span class="status-pill status-active">
+                                    <span class="dot"></span> Activo
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="status-pill status-inactive">
+                                    <span class="dot"></span> Inactivo
+                                </span>
+                            }
+                        </td>
+                        <td>
+                            <div class="action-group justify-content-center">
+                                <button type="button" class="btn-action btn-action-edit edit-btn" 
+                                        data-id="@item.IdTratamiento" 
+                                        data-nombre="@item.NombreTratamiento" 
+                                        data-precio="@item.Precio" 
+                                        data-via="@item.ViaAdministracion" 
+                                        data-frec="@item.Frecuencia"
+                                        data-dosis="@item.Dosis"
+                                        data-duracion="@item.DuracionTratamiento"
+                                        data-estado="@item.IdEstado"
+                                        title="Editar Ficha">
+                                    <i class="fas fa-pen-to-square"></i>
+                                </button>
+                                <button type="button" class="btn-action btn-action-info view-details-btn" data-id="@item.IdTratamiento" title="Ver Detalles">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
                         </td>
                     </tr>
                 }
             </tbody>
         </table>
 
-        <!-- Pagination Footer -->
-        <div class="pagination-wrapper">
+        <!-- PAGINACIÓN PREMIUM -->
+        <div class="premium-pagination">
             @{
                 int currentPage = ViewBag.CurrentPage ?? 1;
                 int totalPages = ViewBag.TotalPages ?? 1;
                 int totalItems = ViewBag.TotalItems ?? 0;
             }
 
-            <a href="@Url.Action("Index", new { page = currentPage - 1 })" 
-               class="pagination-btn @(currentPage <= 1 ? "disabled" : "")" 
-               onclick="@(currentPage <= 1 ? "return false;" : "")">
+            <a href="@(currentPage <= 1 ? "javascript:void(0)" : Url.Action("Index", new { page = currentPage - 1 }))" 
+               class="pag-btn @(currentPage <= 1 ? "disabled" : "")">
                 <i class="fas fa-chevron-left"></i>
             </a>
 
             @for (int i = 1; i <= totalPages; i++)
             {
                 <a href="@Url.Action("Index", new { page = i })" 
-                   class="pagination-btn @(i == currentPage ? "active" : "")">
+                   class="pag-btn @(i == currentPage ? "active" : "")">
                     @i
                 </a>
             }
 
-            <a href="@Url.Action("Index", new { page = currentPage + 1 })" 
-               class="pagination-btn @(currentPage >= totalPages ? "disabled" : "")"
-               onclick="@(currentPage >= totalPages ? "return false;" : "")">
+            <a href="@(currentPage >= totalPages ? "javascript:void(0)" : Url.Action("Index", new { page = currentPage + 1 }))" 
+               class="pag-btn @(currentPage >= totalPages ? "disabled" : "")">
                 <i class="fas fa-chevron-right"></i>
             </a>
 
-            <div class="pagination-info">
-                @totalItems tratamientos
+            <div class="ms-3 text-muted small fw-normal">
+                 Mostrando <span class="fw-bold text-dark">@totalItems</span> servicios registrados
             </div>
         </div>
     }
     else
     {
-        <div class="empty-state">
-            <div><i class="fas fa-notes-medical"></i></div>
-            <h5>Sin tratamientos registrados</h5>
-            <p>Comienza agregando los servicios y especialidades que ofrece la clínica.</p>
-            <button type="button" class="btn btn-outline-primary mt-3" data-bs-toggle="modal" data-bs-target="#createTratamientoModal">
-                Registrar Primer Tratamiento
+        <div class="empty-state py-5 text-center">
+            <div class="mb-3">
+                <i class="fas fa-folder-open fa-4x text-light"></i>
+            </div>
+            <h5 class="fw-bold">No hay tratamientos activos</h5>
+            <p class="text-muted">Parece que aún no has registrado servicios clínicos en tu catálogo.</p>
+            <button type="button" class="btn btn-primary rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#createTratamientoModal">
+                Registrar primer servicio
             </button>
         </div>
     }
-</div>
 
-<!-- Modal Registrar Tratamiento -->
-<div class="modal fade" id="createTratamientoModal" tabindex="-1" aria-hidden="true">
+@section Modals {
+    <!-- Modal Registrar Tratamiento -->
+    <div class="modal fade" id="createTratamientoModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-plus-circle text-primary me-2"></i>Registrar Nuevo Tratamiento</h5>
+        <div class="modal-content modal-content-premium">
+            <div class="modal-header modal-header-premium">
+                <div>
+                    <h4 class="modal-title fw-bold">Nuevo Tratamiento</h4>
+                    <p class="text-muted small m-0">Define los parámetros del nuevo servicio clínico.</p>
+                </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="createTratamientoForm">
                 @Html.AntiForgeryToken()
-                <div class="modal-body">
+                <div class="modal-body modal-body-premium">
                     <div class="row g-4">
                         <div class="col-md-8">
-                            <label class="form-label">Nombre del Tratamiento</label>
-                            <input name="NombreTratamiento" type="text" class="form-control" placeholder="Ej: Limpieza Dental Profunda" required>
+                            <label class="premium-label">Nombre del servicio</label>
+                            <input name="NombreTratamiento" type="text" class="form-control premium-input" placeholder="Ej: Profilaxis Dental Avanzada" required>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label">Precio</label>
+                            <label class="premium-label">Precio Sugerido</label>
                             <div class="input-group">
-                                <span class="input-group-text bg-light text-muted border-end-0" style="border-radius: 12px 0 0 12px;">@(ViewBag.MonedaBase?.Simbolo ?? "$")</span>
-                                <input name="Precio" type="number" step="0.01" class="form-control border-start-0" placeholder="0.00" required>
+                                <span class="input-group-text bg-white border-end-0" style="border-radius: 14px 0 0 14px;">@(ViewBag.MonedaBase?.Simbolo ?? "$")</span>
+                                <input name="Precio" type="number" step="0.01" class="form-control premium-input border-start-0" placeholder="0.00" required>
                             </div>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Vía de Administración</label>
-                            <input name="ViaAdministracion" type="text" class="form-control" placeholder="Ej: Oral, Tópica">
+                            <label class="premium-label">Vía de Aplicación</label>
+                            <input name="ViaAdministracion" type="text" class="form-control premium-input" placeholder="Ej: Intravenous, Oral">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Dosis Sugerida</label>
-                            <input name="Dosis" type="text" class="form-control" placeholder="Ej: 500mg">
+                            <label class="premium-label">Dosis / Concentración</label>
+                            <input name="Dosis" type="text" class="form-control premium-input" placeholder="Ej: 2.5mg">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Frecuencia</label>
-                            <input name="Frecuencia" type="text" class="form-control" placeholder="Ej: Cada 8 horas">
+                            <label class="premium-label">Frecuencia recomendada</label>
+                            <input name="Frecuencia" type="text" class="form-control premium-input" placeholder="Ej: Semanal">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Duración Estimada</label>
-                            <input name="DuracionTratamiento" type="text" class="form-control" placeholder="Ej: 7 días">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Estado Inicial</label>
-                            <select name="IdEstado" class="form-select">
-                                <option value="1">ACTIVO</option>
-                                <option value="2">INACTIVO</option>
+                            <label class="premium-label">Estado Inicial</label>
+                            <select name="IdEstado" class="form-select premium-input">
+                                <option value="1">DISPONIBLE (ACTIVO)</option>
+                                <option value="2">NO DISPONIBLE (INACTIVO)</option>
                             </select>
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer border-0 pb-4 px-4">
-                    <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal" style="border-radius:12px;">Cancelar</button>
-                    <button type="submit" class="btn btn-primary px-5" style="border-radius:12px; font-weight:600;">
-                        <i class="fas fa-save me-2"></i>Guardar Tratamiento
+                <div class="modal-footer border-0 p-4">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-5 fw-bold" style="background: var(--trat-secondary);">
+                        Confirmar Registro
                     </button>
                 </div>
             </form>
@@ -352,56 +484,52 @@
 <!-- Modal Editar Tratamiento -->
 <div class="modal fade" id="editTratamientoModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-edit text-warning me-2"></i>Editar Tratamiento</h5>
+        <div class="modal-content modal-content-premium">
+            <div class="modal-header modal-header-premium">
+                <div>
+                    <h4 class="modal-title fw-bold">Actualizar Tratamiento</h4>
+                    <p class="text-muted small m-0">Modifica los detalles del servicio seleccionado.</p>
+                </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="editTratamientoForm">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="IdTratamiento" id="editId">
-                <div class="modal-body">
+                <div class="modal-body modal-body-premium">
                     <div class="row g-4">
                         <div class="col-md-8">
-                            <label class="form-label">Nombre del Tratamiento</label>
-                            <input name="NombreTratamiento" id="editNombre" type="text" class="form-control" required>
+                            <label class="premium-label">Nombre del servicio</label>
+                            <input name="NombreTratamiento" id="editNombre" type="text" class="form-control premium-input" required>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label">Precio</label>
+                            <label class="premium-label">Precio / Inversión</label>
                             <div class="input-group">
-                                <span class="input-group-text bg-light text-muted border-end-0" style="border-radius: 12px 0 0 12px;">@(ViewBag.MonedaBase?.Simbolo ?? "$")</span>
-                                <input name="Precio" id="editPrecio" type="number" step="0.01" class="form-control border-start-0" required>
+                                <span class="input-group-text bg-white border-end-0" style="border-radius: 14px 0 0 14px;">@(ViewBag.MonedaBase?.Simbolo ?? "$")</span>
+                                <input name="Precio" id="editPrecio" type="number" step="0.01" class="form-control premium-input border-start-0" required>
+                            </div>
+                        </div>
+                        <div class="col-md-12">
+                            <div class="alert alert-info border-0 rounded-4 py-2 small">
+                                 <i class="fas fa-info-circle me-2"></i> Cambiar el estado a "Inactivo" ocultará este tratamiento de las nuevas citas, pero conservará el historial.
                             </div>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Vía de Administración</label>
-                            <input name="ViaAdministracion" id="editVia" type="text" class="form-control">
+                            <label class="premium-label">Vía de Aplicación</label>
+                            <input name="ViaAdministracion" id="editVia" type="text" class="form-control premium-input">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Dosis Sugerida</label>
-                            <input name="Dosis" id="editDosis" type="text" class="form-control">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Frecuencia</label>
-                            <input name="Frecuencia" id="editFrec" type="text" class="form-control">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Duración Estimada</label>
-                            <input name="DuracionTratamiento" id="editDuracion" type="text" class="form-control">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Estado del Tratamiento</label>
-                            <select name="IdEstado" id="editEstado" class="form-select">
-                                <option value="1">ACTIVO</option>
-                                <option value="2">INACTIVO</option>
+                            <label class="premium-label">Estado del Servicio</label>
+                            <select name="IdEstado" id="editEstado" class="form-select premium-input">
+                                <option value="1">ACTIVO (SERVICIO DISPONIBLE)</option>
+                                <option value="2">INACTIVO (FUERA DE CATÁLOGO)</option>
                             </select>
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer border-0 pb-4 px-4">
-                    <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal" style="border-radius:12px;">Cancelar</button>
-                    <button type="submit" class="btn btn-warning px-5 text-white" style="border-radius:12px; font-weight:600;">
-                        <i class="fas fa-save me-2"></i>Actualizar Cambios
+                <div class="modal-footer border-0 p-4">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Volver</button>
+                    <button type="submit" class="btn btn-warning text-white rounded-pill px-5 fw-bold" style="background: var(--trat-warning);">
+                        Guardar Cambios
                     </button>
                 </div>
             </form>
@@ -409,10 +537,65 @@
     </div>
 </div>
 
+    <!-- Modal Detalles de Tratamiento -->
+    <div class="modal fade" id="detailsTratamientoModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content modal-content-premium">
+                <div class="modal-header modal-header-premium">
+                    <div>
+                        <h4 class="modal-title fw-bold">Detalles del Servicio</h4>
+                        <p class="text-muted small m-0">Ficha técnica y valores comerciales del tratamiento.</p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body modal-body-premium" id="detailsContent">
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                        <p class="mt-2 text-muted">Obteniendo información...</p>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 p-4">
+                    <button type="button" class="btn btn-warning text-white rounded-pill px-4" id="btnEditFromDetails" style="display:none; background: var(--trat-warning); border: none;">
+                        <i class="fas fa-edit me-1"></i> Editar este servicio
+                    </button>
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @section Scripts {
     <script>
         $(document).ready(function () {
             console.log("MediTech Treatments Module Initialized");
+
+            // Scroll suave si hay paginación
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('page')) {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+
+            // FILTRADO DINÁMICO
+            window.filterTratamientos = function() {
+                const query = $('#tratamientoSearch').val().toLowerCase();
+                $('.trat-row').each(function() {
+                    const name = $(this).data('name');
+                    $(this).toggle(name.includes(query));
+                });
+            };
+
+            window.filterByStatus = function(statusId) {
+                $('.trat-row').each(function() {
+                    if (statusId === 0) {
+                        $(this).show();
+                    } else {
+                        $(this).toggle($(this).data('status') == statusId);
+                    }
+                });
+            };
 
             // CREACIÓN DE TRATAMIENTO (MODAL)
             $('#createTratamientoForm').on('submit', function (e) {
@@ -421,7 +604,7 @@
                 const $btn = $form.find('button[type="submit"]');
                 const originalText = $btn.html();
 
-                $btn.html('<i class="fas fa-spinner fa-spin me-2"></i>Guardando...').prop('disabled', true);
+                $btn.html('<i class="fas fa-spinner fa-spin me-2"></i>Registrando...').prop('disabled', true);
 
                 $.ajax({
                     url: '@Url.Action("Create")',
@@ -432,36 +615,21 @@
                         if (response.success) {
                             if (typeof MediToast !== 'undefined') {
                                 MediToast.success(response.message);
-                            } else {
-                                alert(response.message);
                             }
                             
                             const modalElem = document.getElementById('createTratamientoModal');
                             const modal = bootstrap.Modal.getInstance(modalElem);
                             if (modal) modal.hide();
 
-                            setTimeout(() => location.reload(), 1500);
+                            setTimeout(() => location.reload(), 1200);
                         } else {
                             let errorMsg = response.message || 'Error al guardar';
-                            if (response.errors && response.errors.length > 0) {
-                                errorMsg = '<ul class="text-start mb-0">' + response.errors.map(err => `<li>${err}</li>`).join('') + '</ul>';
-                            }
-
-                            if (typeof MediToast !== 'undefined') {
-                                MediToast.error(errorMsg);
-                            } else {
-                                alert(errorMsg.replace(/<[^>]*>?/gm, ''));
-                            }
+                            if (typeof MediToast !== 'undefined') MediToast.error(errorMsg);
                             $btn.html(originalText).prop('disabled', false);
                         }
                     },
                     error: function (xhr) {
-                        console.error("AJAX Error:", xhr);
-                        if (typeof MediToast !== 'undefined') {
-                            MediToast.error('Error de comunicación con el servidor');
-                        } else {
-                            alert('Error de comunicación con el servidor');
-                        }
+                        if (typeof MediToast !== 'undefined') MediToast.error('Error de comunicación');
                         $btn.html(originalText).prop('disabled', false);
                     }
                 });
@@ -470,22 +638,15 @@
             // EDICIÓN DE TRATAMIENTO (MODAL)
             $('.edit-btn').on('click', function () {
                 const data = $(this).data();
-                console.log("Preparing edit modal for ID:", data.id);
-
                 $('#editId').val(data.id);
                 $('#editNombre').val(data.nombre);
                 $('#editPrecio').val(data.precio);
                 $('#editVia').val(data.via);
-                $('#editDosis').val(data.dosis);
-                $('#editFrec').val(data.frec);
-                $('#editDuracion').val(data.duracion);
                 $('#editEstado').val(data.estado);
 
                 const editModalId = document.getElementById('editTratamientoModal');
                 let modal = bootstrap.Modal.getInstance(editModalId);
-                if (!modal) {
-                    modal = new bootstrap.Modal(editModalId);
-                }
+                if (!modal) modal = new bootstrap.Modal(editModalId);
                 modal.show();
             });
 
@@ -496,7 +657,7 @@
                 const originalText = $btn.html();
                 const id = $('#editId').val();
 
-                $btn.html('<i class="fas fa-spinner fa-spin me-2"></i>Actualizando...').prop('disabled', true);
+                $btn.html('<i class="fas fa-spinner fa-spin me-2"></i>Procesando...').prop('disabled', true);
 
                 $.ajax({
                     url: '@Url.Action("Edit")/' + id,
@@ -505,39 +666,59 @@
                     headers: { 'X-Requested-With': 'XMLHttpRequest' },
                     success: function (response) {
                         if (response.success) {
-                            if (typeof MediToast !== 'undefined') {
-                                MediToast.success(response.message);
-                            } else {
-                                alert(response.message);
-                            }
+                            if (typeof MediToast !== 'undefined') MediToast.success(response.message);
                             
                             const modalElem = document.getElementById('editTratamientoModal');
                             const modal = bootstrap.Modal.getInstance(modalElem);
                             if (modal) modal.hide();
 
-                            setTimeout(() => location.reload(), 1500);
+                            setTimeout(() => location.reload(), 1200);
                         } else {
-                            let errorMsg = response.message || 'Error al actualizar';
-                            if (response.errors && response.errors.length > 0) {
-                                errorMsg = '<ul class="text-start mb-0">' + response.errors.map(err => `<li>${err}</li>`).join('') + '</ul>';
-                            }
-
-                            if (typeof MediToast !== 'undefined') {
-                                MediToast.error(errorMsg);
-                            } else {
-                                alert(errorMsg.replace(/<[^>]*>?/gm, ''));
-                            }
+                            if (typeof MediToast !== 'undefined') MediToast.error(response.message || 'Error al actualizar');
                             $btn.html(originalText).prop('disabled', false);
                         }
                     },
                     error: function (xhr) {
-                        console.error("AJAX Error:", xhr);
-                        if (typeof MediToast !== 'undefined') {
-                            MediToast.error('Error al conectar con el servidor');
-                        } else {
-                            alert('Error al conectar con el servidor');
-                        }
+                        if (typeof MediToast !== 'undefined') MediToast.error('Error de comunicación');
                         $btn.html(originalText).prop('disabled', false);
+                    }
+                });
+            });
+
+            // CARGAR DETALLES (AJAX)
+            $('.view-details-btn').on('click', function() {
+                const id = $(this).data('id');
+                const $container = $('#detailsContent');
+                
+                // Mostrar cargando
+                $container.html(`
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                        <p class="mt-2 text-muted">Obteniendo información...</p>
+                    </div>
+                `);
+
+                const modalElem = document.getElementById('detailsTratamientoModal');
+                const modal = new bootstrap.Modal(modalElem);
+                modal.show();
+
+                $.ajax({
+                    url: '@Url.Action("Details")/' + id,
+                    type: 'GET',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    success: function(html) {
+                        $container.html(html);
+                        $('#btnEditFromDetails').show().off('click').on('click', function() {
+                            modal.hide();
+                            setTimeout(() => {
+                                $(`.edit-btn[data-id="${id}"]`).click();
+                            }, 400);
+                        });
+                    },
+                    error: function() {
+                        $container.html('<div class="alert alert-danger">Error al cargar la información. Intente de nuevo.</div>');
                     }
                 });
             });

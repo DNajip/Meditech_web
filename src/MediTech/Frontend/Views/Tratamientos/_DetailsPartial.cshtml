@@ -1,0 +1,139 @@
+@model MediTech.Backend.Models.Tratamiento
+
+<style>
+    .details-modal-premium {
+        background: #FFFFFF;
+        padding: 10px;
+    }
+    .detail-card-premium {
+        background: #F8FAFC;
+        border-radius: 12px;
+        padding: 20px;
+        border: 1px solid #E2E8F0;
+        height: 100%;
+        transition: transform 0.2s;
+    }
+    .detail-card-premium:hover {
+        border-color: #6366F1;
+        background: white;
+    }
+    .detail-label-premium {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 4px;
+        display: block;
+    }
+    .detail-value-premium {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #1E293B;
+    }
+    .price-badge-premium {
+        font-size: 1.75rem;
+        font-weight: 800;
+        color: #0F172A;
+        letter-spacing: -0.025em;
+    }
+    .moneda-pill-premium {
+        background: #E0F2FE;
+        color: #0369A1;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+    .section-title-premium {
+        font-size: 0.9rem;
+        font-weight: 800;
+        color: #6366F1;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    .section-title-premium::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: #E2E8F0;
+    }
+</style>
+
+<div class="details-modal-premium">
+    <div class="row g-4">
+        <!-- Encabezado de Identidad -->
+        <div class="col-12 text-center mb-1">
+            <div class="display-6 fw-bold text-dark mb-2">@Model.NombreTratamiento</div>
+            <div class="d-flex justify-content-center align-items-center gap-3">
+                <span class="badge @(Model.IdEstado == 1 ? "bg-success" : "bg-danger") px-3 py-2 rounded-pill shadow-sm" style="font-size:0.75rem; font-weight:700;">
+                     <i class="fas @(Model.IdEstado == 1 ? "fa-check-circle" : "fa-times-circle") me-1"></i>
+                    @(Model.Estado?.DescEstado ?? (Model.IdEstado == 1 ? "ACTIVO" : "INACTIVO"))
+                </span>
+                <span class="text-muted small fw-bold">ID SERVICIO: #@Model.IdTratamiento</span>
+            </div>
+        </div>
+
+        <!-- Información Económica -->
+        <div class="col-12 mt-4">
+            <div class="section-title-premium">
+                <i class="fas fa-money-bill-wave"></i> Valor Comercial
+            </div>
+            <div class="detail-card-premium text-center border-2" style="border-style: dashed;">
+                <span class="detail-label-premium">Inversión por Sesión / Servicio</span>
+                <div class="d-flex align-items-center justify-content-center gap-2">
+                    <span class="price-badge-premium">@((ViewBag.MonedaBase as MediTech.Backend.Models.Moneda)?.Simbolo ?? "$") @(Model.Precio?.ToString("N2") ?? "0.00")</span>
+                    <span class="moneda-pill-premium">@((ViewBag.MonedaBase as MediTech.Backend.Models.Moneda)?.Codigo ?? "USD")</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detalles Médicos -->
+        <div class="col-12 mt-3">
+            <div class="section-title-premium">
+                <i class="fas fa-stethoscope"></i> Especificaciones Clínicas
+            </div>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="detail-card-premium">
+                        <span class="detail-label-premium"><i class="fas fa-pills me-1 text-primary"></i> Dosificación</span>
+                        <span class="detail-value-premium">@(string.IsNullOrEmpty(Model.Dosis) ? "A requerimiento" : Model.Dosis)</span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="detail-card-premium">
+                        <span class="detail-label-premium"><i class="fas fa-syringe me-1 text-primary"></i> Vía de Admin.</span>
+                        <span class="detail-value-premium">@(string.IsNullOrEmpty(Model.ViaAdministracion) ? "No especificada" : Model.ViaAdministracion)</span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="detail-card-premium">
+                        <span class="detail-label-premium"><i class="fas fa-redo me-1 text-primary"></i> Frecuencia Recom.</span>
+                        <span class="detail-value-premium">@(string.IsNullOrEmpty(Model.Frecuencia) ? "Según criterio médico" : Model.Frecuencia)</span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="detail-card-premium">
+                        <span class="detail-label-premium"><i class="fas fa-hourglass-half me-1 text-primary"></i> Duración Est.</span>
+                        <span class="detail-value-premium">@(string.IsNullOrEmpty(Model.DuracionTratamiento) ? "Variable" : Model.DuracionTratamiento)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @if (Model.FechaActualizacion != null)
+        {
+            <div class="col-12 text-center mt-4">
+                <div class="alert alert-light border-0 py-2 small m-0" style="background: #F1F5F9;">
+                    <i class="fas fa-history me-1 text-muted"></i> 
+                    Última actualización: @Model.FechaActualizacion?.ToString("dd/MM/yyyy hh:mm tt")
+                </div>
+            </div>
+        }
+    </div>
+</div>

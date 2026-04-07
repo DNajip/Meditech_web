@@ -178,32 +178,36 @@
             </table>
         </div>
         
-        <!-- Paginación de Inventario -->
-        @if (ViewBag.TotalPages > 1)
+        <!-- Paginación Premium de Inventario -->
+        @if (ViewBag.TotalPages > 1 || (ViewBag.TotalItemsGlobal > 0))
         {
-            <div class="card-footer bg-white border-0 py-3">
+            <div class="card-footer bg-white border-0 py-4 px-4 d-flex justify-content-center align-items-center position-relative">
                 <nav aria-label="Page navigation">
-                    <ul class="pagination pagination-sm justify-content-center mb-0 gap-1">
+                    <ul class="pagination pagination-premium mb-0 gap-1">
                         <li class="page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
-                            <a class="page-link border-0 bg-light rounded shadow-none" asp-action="Index" asp-route-page="@(ViewBag.CurrentPage - 1)" asp-route-searchString="@ViewBag.SearchString">
-                                <i class="fas fa-chevron-left small"></i>
+                            <a class="page-link border-0" asp-action="Index" asp-route-page="@(ViewBag.CurrentPage - 1)" asp-route-searchString="@ViewBag.SearchString">
+                                <i class="fas fa-chevron-left"></i>
                             </a>
                         </li>
                         
                         @for (int i = 1; i <= ViewBag.TotalPages; i++)
                         {
                             <li class="page-item @(ViewBag.CurrentPage == i ? "active" : "")">
-                                <a class="page-link border-0 @(ViewBag.CurrentPage == i ? "bg-primary text-white" : "bg-light text-dark shadow-none") rounded" asp-action="Index" asp-route-page="@i" asp-route-searchString="@ViewBag.SearchString">@i</a>
+                                <a class="page-link border-0" asp-action="Index" asp-route-page="@i" asp-route-searchString="@ViewBag.SearchString">@i</a>
                             </li>
                         }
 
                         <li class="page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
-                            <a class="page-link border-0 bg-light rounded shadow-none" asp-action="Index" asp-route-page="@(ViewBag.CurrentPage + 1)" asp-route-searchString="@ViewBag.SearchString">
-                                <i class="fas fa-chevron-right small"></i>
+                            <a class="page-link border-0" asp-action="Index" asp-route-page="@(ViewBag.CurrentPage + 1)" asp-route-searchString="@ViewBag.SearchString">
+                                <i class="fas fa-chevron-right"></i>
                             </a>
                         </li>
                     </ul>
                 </nav>
+
+                <div class="text-muted d-none d-md-block position-absolute end-0 me-4 pe-2">
+                    Mostrando <span class="fw-bold text-dark">@ViewBag.TotalItemsGlobal</span> productos registrados
+                </div>
             </div>
         }
     </div>
@@ -744,5 +748,43 @@
     .form-control:focus {
         box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.05);
         background-color: #fff !important;
+    }
+
+    /* Paginación Premium */
+    .pagination-premium .page-link {
+        border-radius: 12px !important;
+        margin: 0 2px;
+        border: 1px solid #f1f5f9 !important;
+        color: #64748B;
+        font-weight: 600;
+        padding: 10px 16px;
+        background: #ffffff;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 42px;
+    }
+
+    .pagination-premium .page-link:hover {
+        background: #f8fafc;
+        color: #475569;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }
+
+    .pagination-premium .page-item.active .page-link {
+        background: #6366F1 !important;
+        border-color: #6366F1 !important;
+        color: white !important;
+        box-shadow: 0 6px 12px rgba(99, 102, 241, 0.3) !important;
+    }
+
+    .pagination-premium .page-item.disabled .page-link {
+        background: #f8fafc !important;
+        color: #cbd5e1 !important;
+        opacity: 0.6;
+        cursor: not-allowed;
     }
 </style>

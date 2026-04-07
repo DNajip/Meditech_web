@@ -2,19 +2,73 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MediTech.Backend.Models;
 using Microsoft.Extensions.Caching.Memory;
+using System.Linq;
 
 namespace MediTech.Backend.Controllers;
 
 public class CajaController : Controller
 {
     private readonly MediTechContext _context;
-    private readonly IMemoryCache _cache;
-    private const string TasaCacheKey = "ActiveExchangeRate";
 
-    public CajaController(MediTechContext context, IMemoryCache cache)
+    public CajaController(MediTechContext context)
     {
         _context = context;
-        _cache = cache;
+    }
+
+    [HttpGet]
+    [Route("Caja/GetFinanzasPaciente/{id}")]
+    public async Task<IActionResult> GetFinanzasPaciente(int id)
+    {
+        try
+        {
+            var cuentas = await _context.Cuentas
+                .AsNoTracking()
+                .Where(c => c.IdPaciente == id)
+                .Include(c => c.MonedaBase)
+                .Include(c => c.Detalles)
+                .Include(c => c.Pagos)
+                .OrderByDescending(c => c.FechaCreacion)
+                .ToListAsync();
+
+            var totalFacturado = cuentas.Sum(c => c.TotalFinal ?? 0m);
+            var totalPagado = cuentas.SelectMany(c => c.Pagos).Sum(p => p.MontoBase ?? 0m);
+            var saldoPendiente = totalFacturado - totalPagado;
+
+            var result = new
+            {
+                success = true,
+                resumen = new
+                {
+                    totalFacturado,
+                    totalPagado,
+                    saldoPendiente
+                },
+                cuentas = cuentas.Select(c => new
+                {
+                    idCuenta = c.IdCuenta,
+                    fecha = c.FechaCreacion.ToString("dd/MM/yyyy"),
+                    totalBruto = c.TotalBruto,
+                    descuento = c.Descuento,
+                    totalFinal = c.TotalFinal,
+                    simbolo = c.MonedaBase?.Simbolo ?? "$",
+                    estado = (c.Pagos.Sum(p => p.MontoBase ?? 0m) >= (c.TotalFinal ?? 0m) - 0.05m && (c.TotalFinal ?? 0m) > 0) ? "PAGADA" : "PENDIENTE",
+                    detalles = c.Detalles.Select(d => new
+                    {
+                        tipo = d.TipoItem,
+                        descripcion = d.Descripcion,
+                        cant = d.Cantidad,
+                        precio = d.PrecioUnitario,
+                        subtotal = d.Subtotal
+                    })
+                })
+            };
+
+            return Json(result);
+        }
+        catch (Exception)
+        {
+            return Json(new { success = false, message = "Error al cargar finanzas." });
+        }
     }
 
     // GET: Caja
@@ -73,7 +127,7 @@ public class CajaController : Controller
         }
 
         var totalItems = await query.CountAsync();
-        
+
         var cuentas = await query
             .OrderByDescending(c => c.FechaCreacion)
             .Skip((page - 1) * pageSize)
@@ -114,7 +168,7 @@ public class CajaController : Controller
     [HttpGet]
     public async Task<IActionResult> GetPacientesSearch(string term)
     {
-        try 
+        try
         {
             if (string.IsNullOrWhiteSpace(term) || term.Length < 2) return Json(new List<object>());
 
@@ -125,7 +179,7 @@ public class CajaController : Controller
                 .Where(p => p.IdEstado == 1 && p.Persona != null);
 
             // Búsqueda robusta por múltiples campos
-            query = query.Where(p => 
+            query = query.Where(p =>
                 EF.Functions.Like(p.Persona!.PrimerNombre, pattern) ||
                 EF.Functions.Like(p.Persona.SegundoNombre ?? "", pattern) ||
                 EF.Functions.Like(p.Persona.PrimerApellido, pattern) ||
@@ -136,7 +190,8 @@ public class CajaController : Controller
 
             var pacientes = await query
                 .Take(10)
-                .Select(p => new {
+                .Select(p => new
+                {
                     id = p.IdPaciente,
                     nombre = (p.Persona!.PrimerNombre + " " + p.Persona.PrimerApellido).Trim(),
                     detalle = (p.Persona.NumIdentificacion ?? "S/I") + " | " + (p.Persona.Telefono ?? "S/T")
@@ -179,7 +234,7 @@ public class CajaController : Controller
             return Json(new { success = false, message = "Datos inválidos: " + errors });
         }
 
-        try 
+        try
         {
             if (model.TipoItem == null || model.TipoItem.Length == 0)
             {
@@ -235,7 +290,7 @@ public class CajaController : Controller
                     }
                 }
             }
-            
+
             _context.CuentaDetalles.AddRange(detalles);
             await _context.SaveChangesAsync();
 
@@ -269,7 +324,7 @@ public class CajaController : Controller
             var config = await _context.ConfiguracionesMoneda.Include(c => c.MonedaBase).FirstOrDefaultAsync();
             ViewBag.MonedaBase = config?.MonedaBase ?? new Moneda { Codigo = "USD", Simbolo = "$", Nombre = "Base (Default)" };
         }
-        
+
         ViewBag.Monedas = await _context.Monedas.ToListAsync();
 
         var activeTasa = await _context.TasasCambio.FirstOrDefaultAsync(t => t.Activo);
@@ -298,7 +353,7 @@ public class CajaController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> RegistrarPago(int idCuenta, decimal monto, int idMoneda, string metodoPago, decimal montoRecibido = 0)
     {
-        try 
+        try
         {
             var cuenta = await _context.Cuentas
                 .Include(c => c.Pagos)
@@ -338,10 +393,13 @@ public class CajaController : Controller
                 }
                 else
                 {
-                    if (tasa > 1) {
+                    if (tasa > 1)
+                    {
                         montoBase = monto * tasa;
                         montoRecibidoEnBase = montoRecibido * tasa;
-                    } else {
+                    }
+                    else
+                    {
                         montoBase = monto / tasa;
                         montoRecibidoEnBase = montoRecibido / tasa;
                     }
@@ -389,7 +447,7 @@ public class CajaController : Controller
         }
     }
 
-    // POST: Caja/AnularCuenta
+    // POST: Caja/AnularCuenta (AJAX)
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> AnularCuenta(int id)
@@ -408,14 +466,18 @@ public class CajaController : Controller
             if (det.IdReferencia.HasValue)
             {
                 var prod = await _context.Productos.FindAsync(det.IdReferencia.Value);
-                if (prod != null) prod.Stock += det.Cantidad ?? 0;
+                if (prod != null)
+                {
+                    prod.Stock += det.Cantidad ?? 0;
+                    _context.Productos.Update(prod);
+                }
             }
         }
 
         cuenta.TotalBruto = 0;
         cuenta.TotalFinal = 0;
         cuenta.Descuento = 0;
-        
+
         _context.CuentaDetalles.RemoveRange(_context.CuentaDetalles.Where(d => d.IdCuenta == id));
         _context.Cuentas.Update(cuenta);
         await _context.SaveChangesAsync();

@@ -148,6 +148,12 @@ app.UseStaticFiles(new StaticFileOptions
 });
 
 app.UseRouting();
+app.Use(async (context, next) => {
+    if (context.Request.Path.Value.Contains("GetFinanzasPaciente")) {
+        Console.WriteLine($"[Diagnostic] Request Path: {context.Request.Path}");
+    }
+    await next();
+});
 
 app.UseAuthentication();
 app.UseAuthorization();
