@@ -30,11 +30,16 @@
                 <h5 class="mb-0 fw-bold text-dark" id="calendarTitle"></h5>
             </div>
 
-            <!-- Right Controls: View Switcher -->
-            <div class="btn-group order-3" role="group">
-                <button type="button" class="btn btn-view btn-sm bg-white text-secondary border px-3" id="btnViewMonth">Mes</button>
-                <button type="button" class="btn btn-view btn-sm bg-white text-secondary border px-3" id="btnViewWeek">Sem</button>
-                <button type="button" class="btn btn-view btn-sm bg-white text-secondary border px-3" id="btnViewDay">Día</button>
+            <!-- Right Controls: View Switcher and Export -->
+            <div class="d-flex gap-2 order-3">
+                <div class="btn-group shadow-sm" role="group">
+                    <button type="button" class="btn btn-view btn-sm bg-white text-secondary border px-3" id="btnViewMonth">Mes</button>
+                    <button type="button" class="btn btn-view btn-sm bg-white text-secondary border px-3" id="btnViewWeek">Sem</button>
+                    <button type="button" class="btn btn-view btn-sm bg-white text-secondary border px-3" id="btnViewDay">Día</button>
+                </div>
+                <a href="/Reportes/Index" class="btn btn-light btn-sm border bg-white px-3 shadow-sm text-primary fw-bold" title="Ir a Reportes">
+                    <i class="fas fa-chart-bar"></i>
+                </a>
             </div>
 
         </div>

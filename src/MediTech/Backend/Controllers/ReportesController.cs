@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using MediTech.Backend.Services;
 using MediTech.Backend.Models;
+using MediTech.Backend.Dtos;
 using ClosedXML.Excel;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
@@ -19,23 +20,29 @@ public class ReportesController(ReportingService reportingService) : Controller
         var hoy = DateTime.Today;
         var inicioMes = new DateTime(hoy.Year, hoy.Month, 1);
         
-        ViewBag.StatsCitas = await _reportingService.GetEstadisticasCitas(inicioMes, hoy);
-        ViewBag.IngresosMes = await _reportingService.GetIngresosPeriodo(inicioMes, hoy);
-        ViewBag.StockBajo = await _reportingService.GetProductosBajoStock();
+        // Initial load with current month
+        ViewBag.Caja = await _reportingService.GetAuditoriaCaja(inicioMes, hoy);
+        ViewBag.Operativo = await _reportingService.GetOperativoCore(inicioMes, hoy);
+        ViewBag.Inventario = await _reportingService.GetInventarioControl();
 
         return View();
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetDashboardStats(DateTime? inicio, DateTime? fin)
+    public async Task<IActionResult> GetReportData(DateTime inicio, DateTime fin)
     {
-        var start = inicio ?? DateTime.Today.AddDays(-30);
-        var end = fin ?? DateTime.Today;
+        try
+        {
+            var caja = await _reportingService.GetAuditoriaCaja(inicio, fin);
+            var operativo = await _reportingService.GetOperativoCore(inicio, fin);
+            var inventario = await _reportingService.GetInventarioControl();
 
-        var citas = await _reportingService.GetEstadisticasCitas(start, end);
-        var ingresos = await _reportingService.GetIngresosPeriodo(start, end);
-
-        return Json(new { success = true, citas, ingresos });
+            return Json(new { success = true, caja, operativo, inventario });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = ex.Message });
+        }
     }
 
     #region Export Actions
@@ -43,44 +50,49 @@ public class ReportesController(ReportingService reportingService) : Controller
     [HttpGet]
     public async Task<IActionResult> ExportarIngresosExcel(DateTime inicio, DateTime fin)
     {
-        var data = await _reportingService.GetIngresosPeriodo(inicio, fin);
+        var data = await _reportingService.GetAuditoriaCaja(inicio, fin);
         
         using (var workbook = new XLWorkbook())
         {
-            var worksheet = workbook.Worksheets.Add("Ingresos");
-            worksheet.Cell(1, 1).Value = "REPORTE DE INGRESOS";
+            var worksheet = workbook.Worksheets.Add("Auditoria Caja");
+            worksheet.Cell(1, 1).Value = "AUDITORÍA DE CAJA Y FINANZAS";
             worksheet.Cell(1, 1).Style.Font.Bold = true;
             worksheet.Cell(1, 1).Style.Font.FontSize = 16;
             worksheet.Cell(2, 1).Value = $"Periodo: {inicio:dd/MM/yyyy} - {fin:dd/MM/yyyy}";
 
-            var currentRow = 4;
-            worksheet.Cell(currentRow, 1).Value = "Fecha";
-            worksheet.Cell(currentRow, 2).Value = "Monto Total (Base)";
-            worksheet.Range(currentRow, 1, currentRow, 2).Style.Font.Bold = true;
-            worksheet.Range(currentRow, 1, currentRow, 2).Style.Fill.BackgroundColor = XLColor.LightGray;
+            worksheet.Cell(4, 1).Value = "Resumen General";
+            worksheet.Cell(4, 1).Style.Font.Bold = true;
+            worksheet.Cell(5, 1).Value = "Total Ingresos (Base):";
+            worksheet.Cell(5, 2).Value = data.TotalIngresosBase;
+            worksheet.Cell(5, 2).Style.NumberFormat.Format = "$#,##0.00";
+            worksheet.Cell(6, 1).Value = "Transacciones:";
+            worksheet.Cell(6, 2).Value = data.TotalTransacciones;
 
-            var detalle = (List<dynamic>)data.DetallePorDia;
-            foreach (var item in detalle)
+            var currentRow = 8;
+            worksheet.Cell(currentRow, 1).Value = "Desglose por Método";
+            worksheet.Cell(currentRow, 1).Style.Font.Bold = true;
+            currentRow++;
+            worksheet.Cell(currentRow, 1).Value = "Método";
+            worksheet.Cell(currentRow, 2).Value = "Monto";
+            worksheet.Cell(currentRow, 3).Value = "Cantidad";
+            worksheet.Range(currentRow, 1, currentRow, 3).Style.Font.Bold = true;
+            worksheet.Range(currentRow, 1, currentRow, 3).Style.Fill.BackgroundColor = XLColor.LightGray;
+
+            foreach (var item in data.DesglosePorMetodo)
             {
                 currentRow++;
-                worksheet.Cell(currentRow, 1).Value = item.Fecha.ToShortDateString();
+                worksheet.Cell(currentRow, 1).Value = item.Metodo;
                 worksheet.Cell(currentRow, 2).Value = item.Total;
                 worksheet.Cell(currentRow, 2).Style.NumberFormat.Format = "$#,##0.00";
+                worksheet.Cell(currentRow, 3).Value = item.Cantidad;
             }
-
-            currentRow += 2;
-            worksheet.Cell(currentRow, 1).Value = "TOTAL GLOBAL:";
-            worksheet.Cell(currentRow, 1).Style.Font.Bold = true;
-            worksheet.Cell(currentRow, 2).Value = data.TotalGlobal;
-            worksheet.Cell(currentRow, 2).Style.Font.Bold = true;
-            worksheet.Cell(currentRow, 2).Style.NumberFormat.Format = "$#,##0.00";
 
             worksheet.Columns().AdjustToContents();
 
             using (var stream = new MemoryStream())
             {
                 workbook.SaveAs(stream);
-                return File(stream.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"Reporte_Ingresos_{inicio:yyyyMMdd}.xlsx");
+                return File(stream.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"Auditoria_Caja_{inicio:yyyyMMdd}.xlsx");
             }
         }
     }
@@ -92,8 +104,8 @@ public class ReportesController(ReportingService reportingService) : Controller
         
         using (var workbook = new XLWorkbook())
         {
-            var worksheet = workbook.Worksheets.Add("Citas");
-            worksheet.Cell(1, 1).Value = "CONTROL DE CITAS MÉDICAS";
+            var worksheet = workbook.Worksheets.Add("Agenda");
+            worksheet.Cell(1, 1).Value = "CONTROL DE OPERACIONES Y AGENDA";
             worksheet.Cell(1, 1).Style.Font.Bold = true;
             worksheet.Cell(2, 1).Value = $"Rango: {inicio:dd/MM/yyyy} - {fin:dd/MM/yyyy}";
 
@@ -119,47 +131,7 @@ public class ReportesController(ReportingService reportingService) : Controller
             worksheet.Columns().AdjustToContents();
             using (var stream = new MemoryStream()) {
                 workbook.SaveAs(stream);
-                return File(stream.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Reporte_Citas.xlsx");
-            }
-        }
-    }
-
-    [HttpGet]
-    public async Task<IActionResult> ExportarPacientesExcel()
-    {
-        var data = await _reportingService.GetPacientesRaw();
-        
-        using (var workbook = new XLWorkbook())
-        {
-            var worksheet = workbook.Worksheets.Add("Pacientes");
-            worksheet.Cell(1, 1).Value = "DIRECTORIO DE PACIENTES";
-            worksheet.Cell(1, 1).Style.Font.Bold = true;
-
-            var currentRow = 3;
-            string[] headers = { "Nombre Completo", "Identificación", "Tipo", "Género", "Teléfono", "Email", "F. Nacimiento", "F. Registro" };
-            for (int i = 0; i < headers.Length; i++) {
-                worksheet.Cell(currentRow, i + 1).Value = headers[i];
-                worksheet.Cell(currentRow, i + 1).Style.Font.Bold = true;
-                worksheet.Cell(currentRow, i + 1).Style.Fill.BackgroundColor = XLColor.DavysGrey;
-                worksheet.Cell(currentRow, i + 1).Style.Font.FontColor = XLColor.White;
-            }
-
-            foreach (var item in data) {
-                currentRow++;
-                worksheet.Cell(currentRow, 1).Value = item.NombreCompleto;
-                worksheet.Cell(currentRow, 2).Value = item.Identificacion;
-                worksheet.Cell(currentRow, 3).Value = item.TipoId;
-                worksheet.Cell(currentRow, 4).Value = item.Genero;
-                worksheet.Cell(currentRow, 5).Value = item.Telefono;
-                worksheet.Cell(currentRow, 6).Value = item.Email;
-                worksheet.Cell(currentRow, 7).Value = item.FechaNacimiento?.ToShortDateString();
-                worksheet.Cell(currentRow, 8).Value = item.FechaRegistro?.ToShortDateString();
-            }
-
-            worksheet.Columns().AdjustToContents();
-            using (var stream = new MemoryStream()) {
-                workbook.SaveAs(stream);
-                return File(stream.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Directorio_Pacientes.xlsx");
+                return File(stream.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Reporte_Operativo.xlsx");
             }
         }
     }
@@ -171,8 +143,8 @@ public class ReportesController(ReportingService reportingService) : Controller
         
         using (var workbook = new XLWorkbook())
         {
-            var worksheet = workbook.Worksheets.Add("Inventario");
-            worksheet.Cell(1, 1).Value = "ESTADO DE INVENTARIO";
+            var worksheet = workbook.Worksheets.Add("Control Activos");
+            worksheet.Cell(1, 1).Value = "VALORIZACIÓN Y CONTROL DE ACTIVOS";
             worksheet.Cell(1, 1).Style.Font.Bold = true;
 
             var currentRow = 3;
@@ -192,13 +164,12 @@ public class ReportesController(ReportingService reportingService) : Controller
                 worksheet.Cell(currentRow, 4).Value = item.Precio;
                 worksheet.Cell(currentRow, 4).Style.NumberFormat.Format = "$#,##0.00";
                 worksheet.Cell(currentRow, 5).Value = item.Estado;
-                if (item.Estado == "STOCK BAJO") worksheet.Cell(currentRow, 5).Style.Font.FontColor = XLColor.Red;
             }
 
             worksheet.Columns().AdjustToContents();
             using (var stream = new MemoryStream()) {
                 workbook.SaveAs(stream);
-                return File(stream.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Estado_Inventario.xlsx");
+                return File(stream.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Control_Inventario.xlsx");
             }
         }
     }
@@ -209,7 +180,6 @@ public class ReportesController(ReportingService reportingService) : Controller
         var result = await _reportingService.GetCierreCajaData(idTurno);
         if (result == null) return NotFound();
 
-        // Cast explicitly to avoid dynamic dispatch issues in QuestPDF lambdas
         TurnoCaja turno = result.Turno;
         List<Pago> pagos = result.Pagos;
         decimal totalRecaudadoBase = result.TotalRecaudadoBase;
