@@ -263,7 +263,9 @@
                 <li><a href="@Url.Action("Index","Caja")" class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Caja" ? "active" : "")"><i class="fas fa-cash-register"></i> Caja y Pagos</a></li>
             }
             
-            <li><a href="#"><i class="fas fa-chart-bar"></i> Reportes</a></li>
+            @if (allowedModules.Contains("Reportes") || userRole == "ADMINISTRADOR") {
+                <li><a href="@Url.Action("Index","Reportes")" class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Reportes" ? "active" : "")"><i class="fas fa-chart-line"></i> Reportes</a></li>
+            }
             
             @if (userRole == "ADMINISTRADOR") {
                 <li><a href="@Url.Action("Index","Configuracion")" class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Configuracion" ? "active" : "")"><i class="fas fa-cog"></i> Configuración</a></li>
@@ -306,12 +308,7 @@
                      </div>
                  }
              }
-             else
-             {
-                 <div class="badge bg-soft-info text-info px-3 py-2 rounded-pill border border-info border-opacity-25">
-                    <i class="fas fa-shield-halved me-2"></i>SISTEMA: <span class="fw-bold">PROFESSIONAL</span>
-                 </div>
-             }
+
         </div>
 
         <div class="topbar-user">

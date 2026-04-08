@@ -49,6 +49,14 @@
                         </div>
 
                         <div class="col-md-12">
+                            <label asp-for="IdMedico" class="form-label small fw-bold text-secondary">Médico Asignado (Opcional)</label>
+                            <select asp-for="IdMedico" class="form-select" asp-items="ViewBag.Medicos">
+                                <option value="">-- Sin preferencia --</option>
+                            </select>
+                            <span asp-validation-for="IdMedico" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-12">
                             <label asp-for="Telefono" class="form-label small fw-bold text-secondary">Teléfono de Contacto <span class="text-danger">*</span></label>
                             <input asp-for="Telefono" type="tel" class="form-control" placeholder="Ej: 8888-8888" required />
                             <span asp-validation-for="Telefono" class="text-danger small"></span>

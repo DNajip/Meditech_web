@@ -38,6 +38,7 @@ namespace MediTech.Backend.Models
         public DbSet<Examen> Examenes { get; set; } = null!;
         public DbSet<Modulo> Modulos { get; set; } = null!;
         public DbSet<UsuarioModulo> UsuarioModulos { get; set; } = null!;
+        public DbSet<TurnoCaja> TurnosCaja { get; set; } = null!;
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -57,6 +58,10 @@ namespace MediTech.Backend.Models
 
             modelBuilder.Entity<Cita>()
                 .HasIndex(c => new { c.IdPaciente, c.Fecha, c.HoraInicio })
+                .IsUnique();
+
+            modelBuilder.Entity<TurnoCaja>()
+                .HasIndex(t => new { t.IdUsuario, t.FechaApertura })
                 .IsUnique();
 
             modelBuilder.Entity<UsuarioModulo>()

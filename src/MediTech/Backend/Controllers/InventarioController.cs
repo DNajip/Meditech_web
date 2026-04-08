@@ -122,6 +122,10 @@ namespace MediTech.Backend.Controllers
             ViewBag.TotalPages = (int)Math.Ceiling((double)totalMovimientos / pageSize);
             ViewBag.TotalCount = totalMovimientos;
 
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                return PartialView("_DetailsModalPartial", producto);
+            }
             return View(producto);
         }
 

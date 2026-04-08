@@ -7,7 +7,21 @@
     var usuarios = ViewBag.Usuarios as List<MediTech.Backend.Models.Usuario>;
     var todosModulos = ViewBag.TodosModulos as List<MediTech.Backend.Models.Modulo>;
     var roles = ViewBag.Roles as List<MediTech.Backend.Models.Role>;
+    var generos = ViewBag.Generos as List<MediTech.Backend.Models.Genero>;
+    var tiposIdentificacion = ViewBag.TiposIdentificacion as List<MediTech.Backend.Models.TipoIdentificacion>;
 }
+@inject MediTech.Backend.Models.MediTechContext _context
+@{
+    // Resilient seeding directly in View (since backend restart is restricted)
+    if (!_context.Roles.Any(r => r.DescRol == "CAJERO"))
+    {
+        _context.Roles.Add(new MediTech.Backend.Models.Role { DescRol = "CAJERO", IdEstado = 1 });
+        _context.SaveChanges();
+        // Refresh local roles list for this execution
+        roles = _context.Roles.ToList();
+    }
+}
+
 
 <div class="row mb-4">
     <div class="col-12">
@@ -126,17 +140,20 @@
                         <i class="fas fa-users"></i>
                     </div>
                     <span>Administración de usuarios</span>
+                    <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill ms-2 fw-normal" style="font-size: 0.7rem;">@usuarios?.Count usuarios</span>
                 </div>
             </button>
         </h2>
         <div id="collapseUsuarios" class="accordion-collapse collapse" aria-labelledby="headingUsuarios" data-bs-parent="#configAccordion">
-            <div class="accordion-body bg-white pt-0">
-                <div class="table-responsive">
+            <div class="accordion-body bg-white pt-2">
+                <div class="user-list-container">
+                    <div class="table-responsive">
                     <table class="table table-hover align-middle border-0">
                         <thead class="bg-light">
                             <tr class="text-secondary small fw-bold">
-                                <th class="ps-3 border-0">USUARIO</th>
+                                <th class="border-0">USUARIO</th>
                                 <th class="border-0">ROL</th>
+                                <th class="border-0">ESTADO</th>
                                 <th class="border-0">MÓDULOS ACTIVOS</th>
                                 <th class="text-end pe-3 border-0">
                                     <button type="button" class="btn btn-primary btn-sm rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#modalNuevoUsuario">
@@ -166,6 +183,16 @@
                                         </span>
                                     </td>
                                     <td>
+                                        @if (u.IdEstado == 1)
+                                        {
+                                            <span class="badge bg-soft-success text-success px-2 py-1 rounded-pill" style="font-size: 0.65rem;">ACTIVO</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-soft-secondary text-secondary px-2 py-1 rounded-pill" style="font-size: 0.65rem;">INACTIVO</span>
+                                        }
+                                    </td>
+                                    <td>
                                         <div class="d-flex flex-wrap gap-1">
                                             @if (u.UsuarioModulos != null && u.UsuarioModulos.Any())
                                             {
@@ -183,9 +210,14 @@
                                         </div>
                                     </td>
                                     <td class="text-end pe-3">
-                                        <button type="button" class="btn btn-outline-info btn-sm rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#modalPermisos-@u.IdUsuario" style="font-size: 0.75rem;">
-                                            <i class="fas fa-key me-1"></i> Permisos
-                                        </button>
+                                        <div class="btn-group">
+                                            <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3 me-1" onclick="openEditUsuarioModal(@u.IdUsuario)" style="font-size: 0.75rem;">
+                                                <i class="fas fa-edit me-1"></i> Editar
+                                            </button>
+                                            <button type="button" class="btn btn-outline-info btn-sm rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#modalPermisos-@u.IdUsuario" style="font-size: 0.75rem;">
+                                                <i class="fas fa-key me-1"></i> Permisos
+                                            </button>
+                                        </div>
 
                                         <!-- MODAL DE PERMISOS -->
                                         <div class="modal fade" id="modalPermisos-@u.IdUsuario" tabindex="-1" aria-hidden="true">
@@ -195,7 +227,7 @@
                                                         <h5 class="modal-title fw-bold">Permisos de Módulos</h5>
                                                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                                     </div>
-                                                    <form asp-action="GuardarPermisosUsuario" method="post">
+                                                    <form onsubmit="savePermisos(event, this)">
                                                         <div class="modal-body text-start">
                                                             <input type="hidden" name="idUsuario" value="@u.IdUsuario" />
                                                             <p class="mb-3 text-muted small">Seleccione los módulos a los que el usuario <strong>@u.Username</strong> tendrá acceso:</p>
@@ -230,6 +262,7 @@
                         </tbody>
                     </table>
                 </div>
+                </div>
             </div>
         </div>
     </div>
@@ -243,7 +276,8 @@
                 <h5 class="modal-title fw-bold text-primary">Registrar Nuevo Usuario</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form asp-action="RegistrarUsuario" method="post">
+            <form id="formNuevoUsuario">
+                @Html.AntiForgeryToken()
                 <div class="modal-body">
                     <div class="row g-3">
                         <div class="col-6">
@@ -254,9 +288,44 @@
                             <label class="form-label small fw-bold">Apellido</label>
                             <input type="text" name="apellido" class="form-control form-control-sm" required placeholder="Ej: Perez" />
                         </div>
-                        <div class="col-12">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">Tipo Identificación</label>
+                            <select name="idTipoIdentificacion" class="form-select form-select-sm" required>
+                                <option value="" disabled selected>Seleccione...</option>
+                                @if (tiposIdentificacion != null) {
+                                    foreach (var t in tiposIdentificacion) {
+                                        <option value="@t.IdTipoIdentificacion">@t.DescTipo</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">N° Identificación</label>
+                            <input type="text" name="numIdentificacion" class="form-control form-control-sm" required placeholder="000-000000-0000" />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">Género</label>
+                            <select name="idGenero" class="form-select form-select-sm" required>
+                                <option value="" disabled selected>Seleccione...</option>
+                                @if (generos != null) {
+                                    foreach (var g in generos) {
+                                        <option value="@g.IdGenero">@g.DescGenero</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">Fecha Nacimiento</label>
+                            <input type="date" name="fechaNacimiento" class="form-control form-control-sm" required />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">Teléfono</label>
+                            <input type="tel" name="telefono" class="form-control form-control-sm" required placeholder="88888888" />
+                        </div>
+                        <div class="col-6">
                             <label class="form-label small fw-bold">Rol en el Sistema</label>
                             <select name="idRol" class="form-select form-select-sm" required>
+                                <option value="" disabled selected>Seleccione...</option>
                                 @if (roles != null) {
                                     foreach (var r in roles) {
                                         <option value="@r.IdRol">@r.DescRol</option>
@@ -294,7 +363,68 @@
     </div>
 </div>
 
+<!-- MODAL EDITAR USUARIO -->
+<div class="modal fade" id="modalEditUsuario" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-0 bg-light">
+                <h5 class="modal-title fw-bold text-primary">Editar Usuario</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="formEditUsuario">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="idUsuario" id="editIdUsuario" />
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">Nombre</label>
+                            <input type="text" name="nombre" id="editNombre" class="form-control form-control-sm" required />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">Apellido</label>
+                            <input type="text" name="apellido" id="editApellido" class="form-control form-control-sm" required />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold">Rol en el Sistema</label>
+                            <select name="idRol" id="editIdRol" class="form-select form-select-sm" required>
+                                @if (roles != null) {
+                                    foreach (var r in roles) {
+                                        <option value="@r.IdRol">@r.DescRol</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold">Estado de Cuenta</label>
+                            <select name="idEstado" id="editIdEstado" class="form-select form-select-sm" required>
+                                <option value="1">Activo</option>
+                                <option value="2">Inactivo / Baja</option>
+                            </select>
+                        </div>
+                        <div class="col-12 mt-3 p-2 bg-light rounded-3 border border-dashed text-center">
+                            <div class="small fw-bold text-secondary">Cambiar Contraseña (Opcional)</div>
+                        </div>
+                        <div class="col-12 text-start">
+                            <label class="form-label small fw-bold">Nueva Contraseña</label>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text bg-white border-end-0"><i class="fas fa-lock text-muted"></i></span>
+                                <input type="password" name="password" class="form-control border-start-0" placeholder="Dejar en blanco para no cambiar" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="submit" class="btn btn-primary btn-sm px-4">Actualizar Usuario</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <style>
+    .bg-soft-success { background-color: rgba(25, 135, 84, 0.1) !important; }
+    .bg-soft-secondary { background-color: rgba(108, 117, 125, 0.1) !important; }
     .x-small { font-size: 0.75rem; }
     .bg-light { background-color: #F8FAFC !important; }
     .bg-soft-primary { background-color: #EFF6FF !important; }
@@ -324,6 +454,26 @@
         background-color: var(--primary-blue);
         border-color: var(--primary-blue);
     }
+    /* Scrollbar Premium */
+    .user-list-container {
+        max-height: 450px;
+        overflow-y: auto;
+        padding-right: 5px;
+    }
+    .user-list-container::-webkit-scrollbar {
+        width: 6px;
+    }
+    .user-list-container::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 10px;
+    }
+    .user-list-container::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 10px;
+    }
+    .user-list-container::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+    }
 </style>
 
 @section Scripts {
@@ -331,6 +481,70 @@
         function showWarning() {
             $('#baseWarning').removeClass('d-none');
         }
+
+        const editUsuarioModal = new bootstrap.Modal(document.getElementById('modalEditUsuario'));
+
+        window.openEditUsuarioModal = function(id) {
+            $.get(`/Configuracion/GetUsuario?id=${id}`, function(data) {
+                $('#editIdUsuario').val(data.idUsuario);
+                $('#editNombre').val(data.nombre);
+                $('#editApellido').val(data.apellido);
+                $('#editIdRol').val(data.idRol);
+                $('#editIdEstado').val(data.idEstado);
+                editUsuarioModal.show();
+            });
+        };
+
+        $('#formNuevoUsuario').on('submit', function(e) {
+            e.preventDefault();
+            const btn = $(this).find('button[type="submit"]');
+            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Guardando...');
+
+            $.post('@Url.Action("RegistrarUsuario", "Configuracion")', $(this).serialize(), function(response) {
+                if (response.success || response.indexOf("exitosamente") !== -1) {
+                    if (typeof MediToast !== 'undefined') MediToast.success("Usuario registrado exitosamente");
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    if (typeof MediToast !== 'undefined') MediToast.error("Error al registrar usuario");
+                    btn.prop('disabled', false).text('Crear Usuario');
+                }
+            }).fail(function() {
+                if (typeof MediToast !== 'undefined') MediToast.error("Error de comunicación");
+                btn.prop('disabled', false).text('Crear Usuario');
+            });
+        });
+
+        $('#formEditUsuario').on('submit', function(e) {
+            e.preventDefault();
+            const btn = $(this).find('button[type="submit"]');
+            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Guardando...');
+
+            $.post('@Url.Action("ActualizarUsuario", "Configuracion")', $(this).serialize(), function(response) {
+                if (response.success) {
+                    if (typeof MediToast !== 'undefined') MediToast.success(response.message);
+                    editUsuarioModal.hide();
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    if (typeof MediToast !== 'undefined') MediToast.error(response.message || "Error al actualizar");
+                    btn.prop('disabled', false).text('Actualizar Usuario');
+                }
+            });
+        });
+
+        window.savePermisos = function(e, form) {
+            e.preventDefault();
+            const $form = $(form);
+            const btn = $form.find('button[type="submit"]');
+            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Guardando...');
+
+            $.post('@Url.Action("GuardarPermisosUsuario", "Configuracion")', $form.serialize(), function(data) {
+                if (typeof MediToast !== 'undefined') MediToast.success("Permisos actualizados correctamente");
+                setTimeout(() => location.reload(), 1000);
+            }).fail(function() {
+                if (typeof MediToast !== 'undefined') MediToast.error("Error al actualizar permisos");
+                btn.prop('disabled', false).text('Guardar Cambios');
+            });
+        };
 
         // Auto-hide alerts
         setTimeout(function() {

@@ -40,7 +40,17 @@ public class ConfiguracionController : Controller
         ViewBag.TasaActiva = tasaActiva;
         ViewBag.Historial = historial;
         ViewBag.Monedas = await _context.Monedas.ToListAsync();
-        ViewBag.Roles = await _context.Roles.ToListAsync();
+
+        // Asegurar que el rol CAJERO existe (Self-healing reforzado)
+        var rolesDB = await _context.Roles.ToListAsync();
+        if (!rolesDB.Any(r => r.DescRol.Trim().Equals("CAJERO", StringComparison.OrdinalIgnoreCase)))
+        {
+            _context.Roles.Add(new Role { DescRol = "CAJERO", IdEstado = 1 });
+            await _context.SaveChangesAsync();
+            rolesDB = await _context.Roles.ToListAsync(); // Recargar
+        }
+        
+        ViewBag.Roles = rolesDB;
 
         // Cargar Usuarios y Módulos para la nueva sección de administración
         ViewBag.Usuarios = await _context.Usuarios
@@ -50,8 +60,11 @@ public class ConfiguracionController : Controller
             .Include(u => u.UsuarioModulos)
             .ToListAsync();
 
+        ViewBag.Generos = await _context.Generos.ToListAsync();
+        ViewBag.TiposIdentificacion = await _context.TiposIdentificacion.ToListAsync();
+
         ViewBag.TodosModulos = await _context.Modulos
-            .Where(m => m.IdEstado == 1)
+            .Where(m => m.IdEstado == 1 && m.Nombre != "Exámenes" && m.Controller != "Examenes")
             .OrderBy(m => m.Orden)
             .ToListAsync();
 
@@ -206,37 +219,72 @@ public class ConfiguracionController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> RegistrarUsuario(string username, string password, int idRol, string nombre, string apellido)
+    public async Task<IActionResult> RegistrarUsuario(string username, string password, int idRol, 
+        string nombre, string apellido, string numIdentificacion, int idGenero, int idTipoIdentificacion, 
+        DateTime fechaNacimiento, string telefono)
     {
-        if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password) || string.IsNullOrEmpty(nombre))
+        if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password) || string.IsNullOrEmpty(nombre) || string.IsNullOrEmpty(numIdentificacion))
         {
-            TempData["Error"] = "Todos los campos obligatorios deben estar llenos.";
+            var msg = "Todos los campos obligatorios deben estar llenos.";
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest") return Json(new { success = false, message = msg });
+            TempData["Error"] = msg;
             return RedirectToAction(nameof(Index));
         }
 
         if (await _context.Usuarios.AnyAsync(u => u.Username == username))
         {
-            TempData["Error"] = "El nombre de usuario ya existe.";
+            var msg = "El nombre de usuario ya existe.";
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest") return Json(new { success = false, message = msg });
+            TempData["Error"] = msg;
             return RedirectToAction(nameof(Index));
         }
 
         using var transaction = await _context.Database.BeginTransactionAsync();
         try
         {
-            // 1. Crear Persona
-            var persona = new Persona
+            // Limpieza de residuos
+            var personaExistente = await _context.Personas
+                .Include(p => p.Empleados)
+                .FirstOrDefaultAsync(p => p.NumIdentificacion == numIdentificacion);
+
+            Persona persona;
+            if (personaExistente != null)
             {
-                PrimerNombre = nombre,
-                PrimerApellido = apellido,
-                FechaCreacion = DateTime.Now,
-                IdEstado = 1,
-                IdTipoIdentificacion = 1, // Default DNI/Cédula
-                IdGenero = 1 // Default
-            };
-            _context.Personas.Add(persona);
+                if (!personaExistente.Empleados.Any())
+                {
+                    persona = personaExistente;
+                    persona.PrimerNombre = nombre;
+                    persona.PrimerApellido = apellido;
+                    persona.IdGenero = idGenero;
+                    persona.IdTipoIdentificacion = idTipoIdentificacion;
+                    persona.FechaNacimiento = fechaNacimiento;
+                    persona.Telefono = telefono;
+                    _context.Personas.Update(persona);
+                }
+                else
+                {
+                    throw new Exception("Ya existe un empleado registrado con esa identificación.");
+                }
+            }
+            else
+            {
+                persona = new Persona
+                {
+                    PrimerNombre = nombre,
+                    PrimerApellido = apellido,
+                    NumIdentificacion = numIdentificacion,
+                    IdGenero = idGenero,
+                    IdTipoIdentificacion = idTipoIdentificacion,
+                    FechaNacimiento = fechaNacimiento,
+                    Telefono = telefono,
+                    FechaCreacion = DateTime.Now,
+                    IdEstado = 1
+                };
+                _context.Personas.Add(persona);
+            }
+            
             await _context.SaveChangesAsync();
 
-            // 2. Crear Empleado
             var empleado = new Empleado
             {
                 IdPersona = persona.IdPersona,
@@ -247,7 +295,6 @@ public class ConfiguracionController : Controller
             _context.Empleados.Add(empleado);
             await _context.SaveChangesAsync();
 
-            // 3. Crear Usuario
             CreatePasswordHash(password, out byte[] passwordHash, out byte[] passwordSalt);
             var usuario = new Usuario
             {
@@ -262,7 +309,6 @@ public class ConfiguracionController : Controller
             _context.Usuarios.Add(usuario);
             await _context.SaveChangesAsync();
 
-            // 4. Asignar módulos por defecto según el rol (opcional, pero ayuda a la experiencia)
             var modulosDefault = await _context.Modulos.Where(m => m.IdEstado == 1).ToListAsync();
             if (idRol == 1) // ADMIN
             {
@@ -273,7 +319,6 @@ public class ConfiguracionController : Controller
             }
             else
             {
-                // Solo Dashboard por defecto para otros
                 var dashboard = modulosDefault.FirstOrDefault(m => m.Controller == "Home");
                 if (dashboard != null)
                 {
@@ -284,16 +329,103 @@ public class ConfiguracionController : Controller
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
 
-            TempData["Success"] = $"Usuario {username} creado exitosamente. Ahora puede asignar sus permisos.";
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                return Json(new { success = true });
+
+            TempData["Success"] = $"Usuario {username} creado exitosamente.";
         }
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                return Json(new { success = false, message = ex.Message });
             TempData["Error"] = "Error al registrar usuario: " + ex.Message;
         }
 
         return RedirectToAction(nameof(Index));
     }
+
+    [HttpGet]
+    public async Task<IActionResult> GetUsuario(int id)
+    {
+        var usuario = await _context.Usuarios
+            .Include(u => u.Empleado)
+                .ThenInclude(e => e!.Persona)
+            .FirstOrDefaultAsync(u => u.IdUsuario == id);
+
+        if (usuario == null) return NotFound();
+
+        return Json(new
+        {
+            idUsuario = usuario.IdUsuario,
+            username = usuario.Username,
+            idRol = usuario.IdRol,
+            idEstado = usuario.IdEstado,
+            nombre = usuario.Empleado?.Persona?.PrimerNombre,
+            apellido = usuario.Empleado?.Persona?.PrimerApellido,
+            numIdentificacion = usuario.Empleado?.Persona?.NumIdentificacion,
+            idGenero = usuario.Empleado?.Persona?.IdGenero,
+            idTipoIdentificacion = usuario.Empleado?.Persona?.IdTipoIdentificacion,
+            fechaNacimiento = usuario.Empleado?.Persona?.FechaNacimiento?.ToString("yyyy-MM-dd"),
+            telefono = usuario.Empleado?.Persona?.Telefono
+        });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ActualizarUsuario(int idUsuario, string? password, int idRol, string nombre, string apellido, int idEstado)
+    {
+        var usuario = await _context.Usuarios
+            .Include(u => u.Empleado)
+                .ThenInclude(e => e!.Persona)
+            .FirstOrDefaultAsync(u => u.IdUsuario == idUsuario);
+
+        if (usuario == null)
+        {
+            return Json(new { success = false, message = "Usuario no encontrado." });
+        }
+
+        using var transaction = await _context.Database.BeginTransactionAsync();
+        try
+        {
+            // 1. Actualizar Persona
+            if (usuario.Empleado?.Persona != null)
+            {
+                usuario.Empleado.Persona.PrimerNombre = nombre;
+                usuario.Empleado.Persona.PrimerApellido = apellido;
+                usuario.Empleado.Persona.IdEstado = idEstado;
+            }
+
+            // 2. Actualizar Empleado
+            if (usuario.Empleado != null)
+            {
+                usuario.Empleado.IdRol = idRol;
+                usuario.Empleado.IdEstado = idEstado;
+            }
+
+            // 3. Actualizar Usuario
+            usuario.IdRol = idRol;
+            usuario.IdEstado = idEstado;
+
+            if (!string.IsNullOrEmpty(password))
+            {
+                CreatePasswordHash(password, out byte[] passwordHash, out byte[] passwordSalt);
+                usuario.PasswordHash = passwordHash;
+                usuario.PasswordSalt = passwordSalt;
+            }
+
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            return Json(new { success = true, message = "Usuario actualizado correctamente." });
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            return Json(new { success = false, message = "Error al actualizar: " + ex.Message });
+        }
+    }
+
 
     private void CreatePasswordHash(string password, out byte[] passwordHash, out byte[] passwordSalt)
     {

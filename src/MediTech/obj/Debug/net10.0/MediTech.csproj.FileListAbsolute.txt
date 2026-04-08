@@ -633,3 +633,11 @@ E:\Programación\Antigravity\Meditech\src\MediTech\bin\Debug\net10.0\refs\System
 E:\Programación\Antigravity\Meditech\src\MediTech\bin\Debug\net10.0\refs\WindowsBase.dll
 E:\Programación\Antigravity\Meditech\src\MediTech\obj\Debug\net10.0\MediTech.genruntimeconfig.cache
 E:\Programación\Antigravity\Meditech\src\MediTech\obj\Debug\net10.0\ref\MediTech.dll
+E:\Programación\Antigravity\Meditech\src\MediTech\bin\Debug\net10.0\ClosedXML.dll
+E:\Programación\Antigravity\Meditech\src\MediTech\bin\Debug\net10.0\ClosedXML.Parser.dll
+E:\Programación\Antigravity\Meditech\src\MediTech\bin\Debug\net10.0\DocumentFormat.OpenXml.dll
+E:\Programación\Antigravity\Meditech\src\MediTech\bin\Debug\net10.0\DocumentFormat.OpenXml.Framework.dll
+E:\Programación\Antigravity\Meditech\src\MediTech\bin\Debug\net10.0\ExcelNumberFormat.dll
+E:\Programación\Antigravity\Meditech\src\MediTech\bin\Debug\net10.0\RBush.dll
+E:\Programación\Antigravity\Meditech\src\MediTech\bin\Debug\net10.0\SixLabors.Fonts.dll
+E:\Programación\Antigravity\Meditech\src\MediTech\bin\Debug\net10.0\System.IO.Packaging.dll

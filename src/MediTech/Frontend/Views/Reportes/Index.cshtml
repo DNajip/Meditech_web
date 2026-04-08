@@ -1,0 +1,354 @@
+@{
+    ViewData["Title"] = "Dashboard de Reportes";
+}
+
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="page-header page-header-premium mb-4 flex-column flex-md-row d-flex justify-content-between align-items-md-center gap-3">
+        <div>
+            <h2 class="display-6 fw-bold text-gradient-primary mb-0">Reportes y Estadísticas</h2>
+            <p class="text-muted mb-0">Análisis profundo del rendimiento clínico, financiero y operativo</p>
+        </div>
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+            <div class="btn-group shadow-sm me-2">
+                <button type="button" class="btn btn-white btn-sm px-3" onclick="setRange('month')">Este Mes</button>
+                <button type="button" class="btn btn-white btn-sm px-3" onclick="setRange('lastMonth')">Mes Pasado</button>
+            </div>
+            <div class="input-group shadow-sm" style="max-width: 400px;">
+                <span class="input-group-text bg-white border-end-0 text-muted small"><i class="fas fa-calendar-alt"></i></span>
+                <input type="date" id="reportInicio" class="form-control border-start-0 small" value="@DateTime.Today.AddDays(-30).ToString("yyyy-MM-dd")">
+                <input type="date" id="reportFin" class="form-control small" value="@DateTime.Today.ToString("yyyy-MM-dd")">
+                <button class="btn btn-primary px-3" onclick="loadStats()">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats Cards -->
+    <div class="row g-3 mb-4">
+        <!-- Financial Card -->
+        <div class="col-md-4">
+            <div class="card card-stats border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-3">
+                        <div class="icon-shape bg-soft-success text-success rounded-3">
+                            <i class="fas fa-hand-holding-usd"></i>
+                        </div>
+                        <span class="badge bg-soft-success text-success rounded-pill px-3">Financiero</span>
+                    </div>
+                    <h6 class="text-muted text-uppercase small fw-bold">Ingresos (Periodo)</h6>
+                    <h3 class="fw-bold mb-0" id="statIngresos">@ViewBag.IngresosMes.TotalGlobal.ToString("N2")</h3>
+                    <div class="mt-3 pt-3 border-top d-flex gap-2">
+                        <button class="btn btn-sm btn-outline-primary w-100" onclick="exportExcel('ingresos')">
+                            <i class="fas fa-file-excel me-1"></i> Ingresos
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Management Card -->
+        <div class="col-md-4">
+            <div class="card card-stats border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-3">
+                        <div class="icon-shape bg-soft-primary text-primary rounded-3">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+                        <span class="badge bg-soft-primary text-primary rounded-pill px-3">Gestión</span>
+                    </div>
+                    <h6 class="text-muted text-uppercase small fw-bold">Citas en Periodo</h6>
+                    <h3 class="fw-bold mb-0" id="statCitas">@ViewBag.StatsCitas.TotalCitas</h3>
+                    <div class="mt-3 pt-3 border-top d-flex gap-2">
+                        <button class="btn btn-sm btn-outline-primary w-100" onclick="exportExcel('citas')">
+                            <i class="fas fa-calendar-alt me-1"></i> Listado Citas
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Inventory Card -->
+        <div class="col-md-4">
+            <div class="card card-stats border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-3">
+                        <div class="icon-shape bg-soft-warning text-warning rounded-3">
+                            <i class="fas fa-boxes"></i>
+                        </div>
+                        <span class="badge bg-soft-warning text-warning rounded-pill px-3">Inventario</span>
+                    </div>
+                    <h6 class="text-muted text-uppercase small fw-bold">Stock Crítico</h6>
+                    <h3 class="fw-bold mb-0 text-warning">@ViewBag.StockBajo.TotalCriticos</h3>
+                    <div class="mt-3 pt-3 border-top d-flex gap-2">
+                        <button class="btn btn-sm btn-outline-primary w-100" onclick="exportExcel('inventario')">
+                            <i class="fas fa-box-open me-1"></i> Inventario
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="fw-bold mb-0">Flujo de Ingresos</h5>
+                            <p class="text-muted small mb-0">Tendencia de recaudación por día</p>
+                        </div>
+                        <i class="fas fa-chart-line text-muted"></i>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <canvas id="ingresosChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h5 class="fw-bold mb-0">Citas por Médico</h5>
+                    <p class="text-muted small mb-0">Distribución de carga laboral</p>
+                </div>
+                <div class="card-body">
+                    <canvas id="medicosChart" height="280"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Row -->
+    <div class="row g-4">
+        <div class="col-md-5">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h5 class="fw-bold mb-0">Estado de Citas</h5>
+                </div>
+                <div class="card-body py-4">
+                    <canvas id="estadosChart" height="150"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-7">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h5 class="fw-bold mb-0">Reportes Adicionales</h5>
+                </div>
+                <div class="card-body h-100">
+                    <div class="row g-3">
+                        <div class="col-sm-6">
+                            <div class="report-shortcut p-3 rounded-3 border h-100 d-flex flex-column" onclick="exportExcel('pacientes')">
+                                <div class="icon-shape bg-soft-info text-info rounded-circle mb-3">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                                <h6 class="fw-bold mb-1">Directorio de Pacientes</h6>
+                                <p class="small text-muted mb-3">Exportar base de datos completa con contactos.</p>
+                                <button class="btn btn-sm btn-link text-info p-0 mt-auto text-start">Descargar Excel <i class="fas fa-arrow-right ms-1"></i></button>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="report-shortcut p-3 rounded-3 border h-100 d-flex flex-column" onclick="openCierreModal()">
+                                <div class="icon-shape bg-soft-danger text-danger rounded-circle mb-3">
+                                    <i class="fas fa-file-pdf"></i>
+                                </div>
+                                <h6 class="fw-bold mb-1">Cierre de Caja PDF</h6>
+                                <p class="small text-muted mb-3">Generar reporte profesional de auditoría por Shift ID.</p>
+                                <button class="btn btn-sm btn-link text-danger p-0 mt-auto text-start">Generar Reporte <i class="fas fa-arrow-right ms-1"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para ID de Turno -->
+<div class="modal fade" id="turnoModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-body p-4 text-center">
+                <div class="icon-shape bg-soft-danger text-danger rounded-circle mx-auto mb-3" style="width: 60px; height: 60px;">
+                    <i class="fas fa-file-pdf fs-4"></i>
+                </div>
+                <h5 class="fw-bold">Reporte de Cierre</h5>
+                <p class="text-muted small">Ingrese el ID del turno de caja para generar el reporte PDF.</p>
+                <input type="number" id="turnoIdInput" class="form-control text-center fs-4 fw-bold mb-3" placeholder="000" />
+                <div class="d-grid gap-2">
+                    <button class="btn btn-danger py-2" onclick="generateCierrePdf()">
+                        <i class="fas fa-download me-2"></i>Descargar PDF
+                    </button>
+                    <button class="btn btn-link text-muted btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        let ingresosChart, medicosChart, estadosChart;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initCharts();
+            loadStats();
+        });
+
+        function setRange(type) {
+            const now = new Date();
+            let start, end;
+
+            if (type === 'month') {
+                start = new Date(now.getFullYear(), now.getMonth(), 1);
+                end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+            } else if (type === 'lastMonth') {
+                start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                end = new Date(now.getFullYear(), now.getMonth(), 0);
+            }
+
+            document.getElementById('reportInicio').value = start.toISOString().split('T')[0];
+            document.getElementById('reportFin').value = end.toISOString().split('T')[0];
+            loadStats();
+        }
+
+        function initCharts() {
+            const commonOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } }
+            };
+
+            // Chart Ingresos
+            ingresosChart = new Chart(document.getElementById('ingresosChart'), {
+                type: 'line',
+                data: { labels: [], datasets: [{ label: 'Ingresos', data: [], borderColor: '#6366f1', borderWidth: 3, backgroundColor: 'rgba(99, 102, 241, 0.1)', fill: true, tension: 0.4, pointRadius: 4, pointBackgroundColor: '#fff', pointBorderColor: '#6366f1', pointBorderWidth: 2 }] },
+                options: commonOptions
+            });
+
+            // Chart Médicos
+            medicosChart = new Chart(document.getElementById('medicosChart'), {
+                type: 'bar',
+                data: { labels: [], datasets: [{ data: [], backgroundColor: ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'], borderRadius: 8 }] },
+                options: { ...commonOptions, indexAxis: 'y' }
+            });
+
+            // Chart Estados
+            estadosChart = new Chart(document.getElementById('estadosChart'), {
+                type: 'doughnut',
+                data: { labels: [], datasets: [{ data: [], backgroundColor: ['#10b981', '#f59e0b', '#ef4444', '#6b7280'], borderWidth: 0 }] },
+                options: { ...commonOptions, cutout: '75%', plugins: { legend: { display: true, position: 'right' } } }
+            });
+        }
+
+        function loadStats() {
+            const inicio = document.getElementById('reportInicio').value;
+            const fin = document.getElementById('reportFin').value;
+
+            fetch(`/Reportes/GetDashboardStats?inicio=${inicio}&fin=${fin}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('statIngresos').textContent = '$' + data.ingresos.totalGlobal.toLocaleString('en-US', {minimumFractionDigits: 2});
+                        document.getElementById('statCitas').textContent = data.citas.totalCitas;
+
+                        // Lines
+                        ingresosChart.data.labels = data.ingresos.detallePorDia.map(i => new Date(i.fecha).toLocaleDateString('es-NI', {day:'numeric', month:'short'}));
+                        ingresosChart.data.datasets[0].data = data.ingresos.detallePorDia.map(i => i.total);
+                        ingresosChart.update();
+
+                        // Medicos
+                        medicosChart.data.labels = data.citas.porMedico.map(m => m.medico);
+                        medicosChart.data.datasets[0].data = data.citas.porMedico.map(m => m.cantidad);
+                        medicosChart.update();
+
+                        // Estados
+                        estadosChart.data.labels = data.citas.porEstado.map(e => e.estado);
+                        estadosChart.data.datasets[0].data = data.citas.porEstado.map(e => e.cantidad);
+                        estadosChart.update();
+                    }
+                });
+        }
+
+        function exportExcel(type) {
+            const inicio = document.getElementById('reportInicio').value;
+            const fin = document.getElementById('reportFin').value;
+            
+            let url = "";
+            switch(type) {
+                case 'ingresos': url = `/Reportes/ExportarIngresosExcel?inicio=${inicio}&fin=${fin}`; break;
+                case 'citas': url = `/Reportes/ExportarCitasExcel?inicio=${inicio}&fin=${fin}`; break;
+                case 'pacientes': url = `/Reportes/ExportarPacientesExcel`; break;
+                case 'inventario': url = `/Reportes/ExportarInventarioExcel`; break;
+            }
+            
+            if (url) window.location.href = url;
+        }
+        
+        function openCierreModal() {
+            const myModal = new bootstrap.Modal(document.getElementById('turnoModal'));
+            myModal.show();
+        }
+        
+        function generateCierrePdf() {
+            const id = document.getElementById('turnoIdInput').value;
+            if (!id) {
+                MediToast.error("Ingrese un ID de turno válido");
+                return;
+            }
+            window.location.href = `/Reportes/ExportarCierrePDF?idTurno=${id}`;
+            bootstrap.Modal.getInstance(document.getElementById('turnoModal')).hide();
+        }
+    </script>
+}
+
+<style>
+    .text-gradient-primary {
+        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    .card-stats {
+        border-radius: 16px;
+        transition: all 0.3s ease;
+    }
+    .card-stats:hover {
+        transform: translateY(-5px);
+    }
+    .icon-shape {
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+    }
+    .bg-soft-success { background: rgba(16, 185, 129, 0.1); }
+    .bg-soft-primary { background: rgba(99, 102, 241, 0.1); }
+    .bg-soft-warning { background: rgba(245, 158, 11, 0.1); }
+    .bg-soft-info { background: rgba(6, 182, 212, 0.1); }
+    .bg-soft-danger { background: rgba(239, 68, 68, 0.1); }
+    
+    .report-shortcut {
+        cursor: pointer;
+        transition: all 0.2s;
+        background: #fff;
+    }
+    .report-shortcut:hover {
+        background: #f8fafc;
+        border-color: #e2e8f0 !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    .btn-white {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        color: #64748b;
+    }
+    .btn-white:hover {
+        background: #f1f5f9;
+        color: #1e293b;
+    }
+</style>

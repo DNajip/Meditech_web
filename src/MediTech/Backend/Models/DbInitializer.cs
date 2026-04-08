@@ -228,6 +228,9 @@ namespace MediTech.Backend.Models
         {
             Console.WriteLine("Applying schema migrations...");
 
+            // 0. Ensure Roles exist
+            SeedRoles(context);
+
             // 1. Create CAT.MONEDAS if it doesn't exist
             context.Database.ExecuteSqlRaw(@"
                 IF NOT EXISTS (SELECT 1 FROM sys.tables t JOIN sys.schemas s ON t.schema_id = s.schema_id WHERE s.name = 'CAT' AND t.name = 'MONEDAS')
@@ -444,10 +447,18 @@ namespace MediTech.Backend.Models
 
             // 2.2 Add ID_POSIBLE_PACIENTE column to CLI.CITAS
             context.Database.ExecuteSqlRaw(@"
+                -- 2.2 Add ID_POSIBLE_PACIENTE column to CLI.CITAS
                 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[CLI].[CITAS]') AND name = 'ID_POSIBLE_PACIENTE')
                 BEGIN
                     ALTER TABLE [CLI].[CITAS] ADD [ID_POSIBLE_PACIENTE] INT NULL;
-                    ALTER TABLE [CLI].[CITAS] ADD FOREIGN KEY (ID_POSIBLE_PACIENTE) REFERENCES CLI.POSIBLE_PACIENTES(ID_POSIBLE_PACIENTE);
+                    ALTER TABLE [CLI].[CITAS] ADD FOREIGN KEY (ID_POSIBLE_PACIENTE) REFERENCES CLI.POSIBLES_PACIENTES(ID_POSIBLE_PACIENTE);
+                END
+                
+                -- 2.3 Add ID_MEDICO column to CLI.CITAS
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[CLI].[CITAS]') AND name = 'ID_MEDICO')
+                BEGIN
+                    ALTER TABLE [CLI].[CITAS] ADD [ID_MEDICO] INT NULL;
+                    ALTER TABLE [CLI].[CITAS] ADD FOREIGN KEY (ID_MEDICO) REFERENCES ADM.EMPLEADOS(ID_EMPLEADO);
                 END
             ");
 
@@ -620,11 +631,31 @@ namespace MediTech.Backend.Models
                         MONTO_BASE DECIMAL(12,2),
                         ID_MONEDA INT,
                         METODO_PAGO VARCHAR(30),
+                        MONTO_RECIBIDO DECIMAL(12,2),
+                        VUELTO DECIMAL(12,2),
                         TASA_CAMBIO_APLICADA DECIMAL(18,6),
                         FECHA_PAGO DATETIME2 DEFAULT SYSDATETIME(),
+                        ID_USUARIO INT,
                         FOREIGN KEY(ID_CUENTA) REFERENCES CAJA.CUENTAS(ID_CUENTA),
-                        FOREIGN KEY(ID_MONEDA) REFERENCES CAT.MONEDAS(ID_MONEDA)
+                        FOREIGN KEY(ID_MONEDA) REFERENCES CAT.MONEDAS(ID_MONEDA),
+                        FOREIGN KEY(ID_USUARIO) REFERENCES ADM.USUARIOS(ID_USUARIO)
                     );
+                END
+
+                -- 4.4 Add ID_USUARIO column to CAJA.PAGOS if it doesn't exist
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[CAJA].[PAGOS]') AND name = 'ID_USUARIO')
+                BEGIN
+                    ALTER TABLE [CAJA].[PAGOS] ADD [ID_USUARIO] INT NULL;
+                    ALTER TABLE [CAJA].[PAGOS] ADD FOREIGN KEY (ID_USUARIO) REFERENCES ADM.USUARIOS(ID_USUARIO);
+                END
+            ");
+
+            // Split batch to ensure ID_USUARIO is recognized after ALTER TABLE
+            context.Database.ExecuteSqlRaw(@"
+                -- Ensure all existing payments have the Admin user ID (1) if they don't have one
+                IF EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'[CAJA].[PAGOS]') AND name = 'ID_USUARIO')
+                BEGIN
+                    UPDATE [CAJA].[PAGOS] SET [ID_USUARIO] = 1 WHERE [ID_USUARIO] IS NULL AND EXISTS (SELECT 1 FROM ADM.USUARIOS WHERE ID_USUARIO = 1);
                 END
             ");
 
@@ -742,6 +773,27 @@ namespace MediTech.Backend.Models
                     );
                 END
 
+                -- 8. Create ADM.TURNOS_CAJA
+                IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'TURNOS_CAJA' AND schema_id = SCHEMA_ID('ADM'))
+                BEGIN
+                    CREATE TABLE ADM.TURNOS_CAJA (
+                        ID_TURNO INT IDENTITY PRIMARY KEY,
+                        ID_USUARIO INT NOT NULL,
+                        FECHA_APERTURA DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
+                        FECHA_CIERRE DATETIME2,
+                        MONTO_INICIAL DECIMAL(18,2) NOT NULL DEFAULT 0,
+                        MONTO_FINAL_SISTEMA DECIMAL(18,2),
+                        MONTO_FINAL_REAL DECIMAL(18,2),
+                        DIFERENCIA DECIMAL(18,2),
+                        OBSERVACIONES NVARCHAR(500),
+                        ID_ESTADO INT DEFAULT 1,
+                        FOREIGN KEY (ID_USUARIO) REFERENCES ADM.USUARIOS(ID_USUARIO)
+                    );
+                    
+                    -- Index for active session
+                    EXEC('CREATE UNIQUE INDEX UX_TURNO_ACTIVO ON ADM.TURNOS_CAJA(ID_USUARIO) WHERE ID_ESTADO = 1');
+                END
+
                 -- Ensure modules have IdEstado = 1
                 UPDATE ADM.MODULOS SET ID_ESTADO = 1 WHERE ID_ESTADO IS NULL;
             ");
@@ -757,13 +809,45 @@ namespace MediTech.Backend.Models
                     new Modulo { Nombre = "Consultas", Icono = "fas fa-stethoscope", Controller = "Consultas", Orden = 5, IdEstado = 1 },
                     new Modulo { Nombre = "Inventario", Icono = "fas fa-boxes", Controller = "Inventario", Orden = 6, IdEstado = 1 },
                     new Modulo { Nombre = "Caja y Pagos", Icono = "fas fa-cash-register", Controller = "Caja", Orden = 7, IdEstado = 1 },
-
+                    new Modulo { Nombre = "Reportes", Icono = "fas fa-chart-line", Controller = "Reportes", Orden = 8, IdEstado = 1 },
                     new Modulo { Nombre = "Configuración", Icono = "fas fa-cog", Controller = "Configuracion", Orden = 9, IdEstado = 1 }
                 );
                 context.SaveChanges();
             }
+            else
+            {
+                // Ensure Reportes module exists even if others are already seeded
+                if (!context.Modulos.Any(m => m.Controller == "Reportes"))
+                {
+                    context.Modulos.Add(new Modulo { Nombre = "Reportes", Icono = "fas fa-chart-line", Controller = "Reportes", Orden = 8, IdEstado = 1 });
+                    context.SaveChanges();
+                }
+            }
 
             Console.WriteLine("Schema migrations applied.");
+        }
+
+        private static void SeedRoles(MediTechContext context)
+        {
+            context.Database.ExecuteSqlRaw(@"
+                IF NOT EXISTS (SELECT 1 FROM sys.tables t JOIN sys.schemas s ON t.schema_id = s.schema_id WHERE s.name = 'CAT' AND t.name = 'ROLES')
+                BEGIN
+                    CREATE TABLE CAT.ROLES (
+                        ID_ROL INT IDENTITY PRIMARY KEY,
+                        DESC_ROL VARCHAR(80) NOT NULL,
+                        ID_ESTADO INT DEFAULT 1
+                    );
+                END
+
+                IF NOT EXISTS (SELECT 1 FROM CAT.ROLES WHERE DESC_ROL = 'ADMINISTRADOR')
+                    INSERT INTO CAT.ROLES (DESC_ROL) VALUES ('ADMINISTRADOR');
+                IF NOT EXISTS (SELECT 1 FROM CAT.ROLES WHERE DESC_ROL = 'DOCTOR')
+                    INSERT INTO CAT.ROLES (DESC_ROL) VALUES ('DOCTOR');
+                IF NOT EXISTS (SELECT 1 FROM CAT.ROLES WHERE DESC_ROL = 'ASISTENTE')
+                    INSERT INTO CAT.ROLES (DESC_ROL) VALUES ('ASISTENTE');
+                IF NOT EXISTS (SELECT 1 FROM CAT.ROLES WHERE DESC_ROL = 'CAJERO')
+                    INSERT INTO CAT.ROLES (DESC_ROL) VALUES ('CAJERO');
+            ");
         }
 
         private static void SeedTreatments(MediTechContext context)

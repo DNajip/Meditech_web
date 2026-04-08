@@ -15,9 +15,7 @@
         <button type="button" class="btn btn-primary-premium shadow-sm px-4" data-bs-toggle="modal" data-bs-target="#createProductoModal">
             <i class="fas fa-plus-circle me-1"></i> <span class="d-none d-sm-inline">Nuevo Producto</span><span class="d-sm-none">Nuevo</span>
         </button>
-        <button class="btn btn-outline-secondary-premium shadow-sm px-3" onclick="window.print()">
-            <i class="fas fa-print"></i>
-        </button>
+
     </div>
 </div>
 
@@ -164,7 +162,7 @@
                                     <a href="javascript:void(0)" onclick="openEditModal(@item.IdProducto)" class="btn btn-sm btn-outline-primary" title="Editar">
                                         <i class="fas fa-edit"></i>
                                     </a>
-                                    <a asp-action="Details" asp-route-id="@item.IdProducto" class="btn btn-sm btn-outline-secondary" title="Ver Detalle">
+                                    <a href="javascript:void(0)" onclick="openDetailsModal(@item.IdProducto)" class="btn btn-sm btn-outline-secondary" title="Ver Detalle">
                                         <i class="fas fa-info-circle"></i>
                                     </a>
                                 </div>
@@ -446,6 +444,9 @@
         </div>
     </div>
 </div>
+<!-- Modal: Contenedor para Detalles de Producto -->
+<div class="modal fade" id="detailsModalContainer" tabindex="-1" aria-hidden="true">
+</div>
 
 @section Scripts {
     <script>
@@ -456,6 +457,40 @@
             const adjustmentModal = new bootstrap.Modal(document.getElementById('ajusteStockModal'));
             const editModal = new bootstrap.Modal(document.getElementById('editProductoModal'));
             let currentProductStock = 0;
+            // Global function to open details modal
+            window.openDetailsModal = function(id, page) {
+                page = page || 1;
+                console.log("MediTech Debug: Opening details modal for ID:", id, "Page:", page);
+                var $container = $('#detailsModalContainer');
+                var isVisible = $container.hasClass('show');
+
+                $.ajax({
+                    url: '@Url.Action("Details", "Inventario")/' + id + '?page=' + page,
+                    type: 'GET',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    success: function(data) {
+                        $container.html(data);
+                        if (!isVisible) {
+                            var modalEl = document.getElementById('detailsModalContainer');
+                            var existing = bootstrap.Modal.getInstance(modalEl);
+                            if (existing) { existing.dispose(); }
+                            var modal = new bootstrap.Modal(modalEl);
+                            modal.show();
+                        }
+                    },
+                    error: function(xhr) {
+                        console.error("MediTech Debug: Error loading details data:", xhr);
+                        if (typeof MediToast !== 'undefined') MediToast.error('Error al cargar detalles del producto');
+                    }
+                });
+            };
+
+            // Global function to hide details modal
+            window.hideDetailsModal = function() {
+                var modalEl = document.getElementById('detailsModalContainer');
+                var modal = bootstrap.Modal.getInstance(modalEl);
+                if (modal) { modal.hide(); }
+            };
 
             // Global function to open edit modal
             window.openEditModal = function(id) {

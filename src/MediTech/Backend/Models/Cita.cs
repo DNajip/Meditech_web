@@ -51,6 +51,9 @@ public class Cita
     [Column("ID_ESTADO")]
     public int? IdEstado { get; set; }
 
+    [Column("ID_MEDICO")]
+    public int? IdMedico { get; set; }
+
     // Navigation properties
     [ForeignKey("IdPaciente")]
     public virtual Paciente? Paciente { get; set; }
@@ -63,6 +66,9 @@ public class Cita
 
     [ForeignKey("IdEstadoCita")]
     public virtual EstadoCita? EstadoCita { get; set; }
+
+    [ForeignKey("IdMedico")]
+    public virtual Empleado? Medico { get; set; }
 
     [ForeignKey("IdEstado")]
     public virtual Estado? Estado { get; set; }

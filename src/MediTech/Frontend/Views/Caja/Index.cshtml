@@ -12,11 +12,47 @@
         <p class="text-muted d-none d-sm-block">Control de cuentas, cobros e ingresos de la clínica</p>
     </div>
     <div class="d-flex gap-2">
-        <a asp-action="Create" class="btn btn-primary-premium shadow-sm px-4 py-2">
-            <i class="fas fa-plus-circle me-1"></i> Nueva Cuenta
-        </a>
+        @if (ViewBag.IsCajaAbierta)
+        {
+            <div class="d-flex align-items-center bg-soft-success px-3 py-2 rounded-pill me-2 border border-success border-opacity-25">
+                <div class="status-indicator-pumping me-2"></div>
+                <span class="text-success fw-bold small">CAJA ABIERTA: @ViewBag.TurnoActual.FechaApertura.ToString("HH:mm")</span>
+            </div>
+            <button type="button" class="btn btn-outline-danger shadow-sm px-4 py-2" onclick="abrirModalCierre()">
+                <i class="fas fa-lock me-1"></i> Cerrar Caja
+            </button>
+            <a asp-action="Create" class="btn btn-primary-premium shadow-sm px-4 py-2 ms-2">
+                <i class="fas fa-plus-circle me-1"></i> Nueva Cuenta
+            </a>
+        }
+        else
+        {
+            <div class="d-flex align-items-center bg-soft-danger px-3 py-2 rounded-pill me-2 border border-danger border-opacity-25">
+                <i class="fas fa-lock text-danger me-2"></i>
+                <span class="text-danger fw-bold small">CAJA CERRADA</span>
+            </div>
+            <button type="button" class="btn btn-success shadow-sm px-4 py-2" onclick="abrirModalApertura()">
+                <i class="fas fa-key me-1"></i> Abrir Caja
+            </button>
+        }
     </div>
 </div>
+
+@if (!ViewBag.IsCajaAbierta)
+{
+    <div class="alert alert-warning border-0 shadow-sm mb-4 d-flex align-items-center p-4" style="border-radius: 12px; border-left: 5px solid #f59e0b !important;">
+        <div class="icon-shape bg-warning text-white rounded-circle me-4 fs-3">
+            <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <div>
+            <h5 class="fw-bold mb-1">Caja Cerrada</h5>
+            <p class="mb-0 text-dark opacity-75">Debe realizar la apertura de caja para poder registrar nuevos pagos y gestionar las finanzas del día.</p>
+        </div>
+        <button class="btn btn-warning fw-bold ms-auto px-4" onclick="abrirModalApertura()">
+            Comenzar Turno
+        </button>
+    </div>
+}
 
     <!-- Stats Cards -->
     <div class="row g-3 mb-4">
@@ -291,7 +327,112 @@
 </div>
 
 @section Scripts {
+    <style>
+        .status-indicator-pumping {
+            width: 10px;
+            height: 10px;
+            background-color: #10B981;
+            border-radius: 50%;
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            animation: pulse-green 2s infinite;
+        }
+
+        @@keyframes pulse-green {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+        
+        .bg-soft-success { background-color: rgba(16, 185, 129, 0.1); }
+        .bg-soft-danger { background-color: rgba(239, 68, 68, 0.1); }
+        .bg-soft-warning { background-color: rgba(245, 158, 11, 0.1); }
+        .bg-soft-primary { background-color: rgba(79, 70, 229, 0.1); }
+        .bg-soft-info { background-color: rgba(6, 182, 212, 0.1); }
+    </style>
+
 <script>
+    function abrirModalApertura() {
+        const modal = new bootstrap.Modal(document.getElementById('modalApertura'));
+        modal.show();
+    }
+
+    function abrirModalCierre() {
+        const modal = new bootstrap.Modal(document.getElementById('modalCierre'));
+        modal.show();
+    }
+
+    function confirmarApertura() {
+        const montoStr = document.getElementById('montoInicial').value;
+        const monto = parseFloat(montoStr);
+        if (isNaN(monto) || monto < 0) {
+            MediToast.error("Ingrese un monto inicial válido.");
+            return;
+        }
+
+        const btn = document.getElementById('btnConfirmarApertura');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Abriendo...';
+
+        const form = new FormData();
+        form.append('montoInicial', monto);
+        form.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+
+        fetch('/Caja/AbrirCaja', {
+            method: 'POST',
+            body: form
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                MediToast.success(data.message);
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                MediToast.error(data.message);
+                btn.disabled = false;
+                btn.innerHTML = 'Abrir Caja';
+            }
+        });
+    }
+
+    function confirmarCierre() {
+        const montoStr = document.getElementById('montoReal').value;
+        const obs = document.getElementById('observacionesCierre').value;
+        const monto = parseFloat(montoStr);
+        
+        if (isNaN(monto) || monto < 0) {
+            MediToast.error("Ingrese el monto real en caja.");
+            return;
+        }
+
+        const btn = document.getElementById('btnConfirmarCierre');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Cerrando...';
+
+        const form = new FormData();
+        form.append('montoReal', monto);
+        form.append('observaciones', obs);
+        form.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+
+        fetch('/Caja/CerrarCaja', {
+            method: 'POST',
+            body: form
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                MediToast.success(data.message);
+                if (data.diferencia != 0) {
+                    MediToast.warning("Diferencia detectada: " + data.diferencia.toFixed(2));
+                }
+                setTimeout(() => location.reload(), 2000);
+            } else {
+                MediToast.error(data.message);
+                btn.disabled = false;
+                btn.innerHTML = 'Cerrar Turno';
+            }
+        });
+    }
+
     document.querySelectorAll('.btn-anular').forEach(btn => {
         btn.addEventListener('click', function() {
             const id = this.dataset.id;
@@ -338,4 +479,66 @@
 }
 
 @Html.AntiForgeryToken()
+
+<!-- Modal Apertura de Caja -->
+<div class="modal fade" id="modalApertura" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold"><i class="fas fa-key text-success me-2"></i>Apertura de Turno</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="text-muted small mb-4">Ingrese el monto en efectivo con el que inicia su turno en caja.</p>
+                <div class="mb-3">
+                    <label class="form-label fw-bold small text-muted">Monto Inicial (@ViewBag.MonedaBase?.Simbolo)</label>
+                    <div class="input-group input-group-lg">
+                        <span class="input-group-text bg-white border-end-0 fs-4 text-muted">@ViewBag.MonedaBase?.Simbolo</span>
+                        <input type="number" id="montoInicial" class="form-control border-start-0 fs-3 fw-bold" value="0.00" step="0.01">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0 pb-4">
+                <button type="button" class="btn btn-light fw-bold px-4" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" id="btnConfirmarApertura" class="btn btn-success fw-bold px-4" onclick="confirmarApertura()">Abrir Caja</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Cierre de Caja -->
+<div class="modal fade" id="modalCierre" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-danger"><i class="fas fa-lock text-danger me-2"></i>Cierre de Turno</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="text-muted small mb-4">Para cerrar el turno, realice el conteo de efectivo real en caja e ingréselo a continuación.</p>
+                
+                <div class="alert alert-info border-0 py-2 small mb-4" style="border-radius: 10px;">
+                    <i class="fas fa-info-circle me-1"></i> El sistema comparará su ingreso con lo recaudado digitalmente.
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-bold small text-muted">Total Efectivo Real (@ViewBag.MonedaBase?.Simbolo)</label>
+                    <div class="input-group input-group-lg">
+                        <span class="input-group-text bg-white border-end-0 fs-4 text-muted">@ViewBag.MonedaBase?.Simbolo</span>
+                        <input type="number" id="montoReal" class="form-control border-start-0 fs-3 fw-bold" placeholder="0.00" step="0.01">
+                    </div>
+                </div>
+
+                <div class="mb-0">
+                    <label class="form-label fw-bold small text-muted">Observaciones final del turno</label>
+                    <textarea id="observacionesCierre" class="form-control" rows="2" placeholder="Notas sobre el turno, diferencias, etc..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0 pb-4">
+                <button type="button" class="btn btn-light fw-bold px-4" data-bs-dismiss="modal">Mantener Abierto</button>
+                <button type="button" id="btnConfirmarCierre" class="btn btn-danger fw-bold px-4" onclick="confirmarCierre()">Cerrar Turno</button>
+            </div>
+        </div>
+    </div>
+</div>
 

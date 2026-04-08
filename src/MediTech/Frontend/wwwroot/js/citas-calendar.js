@@ -226,6 +226,7 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('modalTratamientoSearch').value = "";
         document.getElementById('PacienteId').value = "";
         document.getElementById('PosiblePacienteId').value = "";
+        document.getElementById('modalIdMedico').value = "";
 
         // Reset Phone Alert
         if (phoneAlert) phoneAlert.classList.add('d-none');
@@ -523,6 +524,7 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('detailFecha').textContent = data.fecha;
         document.getElementById('detailTelefono').textContent = data.telefono || 'No especificado';
         document.getElementById('detailTratamiento').textContent = data.tratamiento;
+        document.getElementById('detailMedico').textContent = data.medico || 'Cualquier médico';
 
         const obsRow = document.getElementById('detailObsRow');
         if(data.observaciones && data.observaciones.trim() !== '') {

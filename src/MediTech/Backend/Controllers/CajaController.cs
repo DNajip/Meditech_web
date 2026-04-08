@@ -17,6 +17,80 @@ public class CajaController : Controller
         _context = context;
     }
 
+    private async Task<TurnoCaja?> GetTurnoActivo()
+    {
+        var userIdStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (!int.TryParse(userIdStr, out int userId)) return null;
+
+        return await _context.TurnosCaja
+            .FirstOrDefaultAsync(t => t.IdUsuario == userId && t.IdEstado == 1);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetStatus()
+    {
+        var turno = await GetTurnoActivo();
+        if (turno == null) return Json(new { isOpen = false });
+
+        return Json(new { 
+            isOpen = true, 
+            id = turno.IdTurno,
+            fechaApertura = turno.FechaApertura.ToString("dd/MM/yyyy HH:mm"),
+            montoInicial = turno.MontoInicial
+        });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AbrirCaja(decimal montoInicial)
+    {
+        var userIdStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (!int.TryParse(userIdStr, out int userId)) return Unauthorized();
+
+        var turnoExistente = await GetTurnoActivo();
+        if (turnoExistente != null) return BadRequest("Ya existe un turno abierto.");
+
+        var nuevoTurno = new TurnoCaja
+        {
+            IdUsuario = userId,
+            MontoInicial = montoInicial,
+            FechaApertura = DateTime.Now,
+            IdEstado = 1 // Abierto
+        };
+
+        _context.TurnosCaja.Add(nuevoTurno);
+        await _context.SaveChangesAsync();
+
+        return Json(new { success = true, message = "Caja abierta correctamente." });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CerrarCaja(decimal montoReal, string? observaciones)
+    {
+        var turno = await GetTurnoActivo();
+        if (turno == null) return BadRequest("No hay un turno abierto.");
+
+        // Calcular monto en sistema (Solo pagos registrados en este turno)
+        // Por simplicidad en este MVP, sumamos todos los pagos del día del usuario 
+        // En un sistema real filtraríamos por ID_TURNO si lo guardáramos en Pagos
+        var montoPagos = await _context.Pagos
+            .Where(p => p.IdUsuario == turno.IdUsuario && p.FechaPago >= turno.FechaApertura)
+            .SumAsync(p => p.MontoBase ?? 0);
+
+        turno.MontoFinalSistema = turno.MontoInicial + montoPagos;
+        turno.MontoFinalReal = montoReal;
+        turno.Diferencia = montoReal - turno.MontoFinalSistema;
+        turno.Observaciones = observaciones;
+        turno.FechaCierre = DateTime.Now;
+        turno.IdEstado = 2; // Cerrado
+
+        _context.Update(turno);
+        await _context.SaveChangesAsync();
+
+        return Json(new { success = true, message = "Caja cerrada correctamente.", diferencia = turno.Diferencia });
+    }
+    
     [HttpGet]
     [Route("Caja/GetFinanzasPaciente/{id}")]
     public async Task<IActionResult> GetFinanzasPaciente(int id)
@@ -128,22 +202,26 @@ public class CajaController : Controller
                 query = query.Where(c => (c.TotalFinal ?? 0) == 0);
         }
 
-        var totalItems = await query.CountAsync();
+        // Check Shift Status
+        var turno = await GetTurnoActivo();
+        ViewBag.IsCajaAbierta = turno != null;
+        ViewBag.TurnoActual = turno;
 
-        var cuentas = await query
+        var totalItems = await query.CountAsync();
+        var items = await query
             .OrderByDescending(c => c.FechaCreacion)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
 
-        ViewBag.CurrentPage = page;
-        ViewBag.TotalPages = (int)Math.Ceiling((double)totalItems / pageSize);
         ViewBag.TotalItems = totalItems;
+        ViewBag.TotalPages = (int)Math.Ceiling((double)totalItems / pageSize);
+        ViewBag.CurrentPage = page;
         ViewBag.EstadoFilter = estado;
         ViewBag.FechaFilter = fecha?.ToString("yyyy-MM-dd");
         ViewBag.BuscarFilter = buscar;
 
-        return View(cuentas);
+        return View(items);
     }
 
     // GET: Caja/Create
@@ -355,6 +433,10 @@ public class CajaController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> RegistrarPago(int idCuenta, decimal monto, int idMoneda, string metodoPago, decimal montoRecibido = 0)
     {
+        // 1. Check if Caja is open
+        var turno = await GetTurnoActivo();
+        if (turno == null) return Json(new { success = false, message = "DEBE ABRIR CAJA para poder registrar pagos." });
+
         try
         {
             var cuenta = await _context.Cuentas
@@ -435,7 +517,8 @@ public class CajaController : Controller
                 IdMoneda = idMoneda,
                 MetodoPago = metodoPago,
                 TasaCambioAplicada = tasa,
-                FechaPago = DateTime.Now
+                FechaPago = DateTime.Now,
+                IdUsuario = turno.IdUsuario
             };
 
             _context.Pagos.Add(pago);

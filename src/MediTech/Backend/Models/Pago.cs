@@ -39,11 +39,17 @@ public class Pago
     [Column("FECHA_PAGO")]
     public DateTime FechaPago { get; set; } = DateTime.Now;
 
+    [Column("ID_USUARIO")]
+    public int? IdUsuario { get; set; }
+
     // Navigation
     [ForeignKey("IdCuenta")]
     public virtual Cuenta? Cuenta { get; set; }
 
     [ForeignKey("IdMoneda")]
     public virtual Moneda? Moneda { get; set; }
+
+    [ForeignKey("IdUsuario")]
+    public virtual Usuario? Usuario { get; set; }
 }
 

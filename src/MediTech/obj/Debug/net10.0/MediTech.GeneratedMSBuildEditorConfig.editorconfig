@@ -102,6 +102,10 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRlbmRcVmlld3NcSW52ZW50YXJpb1xJbmRleC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
+[E:/Programación/Antigravity/Meditech/src/MediTech/Frontend/Views/Inventario/_DetailsModalPartial.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRlbmRcVmlld3NcSW52ZW50YXJpb1xfRGV0YWlsc01vZGFsUGFydGlhbC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
 [E:/Programación/Antigravity/Meditech/src/MediTech/Frontend/Views/Pacientes/Create.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRlbmRcVmlld3NcUGFjaWVudGVzXENyZWF0ZS5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
@@ -120,6 +124,10 @@ build_metadata.AdditionalFiles.CssScope =
 
 [E:/Programación/Antigravity/Meditech/src/MediTech/Frontend/Views/Pacientes/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = RnJvbnRlbmRcVmlld3NcUGFjaWVudGVzXEluZGV4LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[E:/Programación/Antigravity/Meditech/src/MediTech/Frontend/Views/Reportes/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = RnJvbnRlbmRcVmlld3NcUmVwb3J0ZXNcSW5kZXguY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
 [E:/Programación/Antigravity/Meditech/src/MediTech/Frontend/Views/Shared/AccessDenied.cshtml]

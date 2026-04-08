@@ -182,6 +182,7 @@ public class CitasController(MediTechContext context, ILogger<CitasController> l
             .Include(c => c.Paciente).ThenInclude(p => p!.Persona)
             .Include(c => c.PosiblePaciente)
             .Include(c => c.Tratamiento)
+            .Include(c => c.Medico).ThenInclude(m => m!.Persona)
             .Include(c => c.Estado)
             .FirstOrDefaultAsync(m => m.IdCita == id);
 
@@ -197,6 +198,7 @@ public class CitasController(MediTechContext context, ILogger<CitasController> l
             posiblePacienteId = cita.IdPosiblePaciente,
             identificacion = cita.Paciente?.Persona?.NumIdentificacion ?? "",
             tratamiento = cita.Tratamiento?.NombreTratamiento ?? "General",
+            medico = cita.Medico != null ? $"Dr. {cita.Medico.Persona?.PrimerNombre} {cita.Medico.Persona?.PrimerApellido}" : "Cualquier médico",
             color = "#3B82F6",
             fecha = cita.Fecha.ToString("dd/MM/yyyy"),
             horaInicio = DateTime.Today.Add(cita.HoraInicio).ToString("hh:mm tt"),
@@ -269,7 +271,7 @@ public class CitasController(MediTechContext context, ILogger<CitasController> l
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> CreateJson(int? PacienteId, int? PosiblePacienteId, int IdTratamiento, DateTime Fecha, string HoraInicio, string HoraFin, string Observaciones, string Telefono)
+    public async Task<IActionResult> CreateJson(int? PacienteId, int? PosiblePacienteId, int IdTratamiento, int? IdMedico, DateTime Fecha, string HoraInicio, string HoraFin, string Observaciones, string Telefono)
     {
         if (PacienteId == null && PosiblePacienteId == null)
             return Json(new { success = false, message = "Debe seleccionar un paciente o un prospecto." });
@@ -287,6 +289,7 @@ public class CitasController(MediTechContext context, ILogger<CitasController> l
             IdPaciente = PacienteId,
             IdPosiblePaciente = PosiblePacienteId,
             IdTratamiento = IdTratamiento,
+            IdMedico = IdMedico,
             Fecha = Fecha,
             HoraInicio = hInicio,
             HoraFin = hFin,
@@ -342,7 +345,7 @@ public class CitasController(MediTechContext context, ILogger<CitasController> l
     // POST: Citas/Edit/5
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(int id, [Bind("IdCita,IdPaciente,IdTratamiento,Fecha,HoraInicio,HoraFin,Observaciones,IdEstado,Telefono")] Cita? cita)
+    public async Task<IActionResult> Edit(int id, [Bind("IdCita,IdPaciente,IdTratamiento,Fecha,HoraInicio,HoraFin,Observaciones,IdEstado,Telefono,IdMedico,IdEstadoCita")] Cita? cita)
     {
         if (cita == null) return NotFound();
         if (id != cita.IdCita) return NotFound();
@@ -459,8 +462,17 @@ public class CitasController(MediTechContext context, ILogger<CitasController> l
             .Where(t => t.IdEstado == 1)
             .ToListAsync();
 
+        var medicos = await _context.Empleados
+            .Include(e => e.Persona)
+            .Where(e => e.IdEstado == 1 && e.IdRol == 2) // Role 2: DOCTOR
+            .Select(e => new {
+                e.IdEmpleado,
+                Nombre = e.Persona != null ? $"Dr. {e.Persona.PrimerNombre} {e.Persona.PrimerApellido}" : "Médico sin nombre"
+            }).ToListAsync();
+
         ViewBag.Pacientes = new SelectList(pacientes, "IdPaciente", "Nombre");
         ViewBag.Tratamientos = new SelectList(tratamientos, "IdTratamiento", "NombreTratamiento");
+        ViewBag.Medicos = new SelectList(medicos, "IdEmpleado", "Nombre");
         ViewBag.Estados = new SelectList(await _context.Estados.ToListAsync(), "IdEstado", "DescEstado");
         ViewBag.TiposIdentificacion = new SelectList(await _context.TiposIdentificacion.Where(t => t.IdEstado == 1).ToListAsync(), "IdTipoIdentificacion", "DescTipo");
         ViewBag.Generos = new SelectList(await _context.Generos.Where(g => g.IdEstado == 1).ToListAsync(), "IdGenero", "DescGenero");

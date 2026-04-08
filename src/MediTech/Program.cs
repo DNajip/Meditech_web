@@ -99,6 +99,9 @@ builder.Services.AddDbContext<MediTechContext>(options =>
     options.UseSqlServer(connectionString));
 
 // Custom Services
+QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
+builder.Services.AddScoped<MediTech.Backend.Services.ReportingService>();
+
 // Authentication & Session
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
